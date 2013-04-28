@@ -1,0 +1,69 @@
+#
+# Copyright 2013 Double Precision, Inc.
+# See COPYING for distribution information.
+#
+
+Summary: LibCXX SQL Library
+Name: libcxxsql
+Version: @VERSION@
+Release: 1%{?extrarelease}
+License: GPL
+Group: Development/Libraries
+Source0: %{name}-%{version}.tar.bz2
+
+%define _hardened_build 1
+
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+BuildRequires: libcxx-devel >= 0.5
+BuildRequires: unixODBC-devel
+
+%description
+This package installs the LibCXX SQL library. This package must be installed
+to run software that's linked against libcxxsql.
+
+Some software may also need to need the unixODBC-gui-qt package, which
+contains code for a GUI prompt to select an SQL data source, that some
+applications use.
+
+%package devel
+Group: Development/Libraries
+Summary: LibCXX SQL development libraries
+Requires: %{name} = 0:%{version}-%{release}
+
+%description devel
+This package installs files needed to develop applications that use 
+LibCXX SQL development libraries.
+
+%prep
+%setup -q
+%configure
+
+%build
+%{__make} %{_smp_mflags}
+
+%install
+rm -rf $RPM_BUILD_ROOT
+%{__make} install DESTDIR=$RPM_BUILD_ROOT
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%post -p /sbin/ldconfig
+%postun -p /sbin/ldconfig
+
+%files
+%defattr(-,root,root,-)
+%{_libdir}/*.so.*
+
+%files devel
+%defattr(-,root,root,-)
+%{_libdir}/*.so
+%{_libdir}/*.la
+%{_libdir}/*.a
+%{_libdir}/pkgconfig/*
+%{_includedir}/x/sql
+
+%changelog
+* Sat Jun  1 2013 Sam Varshavchik <mrsam@octopus.email-scan.com>
+- Initial version
+
