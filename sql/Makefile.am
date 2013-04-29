@@ -17,6 +17,7 @@ x:
 
 lib_LTLIBRARIES=libcxxsql.la
 libcxxsql_la_SOURCES=\
+	connection.C \
 	env.C \
 	exception.C \
 	gettext_in.h \

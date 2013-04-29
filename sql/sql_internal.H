@@ -4,6 +4,8 @@
 #include "x/sql/env.H"
 #include "x/sql/exception.H"
 #include "x/sql/exceptionobj.H"
+#include "x/sql/connection.H"
+#include "x/logger.H"
 #include <sql.h>
 #include <sqlext.h>
 #include <list>
@@ -54,7 +56,32 @@ class LIBCXX_HIDDEN envimplObj : public envObj {
 
 	void get_drivers(std::map<std::string, std::string>
 			 &drivers) const override;
+
+	std::pair<connection, std::string>
+		connect(const std::string &connection_parameters,
+			connect_flags flags);
 };
+
+class LIBCXX_HIDDEN connectionimplObj : public connectionObj {
+
+	LOG_CLASS_SCOPE;
+
+ public:
+	SQLHDBC h;
+	bool connected;
+	ref<envimplObj> env;
+
+	connectionimplObj(ref<envimplObj> &&envArg);
+	~connectionimplObj() noexcept;
+
+	void ret(SQLRETURN ret, const char *func);
+
+	diagnostics diags;
+
+	void disconnect();
+	void do_disconnect();
+};
+
 #if 0
 {
 	{

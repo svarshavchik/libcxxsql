@@ -5,11 +5,15 @@
 
 #include "libcxx_config.h"
 #include "sql_internal.H"
+#include "gettext_in.h"
 #include <x/exception.H>
+#include <x/property_value.H>
 
 #include <list>
 #include <sstream>
 #include <string>
+#include <cstring>
+#include <odbcinst.h>
 
 namespace LIBCXX_NAMESPACE {
 	namespace sql {
@@ -17,6 +21,14 @@ namespace LIBCXX_NAMESPACE {
 	}
 };
 #endif
+
+// Specifies the module that prompts for any additional connection
+// parameters. The default value references the
+// unixODBC-gui-qt module.
+
+static property::value<std::string> ui_property(LIBCXX_NAMESPACE_WSTR
+						"::sql::uiprompt",
+						"odbcinstQ4");
 
 diagnostics::diagnostics() : e(CUSTOM_EXCEPTION(exceptionObj))
 {
@@ -144,6 +156,88 @@ void envimplObj::get_drivers(std::map<std::string, std::string>
 					      reinterpret_cast<char *>
 					      (description)));
 	}
+}
+
+std::pair<connection, std::string>
+envimplObj::connect(const std::string &connection_parameters,
+		    connect_flags flags)
+{
+	ODBCINSTWND wnd;
+
+	{
+		auto str=ui_property.getValue();
+
+		wnd.szUI[0]=0;
+		strncat(wnd.szUI, str.c_str(), sizeof(wnd.szUI)-1);
+	}
+	wnd.hWnd=0;
+
+	std::lock_guard<std::mutex> lock(objmutex);
+
+	static const int flagmap[]={
+		SQL_DRIVER_PROMPT,
+		SQL_DRIVER_COMPLETE,
+		SQL_DRIVER_COMPLETE_REQUIRED,
+		SQL_DRIVER_NOPROMPT,
+	};
+
+	SQLCHAR out_connection_parameters[connection_parameters.size() * 2
+					  + 1024];
+	SQLSMALLINT out_connection_parameters_len;
+
+	auto conn=ref<connectionimplObj>::create(ref<envimplObj>(this));
+
+	conn->ret(SQLDriverConnect(conn->h, reinterpret_cast<SQLHWND>(&wnd),
+				   reinterpret_cast<SQLCHAR *>(const_cast<char *>(connection_parameters.c_str())),
+				   SQL_NTS,
+				   out_connection_parameters,
+				   sizeof(out_connection_parameters),
+				   &out_connection_parameters_len,
+				   (size_t)flags >= 0 &&
+				   (size_t)flags < sizeof(flagmap)/
+				   sizeof(flagmap[0]) ?
+				   flagmap[(size_t)flags]:SQL_DRIVER_NOPROMPT),
+		  "SQLDriverConnect");
+
+	conn->connected=true;
+	return std::make_pair(conn, std::string(reinterpret_cast<const char *>
+						(out_connection_parameters)));
+}
+
+std::pair<connection, std::string>
+envObj::connect(const std::string &connection_parameters)
+{
+	return connect(connection_parameters, connect_flags::noprompt);
+}
+
+// Look for bad characters in discreet connection string parameter names/values
+
+static bool bad(const std::string &s)
+{
+	return std::find_if(s.begin(), s.end(),
+			    []
+			    (char c)
+			    {
+				    return strchr("[]{}(),;?*=!@\\", c)
+					    ? 1:0;
+			    }) == s.end();
+}
+
+// Build a connection string from explicit name=value tuples.
+
+std::pair<connection, std::string>
+envObj::connect(const arglist_t &args, connect_flags flags)
+{
+	std::ostringstream o;
+
+	for (const auto &arg:args)
+	{
+		if (bad(arg.first) || bad(arg.second))
+			throw EXCEPTION(_TXT(_txt("Invalid character in connection parameter")));
+		o << arg.first << '=' << arg.second << ';';
+	}
+
+	return connect(o.str(), flags);
 }
 
 #if 0

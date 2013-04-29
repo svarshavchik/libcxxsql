@@ -44,6 +44,10 @@ public:
 					       (args)...);
 		}
 	};
+
+	//! Convenience typedef
+
+	typedef envObj::arglist_t arglist_t;
 };
 
 #if 0
