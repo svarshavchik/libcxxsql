@@ -51,6 +51,9 @@ class LIBCXX_HIDDEN envimplObj : public envObj {
 
 	void get_data_sources(std::map<std::string,
 			      std::string> &sources) const override;
+
+	void get_drivers(std::map<std::string, std::string>
+			 &drivers) const override;
 };
 #if 0
 {

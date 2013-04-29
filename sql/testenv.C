@@ -24,6 +24,21 @@ void testenv()
 			  << " "
 			  << src.second << std::endl;
 	}
+
+	sources.clear();
+
+	LIBCXX_NAMESPACE::sql::env::create()->get_drivers(sources);
+
+	for (const auto &src:sources)
+	{
+		std::cout << std::setw(30)
+			  << std::setiosflags(std::ios::left)
+			  << src.first
+			  << std::setw(0)
+			  << " "
+			  << src.second << std::endl;
+	}
+
 }
 				       
 int main(int argc, char **argv)

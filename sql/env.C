@@ -112,6 +112,40 @@ void envimplObj::get_data_sources(std::map<std::string,
 	}
 }
 
+void envimplObj::get_drivers(std::map<std::string, std::string>
+			     &drivers) const
+{
+	SQLCHAR	driver[256];
+	SQLCHAR	description[256];
+	SQLSMALLINT	driver_len;
+	SQLSMALLINT	description_len;
+	SQLUSMALLINT	direction=SQL_FETCH_FIRST;
+
+	std::lock_guard<std::mutex> lock(objmutex);
+	SQLRETURN ret;
+
+	while (1)
+	{
+		ret = SQLDrivers(h, direction,
+				 driver, sizeof(driver),
+				 &driver_len,
+				 description, sizeof(description),
+				 &description_len);
+
+		if (ret == SQL_NO_DATA_FOUND)
+			break;
+
+		if (!SQL_SUCCEEDED(ret))
+			sql_error("SQLDrivers", h, SQL_HANDLE_ENV);
+		direction=SQL_FETCH_NEXT;
+
+		drivers.insert(std::make_pair(reinterpret_cast<char *>
+					      (driver),
+					      reinterpret_cast<char *>
+					      (description)));
+	}
+}
+
 #if 0
 {
 	{

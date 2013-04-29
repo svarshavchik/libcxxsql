@@ -41,6 +41,9 @@ public:
 	virtual void get_data_sources(std::map<std::string, std::string>
 				      &sources) const=0;
 
+	//! Return available drivers
+	virtual void get_drivers(std::map<std::string, std::string>
+				 &drivers) const=0;
 };
 
 #if 0
