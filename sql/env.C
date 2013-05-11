@@ -188,7 +188,7 @@ envimplObj::connect(const std::string &connection_parameters,
 	auto conn=ref<connectionimplObj>::create(ref<envimplObj>(this));
 
 	conn->ret(SQLDriverConnect(conn->h, reinterpret_cast<SQLHWND>(&wnd),
-				   reinterpret_cast<SQLCHAR *>(const_cast<char *>(connection_parameters.c_str())),
+				   to_sqlcharptr(connection_parameters),
 				   SQL_NTS,
 				   out_connection_parameters,
 				   sizeof(out_connection_parameters),
