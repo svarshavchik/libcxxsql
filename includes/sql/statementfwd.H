@@ -2,11 +2,11 @@
 ** Copyright 2013 Double Precision, Inc.
 ** See COPYING for distribution information.
 */
-
 #ifndef x_sql_statementfwd_H
 #define x_sql_statementfwd_H
 
 #include <x/ptrfwd.H>
+#include <x/vector.H>
 
 namespace LIBCXX_NAMESPACE {
 
@@ -18,6 +18,123 @@ namespace LIBCXX_NAMESPACE {
 
 class statementObj;
 class statementBase;
+
+//! A row bookmark
+
+//! Before executing the query, use
+//! \ref newstatementObj::option "newstatement->option"("BOOKMARKS", "ON")
+//! to enable bookmarks for this query.
+//!
+//! This is an opaque object that represents a row bookmark.
+//! This is optionally passed as the first value to
+//! \ref statementObj::fetch "statement->fetch"() or, a
+//! \c std::vector<INSERT_LIBX_NAMESPACE::sql::bookmark> gets passed as the
+//! first value to
+//! \ref statementObj::fetch_vectors "statement->fetch_vectors"(); in all cases
+//! without a column name or number identifier. An opaque bookmark for each
+//! row gets placed into the bookmark object, and can be used to scroll to
+//! that bookmark, using
+//! \ref fetch::atbookmark "INSERT_LIBX_NAMESPACE::sql::fetch::atbookmark"().
+
+class bookmark : public vectorptr<unsigned char> {
+
+public:
+	//! Constructor
+	bookmark();
+
+	//! Destructor
+	~bookmark() noexcept;
+
+	//! Used by fetch() to load the bookmark
+	bookmark &operator=(vectorptr<unsigned char> &&);
+
+	using vectorptr<unsigned char>::operator*;
+	using vectorptr<unsigned char>::operator->;
+
+};
+
+//! Last optional argument to \ref statementObj::fetch "statement->fetch"() or \ref statementObj::fetch_vectors "statement->fetch_vectors"().
+
+//! Specifies fetch direction. Don't construct this yourself, let the
+//! \ref fetch "fetch class" do it for you.
+
+class fetch_orientation {
+
+public:
+	//! Orientiation code
+	const int orientation;
+
+	//! Offset
+	const long long offset;
+
+	//! Bookmark
+	const bookmark * const bookmarkptr;
+
+	//! Internal constructor
+	constexpr fetch_orientation(int orientation_value,
+				    long long offset_value,
+				    const bookmark *bookmarkptr_value)
+		: orientation(orientation_value),
+		  offset(offset_value),
+		  bookmarkptr(bookmarkptr_value)
+	{
+	}
+};
+
+//! Fetch direction/orientation.
+
+//! Pass this as the last argument to
+//! \ref statementObj::fetch "statement->fetch"() or
+//! \ref statementObj::fetch_vectors "statement->fetch_vectors"(),
+//! specifying the fetch direction, for cursor types that support scrolling.
+
+class fetch {
+
+public:
+
+	//! Fetch the next set of rows (the default)
+	static const fetch_orientation next;
+
+	//! Fetch the previous set of rows
+	static const fetch_orientation prior;
+
+	//! Fetch the first set of rows
+	static const fetch_orientation first;
+
+	//! Fetch the last set of rows
+	static const fetch_orientation last;
+
+	//! \c INSERT_LIBX_NAMESPACE::sql::fetch::absolute(n) - fetch rows starting at row \#n (0-based)
+
+	class absolute : public fetch_orientation {
+	public:
+		//! Constructor
+		absolute(long long pos);
+	};
+
+	//! \c INSERT_LIBX_NAMESPACE::sql::fetch::relative(n) - fetch rows starting at row +/-n from the current row
+
+	class relative : public fetch_orientation {
+	public:
+		//! Constructor
+		relative(long long pos);
+	};
+
+	//! \c INSERT_LIBX_NAMESPACE::sql::fetch::atbookmark(n) - fetch rows starting at the given bookmark.
+
+	class atbookmark : public fetch_orientation {
+
+		//! Saved bookmark
+		bookmark bookmarkSave;
+	public:
+		//! Constructor
+		atbookmark(//! Saved bookmark
+			   const bookmark &bookmarksaveArg,
+
+			   //! Optional +/- offset # of rows from the bookmark
+			   long long offset=0);
+	};
+};
 
 //! A prepared SQL statement
 
@@ -281,12 +398,122 @@ class statementBase;
 //! the remaining parameters are the same as fetch_vectors().
 //!
 //! fetch_vectors_all() calls fetch_vectors() repeatedly, until it returns 0.
+//! With scrolling cursors, this is equivalent to specifying
+//! \c INSERT_LIBX_NAMESPACE::sql::fetch::next.
 //! After each call, except for the last one that returns 0, the lambda
 //! gets invoked, with the return value from fetch_vectors() as its sole
 //! parameter.
 //!
 //! The lambda cannot resize any vectors being fetched.
 //!
+//! \par Scrolling cursors
+//!
+//! A scrolling cursor takes an optional last argument to fetch() that
+//! specifies the scroll direction:
+//!
+//! \code
+//! float price;
+//! std::vector<float> prices;
+//!
+//! stmt->fetch("prices", price, INSERT_LIBX_NAMESPACE::sql::fetch::next);
+//!
+//! size_t cnt=stmt->fetch_vectors(1000, "prices", prices, INSERT_LIBX_NAMESPACE::sql::fetch::next);
+//! \endcode
+//!
+//! This is the default action, if omitted, that fetches the next row or
+//! vector of rows from the cursor.
+//!
+//! \code
+//! float price;
+//! std::vector<float> prices;
+//!
+//! stmt->fetch("prices", price, INSERT_LIBX_NAMESPACE::sql::fetch::prior);
+//!
+//! size_t cnt=stmt->fetch_vectors(1000, "prices", prices, INSERT_LIBX_NAMESPACE::sql::fetch::prior);
+//! \endcode
+//!
+//! \c INSERT_LIBX_NAMESPACE::sql::fetch::prior fetches the previous row or
+//! vector of rows from the cursor.
+//!
+//! \code
+//! float price;
+//! std::vector<float> prices;
+//!
+//! stmt->fetch("prices", price, INSERT_LIBX_NAMESPACE::sql::fetch::first);
+//!
+//! size_t cnt=stmt->fetch_vectors(1000, "prices", prices, INSERT_LIBX_NAMESPACE::sql::fetch::first);
+//! \endcode
+//!
+//! \c INSERT_LIBX_NAMESPACE::sql::fetch::first fetches the first row or vector
+//! of rows from the cursor.
+//!
+//! \code
+//! float price;
+//! std::vector<float> prices;
+//!
+//! stmt->fetch("prices", price, INSERT_LIBX_NAMESPACE::sql::fetch::last);
+//!
+//! size_t cnt=stmt->fetch_vectors(1000, "prices", prices, INSERT_LIBX_NAMESPACE::sql::fetch::last);
+//! \endcode
+//!
+//! \c INSERT_LIBX_NAMESPACE::sql::fetch::last fetches the last row or vector of
+//! rows from the cursor.
+//!
+//! \code
+//! float price;
+//! std::vector<float> prices;
+//!
+//! stmt->fetch("prices", price, INSERT_LIBX_NAMESPACE::sql::fetch::absolute(100));
+//!
+//! size_t cnt=stmt->fetch_vectors(1000, "prices", prices, INSERT_LIBX_NAMESPACE::sql::fetch::absolute(0));
+//! \endcode
+//!
+//! \c INSERT_LIBX_NAMESPACE::sql::fetch::absolute(n) fetches a row or vector of
+//! rows starting with the given absolute row number from the cursor.
+//! The row numbers are 0-based.
+//!
+//! \code
+//! float price;
+//! std::vector<float> prices;
+//!
+//! stmt->fetch("prices", price, INSERT_LIBX_NAMESPACE::sql::fetch::relative(-1));
+//!
+//! size_t cnt=stmt->fetch_vectors(1000, "prices", prices, INSERT_LIBX_NAMESPACE::sql::fetch::relative(10));
+//! \endcode
+//!
+//! \c INSERT_LIBX_NAMESPACE::sql::fetch::relative(n) fetches a row or vector of
+//! rows starting with the given offset from the start of the current resultset
+//! row or row vector.
+//!
+//! \code
+//! float price;
+//! std::vector<float> prices;
+//!
+//! INSERT_LIBX_NAMESPACE::sql::bookmark bookmark;
+//!
+//! std::vector<INSERT_LIBX_NAMESPACE::sql::bookmark> bookmarks;
+//!
+//! auto stmt=conn->create_newstatement("BOOKMARKS", "ON", "CURSOR_TYPE", "STATIC")->execute("SELECT prices FROM books order by stock_id");
+//!
+//! stmt->fetch(bookmark, "price", price);
+//!
+//! stmt->fetch_vectors(100, bookmarks, "price", price);
+//!
+//! stmt->fetch("prices", price, INSERT_LIBX_NAMESPACE::sql::fetch::atbookmark(bookmark, -1));
+//!
+//! size_t cnt=stmt->fetch_vectors(1000, "prices", prices, INSERT_LIBX_NAMESPACE::sql::fetch::atbookmark(bookmark));
+//! \endcode
+//!
+//! \ref bookmark "INSERT_LIBX_NAMESPACE::sql::bookmark" is an opaque object
+//! that stores a row's "bookmark". It's optionally passed as the first
+//! lvalue parameter to fetch(); or a vector of bookmarks gets passed as the
+//! first vector to fetch_fectors(), which puts a bookmark for each row in the
+//! fetched vector into the corresponding bookmark vector.
+//!
+//! \c INSERT_LIBX_NAMESPACE::sql::fetch::atbookmark fetches a row or vector of
+//! rows starting with the previously-obtained bookmark row, with an optional
+//! relative offset.
+
 typedef ref<statementObj, statementBase> statement;
 
 //! A nullable pointer reference to an \ref statement "SQL statement".

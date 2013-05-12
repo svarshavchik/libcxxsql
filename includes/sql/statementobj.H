@@ -323,34 +323,84 @@ public:
 
 	virtual const columnmap_t &get_columnmap()=0;
 
+private:
+
+	//! Helper class used to process the first argument to fetch() when it's a bookmark
+
+	template<typename firstArgType> class fetch_first_arg {
+
+	public:
+
+		//! The default template implementation is when the first argument is not a bookmark
+
+		template<typename firstArg, typename ...Args>
+		static inline void bind_all(statementObj &stmt,
+					    firstArg &&arg,
+					    Args && ...args)
+		{
+			stmt.bind_all(std::forward<firstArg>(arg),
+				      std::forward<Args>(args)...);
+		}
+	};
+
+	//! Helper class used to process the first argument to fetch() when it's a bookmark vector
+
+	template<typename firstArgType> class fetch_vectors_first_arg {
+
+	public:
+
+		//! The default template implementation is when the first argument is not a bookmark
+
+		template<typename firstArg, typename ...Args>
+		static inline void bind_vectors_all(statementObj &stmt,
+						    size_t rowsize,
+						    firstArg &&arg,
+						    Args && ...args)
+		{
+			stmt.bind_vectors_all(rowsize,
+					      std::forward<firstArg>(arg),
+					      std::forward<Args>(args)...);
+		}
+	};
+
+public:
 	//! Fetch a single row.
 
 	template<typename firstArg, typename ...Args>
 	bool fetch(firstArg &&arg, Args && ...args)
 	{
 		clear_binds(1);
-		bind_all(std::forward<firstArg>(arg),
-			 std::forward<Args>(args)...);
+		fetch_first_arg<firstArg>
+			::bind_all(*this,
+				   std::forward<firstArg>(arg),
+				   std::forward<Args>(args)...);
 		return fetch_into() > 0;
 	}
 
 	//! Fetch a vector of rows
 
-	template<typename ...Args>
+	template<typename firstArg, typename ...Args>
 	size_t fetch_vectors(//! How many rows to fetch
 			     size_t rowsize,
 
-			     //! Columns
+			     //! First argument
+			     firstArg && arg,
+
+			     //! Remaining arguments
 			     Args && ...args)
 	{
 		clear_binds(rowsize);
-		bind_vectors_all(rowsize, std::forward<Args>(args)...);
+
+		fetch_vectors_first_arg<firstArg>
+			::bind_vectors_all(*this, rowsize,
+					   std::forward<firstArg>(arg),
+					   std::forward<Args>(args)...);
 		return fetch_into();
 	}
 
 	//! Fetch all rows into vectors
 
-	template<typename Functor, typename ...Args>
+	template<typename Functor, typename firstArg, typename ...Args>
 	void fetch_vectors_all(//! How many rows to fetch, at a time
 			       size_t rowsize,
 
@@ -359,11 +409,18 @@ public:
 
 			       Functor &&functor,
 
+			       //! First argument
+			       firstArg && arg,
+
 			       //! Columns
 			       Args && ...args)
 	{
 		clear_binds(rowsize);
-		bind_vectors_all(rowsize, std::forward<Args>(args)...);
+
+		fetch_vectors_first_arg<firstArg>
+			::bind_vectors_all(*this, rowsize,
+					   std::forward<firstArg>(arg),
+					   std::forward<Args>(args)...);
 
 		size_t n;
 
@@ -378,6 +435,9 @@ private:
 	inline void bind_all()
 	{
 	}
+
+	//! End fetch() parameters with an explicit scroll indication
+	virtual void bind_all(const fetch_orientation &orientation)=0;
 
 	//! Bind a resultset column by column number.
 
@@ -445,6 +505,13 @@ private:
 	//! No more resultset vectors to bind.
 	void bind_vectors_all(size_t rowsize)
 	{
+	}
+
+	//! End fetch_vectors() parameters with an explicit scroll indication
+	inline void bind_vectors_all(size_t rowsize,
+				     const fetch_orientation &orientation)
+	{
+		bind_all(orientation);
 	}
 
 	//! Bind a resultset vector column by column number.
@@ -532,6 +599,9 @@ private:
 
 	//! Map a column name to number.
 	virtual size_t bind_column_name(const std::string &name)=0;
+
+	//! Bind the bookmark column
+	virtual void bind_bookmarks(bookmark *bookmarks)=0;
 
 	//! Bind a resultset bitflag column
 	virtual void bind_next(size_t column_number, bitflag *n, bitflag *nullflag)=0;
@@ -768,6 +838,51 @@ private:
 
 	//! Some drivers do not throw an exception on a partial vector insert failure
 	virtual void verify_vector_execute(const std::vector<bitflag> &retvalues)=0;
+};
+
+//! Specialization
+
+//! Process fetch() arguments when the first one is a bookmark.
+
+template<>
+class statementObj::fetch_first_arg<bookmark &> {
+
+public:
+
+	//! Special processing for the bookmark column
+
+	template<typename ...Args>
+	static inline void bind_all(statementObj &stmt,
+				    bookmark &bookmarkArg,
+				    Args && ...args)
+	{
+		stmt.bind_bookmarks(&bookmarkArg);
+		stmt.bind_all(std::forward<Args>(args)...);
+	}
+};
+
+//! Specialization
+
+//! Process fetch_vectors() arguments when the first one is a bookmark.
+
+template<>
+class statementObj::fetch_vectors_first_arg<std::vector<bookmark> &> {
+
+public:
+
+	//! Special processing for the bookmark column
+
+	template<typename ...Args>
+	static inline void bind_vectors_all(statementObj &stmt,
+					    size_t rowsize,
+					    std::vector<bookmark> &bookmarkArg,
+					    Args && ...args)
+	{
+		bookmarkArg.resize(rowsize);
+		stmt.bind_bookmarks(&bookmarkArg[0]);
+		stmt.bind_vectors_all(rowsize,
+				      std::forward<Args>(args)...);
+	}
 };
 
 //! Process an execute() parameter that's not a NULL

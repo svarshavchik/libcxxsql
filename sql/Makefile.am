@@ -31,7 +31,11 @@ libcxxsql_la_SOURCES=\
 libcxxsql_la_LIBADD=-lcxx @ODBC_LIBS@
 libcxxsql_la_LDFLAGS=-version-info @VERSION_INFO@ $(LINKTYPE)
 
-noinst_PROGRAMS=testenv
+noinst_PROGRAMS=testenv testcursor
+
+testcursor_SOURCES=testcursor.C
+testcursor_LDADD=libcxxsql.la
+testcursor_LDFLAGS=$(LINKTYPE)
 
 testenv_SOURCES=testenv.C
 testenv_LDADD=libcxxsql.la
@@ -41,3 +45,5 @@ check-am: $(noinst_PROGRAMS)
 	./testenv
 	test -f private.mysql || exit 0; ./testenv --connect "`cat private.mysql`"
 	test -f private.postgres || exit 0; ./testenv --connect "`cat private.postgres`"
+	test -f private.mysql || exit 0; ./testcursor --connect "`cat private.mysql`"
+	test -f private.postgres || exit 0; ./testcursor --connect "`cat private.postgres`"

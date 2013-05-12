@@ -26,6 +26,51 @@ namespace LIBCXX_NAMESPACE {
 };
 #endif
 
+bookmark::bookmark()
+{
+}
+
+bookmark::~bookmark() noexcept
+{
+}
+
+bookmark &bookmark::operator=(vectorptr<unsigned char> &&value)
+{
+	vectorptr<unsigned char>::operator=(std::move(value));
+	return *this;
+}
+
+// Translate our exported fetch orientation objects into ODBC constants
+
+const fetch_orientation fetch::next(SQL_FETCH_NEXT, 0, nullptr);
+
+const fetch_orientation fetch::prior(SQL_FETCH_PRIOR, 0, nullptr);
+
+const fetch_orientation fetch::last(SQL_FETCH_LAST, 0, nullptr);
+
+const fetch_orientation fetch::first(SQL_FETCH_FIRST, 0, nullptr);
+
+fetch::absolute::absolute(long long pos) :
+	// We use 0-based row numbers, ODBC uses 1-based row numbers
+	fetch_orientation(SQL_FETCH_ABSOLUTE, pos+1, nullptr)
+{
+	if (offset < 0)
+		throw EXCEPTION(_TXT(_txt("Absolute row number too large")));
+}
+
+fetch::relative::relative(long long pos) :
+	fetch_orientation(SQL_FETCH_RELATIVE, pos, nullptr)
+{
+}
+
+
+fetch::atbookmark::atbookmark(const bookmark &bookmarksaveArg,
+			      long long offset) :
+	fetch_orientation(SQL_FETCH_BOOKMARK, offset, &bookmarkSave),
+	bookmarkSave(bookmarksaveArg)
+{
+}
+
 statementObj::statementObj()
 {
 }
@@ -987,6 +1032,42 @@ void statementimplObj::bound_indicator::stringsObj
 	}
 }
 
+statementimplObj::bound_indicator::bookmarksObj
+::bookmarksObj(bookmark *bookmarksArg,
+	       size_t recsize, size_t row_array_size)
+	: stringsbaseObj(recsize, row_array_size),
+	  bookmarks(bookmarksArg)
+{
+}
+
+statementimplObj::bound_indicator::bookmarksObj
+::~bookmarksObj() noexcept
+{
+}
+
+void statementimplObj::bound_indicator::bookmarksObj::bind(const
+							   bound_indicator &b,
+							   statementimplObj
+							   &stmt)
+{
+	// Pull out bookmarks.
+
+	const char *p=&string_buffer[0];
+	auto s=bookmarks;
+	auto indicators=&b.indicators[0];
+
+	size_t num_rows_fetched=b.indicators.size();
+
+	for (size_t i=0; i<num_rows_fetched;
+	     ++i, p += string_size, ++indicators, ++s)
+	{
+		*s=*indicators != SQL_NULL_DATA
+			? vectorptr<unsigned char>
+			::create(p, p+*indicators)
+			: vectorptr<unsigned char>();
+	}
+}
+
 statementimplObj::indicator::~indicator() noexcept
 {
 	if (!installedflag)
@@ -1016,6 +1097,31 @@ void statementimplObj::clear_binds(size_t row_array_sizeArg)
 	bound_indicator_list.clear();
 
 	SET_ATTR(SQL_ATTR_ROWS_FETCHED_PTR, ptr, &num_rows_fetched);
+
+	scroll_orientation=SQL_FETCH_NEXT;
+	scroll_offset=0;
+	scroll_bookmark=bookmark();
+}
+
+// End of bound columns, save positioning indicator for the upcoming fetch.
+
+void statementimplObj::bind_all(const fetch_orientation &orientation)
+{
+	scroll_orientation=orientation.orientation;
+
+	if ((scroll_offset=orientation.offset) != orientation.offset)
+		throw EXCEPTION((std::string)
+				gettextmsg(_TXT(_txt("Scroll offset of %1% "
+						     "exceeds word size")),
+					   orientation.offset));
+	if (orientation.bookmarkptr)
+	{
+		scroll_bookmark= *orientation.bookmarkptr;
+		ret(SQLSetStmtAttr(h, SQL_ATTR_FETCH_BOOKMARK_PTR,
+				   (SQLPOINTER)(&*scroll_bookmark->begin()),
+				   scroll_bookmark->size()),
+		    "SQLSetStmtAttr(SQL_ATTR_FETCH_BOOKMARK_PTR)");
+	}
 }
 
 size_t statementimplObj::bind_column_name(const std::string &name)
@@ -1032,6 +1138,24 @@ size_t statementimplObj::bind_column_name(const std::string &name)
 					   name));
 
 	return range.first->second.column_number;
+}
+
+void statementimplObj::bind_bookmarks(bookmark *bookmarks)
+{
+	// Bind bookmark column.
+
+	SQLLEN len=colattribute_n(0, SQL_DESC_OCTET_LENGTH,
+				  "SQLColAttribute(SQL_DESC_OCTET_LENGTH(Bookmark))");
+
+	auto bind=ref<bound_indicator::bookmarksObj>::create(bookmarks, len,
+							     row_array_size);
+
+	indicator ind(this, nullptr, row_array_size, bind);
+
+	ret(SQLBindCol(h, 0, SQL_C_VARBOOKMARK,
+		       &bind->string_buffer[0],
+		       bind->string_size, ind), "SQLBindCol(Bookmark)");
+	ind.installed();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1216,7 +1340,7 @@ void statementimplObj::bind_next(size_t i,
 
 size_t statementimplObj::fetch_into()
 {
-	auto rc=SQLFetchScroll(h, SQL_FETCH_NEXT, 0);
+	auto rc=SQLFetchScroll(h, scroll_orientation, scroll_offset);
 
 	if (rc == SQL_NO_DATA)
 		return 0;

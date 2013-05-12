@@ -138,6 +138,13 @@ class LIBCXX_HIDDEN newstatementimplObj : public newstatementObj {
 
 	ref<connectionimplObj> conn;
 
+	std::map<SQLINTEGER, std::pair<const char *, SQLULEN>> ulen_attributes;
+
+#define STMT_ATTR(n, type, value) \
+	set_attribute_ ## type(n, "SQLSetStmtAttr(" #type ", " #value ")", value)
+
+	void set_attribute_ulen(SQLINTEGER, const char *, SQLULEN);
+
 	newstatementimplObj(ref<connectionimplObj> &&connArg);
 	~newstatementimplObj() noexcept;
 
@@ -172,8 +179,11 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 	set_attr_ ## type (what, "SQLSetStmtAttr(" #what ")", value)
 
 	void clear_binds(size_t row_array_sizeArg) override;
+	void bind_all(const fetch_orientation &orientation) override;
+
 	size_t bind_column_name(const std::string &name) override;
 
+	void bind_bookmarks(bookmark *bookmarks) override;
 	void bind_next(size_t column_number, bitflag *n, bitflag *nullflag) override;
 
 	void bind_next(size_t column_number, short *n, bitflag *nullflag) override;
@@ -205,6 +215,10 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 	size_t fetch_into() override;
 
 	size_t row_array_size;
+	int scroll_orientation;
+	SQLLEN scroll_offset;
+	bookmark scroll_bookmark;
+
 	std::vector<SQLUSMALLINT> row_status_array;
 	SQLUINTEGER num_rows_fetched;
 
@@ -312,6 +326,18 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 			stringsObj(std::string *stringsArg,
 				   size_t recsize, size_t row_array_size);
 			~stringsObj() noexcept;
+			void bind(const bound_indicator &indicators,
+				  statementimplObj &statement) override;
+		};
+
+		class bookmarksObj : public stringsbaseObj {
+
+		public:
+			bookmark *bookmarks;
+
+			bookmarksObj(bookmark *bookmarksArg,
+				     size_t recsize, size_t row_array_size);
+			~bookmarksObj() noexcept;
 			void bind(const bound_indicator &indicators,
 				  statementimplObj &statement) override;
 		};

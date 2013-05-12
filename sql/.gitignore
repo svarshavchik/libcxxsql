@@ -1,3 +1,4 @@
 libcxxsql.la
+testcursor
 testenv
 x
