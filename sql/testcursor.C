@@ -148,6 +148,7 @@ void testcursor(const std::string &connection,
 		int flags)
 {
 	auto env=LIBCXX_NAMESPACE::sql::env::create();
+	env->set_login_timeout(10);
 	auto conn=env->connect(connection,
 			       (LIBCXX_NAMESPACE::sql::connect_flags)flags)
 		.first;

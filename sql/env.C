@@ -62,7 +62,7 @@ envObj::~envObj() noexcept
 {
 }
 
-envimplObj::envimplObj()
+envimplObj::envimplObj() : login_timeout_set(false)
 {
 	if (!SQL_SUCCEEDED(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &h)))
 	{
@@ -187,6 +187,9 @@ envimplObj::connect(const std::string &connection_parameters,
 
 	auto conn=ref<connectionimplObj>::create(ref<envimplObj>(this));
 
+	if (login_timeout_set)
+		conn->CONN_ATTR(SQL_ATTR_LOGIN_TIMEOUT, uint, login_timeout);
+		
 	conn->ret(SQLDriverConnect(conn->h, reinterpret_cast<SQLHWND>(&wnd),
 				   to_sqlcharptr(connection_parameters),
 				   SQL_NTS,
@@ -239,6 +242,22 @@ envObj::connect(const arglist_t &args, connect_flags flags)
 
 	return connect(o.str(), flags);
 }
+
+void envimplObj::set_login_timeout(time_t t)
+{
+	std::lock_guard<std::mutex> lock(objmutex);
+
+	login_timeout_set=true;
+	login_timeout=t;
+}
+
+void envimplObj::clear_login_timeout()
+{
+	std::lock_guard<std::mutex> lock(objmutex);
+
+	login_timeout_set=false;
+}
+
 
 #if 0
 {

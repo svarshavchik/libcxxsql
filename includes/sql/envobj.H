@@ -63,6 +63,12 @@ public:
 	virtual void get_drivers(std::map<std::string, std::string>
 				 &drivers) const=0;
 
+	//! Set login timeout
+	virtual void set_login_timeout(time_t)=0;
+
+	//! Clear login timeout
+	virtual void clear_login_timeout()=0;
+
 	//! Create a connection
 
 	//! The connection parameter is given as a single string.

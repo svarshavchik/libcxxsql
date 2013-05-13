@@ -112,6 +112,16 @@ class envBase;
 //! (which is nothing more than a \c std::list of a
 //! \c std::string pair.
 //!
+//! \code
+//! env->set_login_timeout(60);
+//! env->clear_login_timeout();
+//! \endcode
+//!
+//! set_login_timeout() sets the timeout interval for new connections to
+//! log in to the database server. clear_login_timeout() resets it to the
+//! driver default. The default value, and the implementation of login
+//! timeouts is driver-specific.
+
 typedef ref<envObj, envBase> env;
 
 //! A nullable pointer reference to an \ref env "SQL environment".

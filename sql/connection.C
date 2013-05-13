@@ -224,6 +224,14 @@ ref<newstatementimplObj> connectionimplObj::do_create_newstatement()
 	return ref<newstatementimplObj>::create(ref<connectionimplObj>(this));
 }
 
+void connectionimplObj::set_attribute_uint(SQLINTEGER attribute,
+					   const char *attribute_str,
+					   SQLUINTEGER v)
+{
+	ret(SQLSetConnectAttr(h, attribute, (SQLPOINTER)(SQLULEN)v, 0),
+	    attribute_str);
+}
+
 #if 0
 {
 	{

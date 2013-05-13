@@ -81,6 +81,12 @@ class LIBCXX_HIDDEN envimplObj : public envObj {
 	void get_drivers(std::map<std::string, std::string>
 			 &drivers) const override;
 
+	void set_login_timeout(time_t t) override;
+	void clear_login_timeout() override;
+
+	bool login_timeout_set;
+	time_t login_timeout;
+
 	std::pair<connection, std::string>
 		connect(const std::string &connection_parameters,
 			connect_flags flags);
@@ -129,6 +135,11 @@ class LIBCXX_HIDDEN connectionimplObj : public connectionObj {
 #include "getinfo_internal.H"
 #undef LIBCXX_SQL_GETINFO_DECL
 #undef LIBCXX_SQL_GETINFO_IMPL
+
+#define CONN_ATTR(n, type, value) \
+	set_attribute_ ## type(n, "SQLSetConnectAttr(" #type ", " #value ")", value)
+
+	void set_attribute_uint(SQLINTEGER, const char *, SQLUINTEGER);
 
 };
 
