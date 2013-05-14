@@ -102,6 +102,7 @@ class LIBCXX_HIDDEN connectionimplObj : public connectionObj {
  public:
 	SQLHDBC h;
 	bool connected;
+	unsigned transaction_scope_level;
 	ref<envimplObj> env;
 
 	friend class newstatementimplObj;
@@ -141,6 +142,17 @@ class LIBCXX_HIDDEN connectionimplObj : public connectionObj {
 
 	void set_attribute_uint(SQLINTEGER, const char *, SQLUINTEGER);
 
+	void autocommit(bool value) override;
+	void commit(bool turn_on_autocommit) override;
+	void rollback(bool turn_on_autocommit) override;
+	void check_not_transaction_scope_level(const char *funcname);
+	std::string savepoint_name();
+	void commit_rollback_work(const ref<newstatementimplObj> &,
+				  const ref<statementimplObj> &,
+				  const std::string &);
+	void begin_work(const std::string &options) override;
+	void commit_work() override;
+	void rollback_work() override;
 };
 
 class LIBCXX_HIDDEN newstatementimplObj : public newstatementObj {
@@ -160,6 +172,8 @@ class LIBCXX_HIDDEN newstatementimplObj : public newstatementObj {
 	~newstatementimplObj() noexcept;
 
 	statement prepare(const std::string &sql) override;
+	statement prepare(const ref<statementimplObj> &s,
+			  const std::string &sql);
 	ref<statementimplObj> newstmt();
 
 	void option(const std::string &name, const std::string &value)

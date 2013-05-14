@@ -28,8 +28,14 @@ connectionObj::~connectionObj() noexcept
 {
 }
 
+void connectionObj::begin_work()
+{
+	begin_work("");
+}
+
 connectionimplObj::connectionimplObj(ref<envimplObj> &&envArg)
-	: h(nullptr), connected(false), env(std::move(envArg))
+	: h(nullptr), connected(false), transaction_scope_level(0),
+	  env(std::move(envArg))
 {
 	if (!SQL_SUCCEEDED(SQLAllocHandle(SQL_HANDLE_DBC, env->h, &h)))
 	{
@@ -231,6 +237,179 @@ void connectionimplObj::set_attribute_uint(SQLINTEGER attribute,
 	ret(SQLSetConnectAttr(h, attribute, (SQLPOINTER)(SQLULEN)v, 0),
 	    attribute_str);
 }
+
+void connectionimplObj::autocommit(bool value)
+{
+	std::lock_guard<std::mutex> lock(objmutex);
+
+	check_not_transaction_scope_level("autocommit");
+	CONN_ATTR(SQL_ATTR_AUTOCOMMIT, uint, value ? SQL_AUTOCOMMIT_ON:SQL_AUTOCOMMIT_OFF);
+}
+
+void connectionimplObj::commit(bool turn_on_autocommit)
+{
+	std::lock_guard<std::mutex> lock(objmutex);
+
+	check_not_transaction_scope_level("commit");
+	ret(SQLEndTran(SQL_HANDLE_DBC, h, SQL_COMMIT), "SQLEndTran");
+
+	if (turn_on_autocommit)
+		CONN_ATTR(SQL_ATTR_AUTOCOMMIT, uint, SQL_AUTOCOMMIT_ON);
+}
+
+void connectionimplObj::rollback(bool turn_on_autocommit)
+{
+	std::lock_guard<std::mutex> lock(objmutex);
+
+	check_not_transaction_scope_level("rollback");
+	ret(SQLEndTran(SQL_HANDLE_DBC, h, SQL_ROLLBACK), "SQLEndTran");
+
+	if (turn_on_autocommit)
+		CONN_ATTR(SQL_ATTR_AUTOCOMMIT, uint, SQL_AUTOCOMMIT_ON);
+}
+
+void connectionimplObj::check_not_transaction_scope_level(const char *func)
+{
+	if (!transaction_scope_level)
+		return;
+
+	throw EXCEPTION((std::string)
+			gettextmsg(_TXT(_txt("%1%() invoked in a middle of a transaction")),
+				   func));
+}
+
+std::string connectionimplObj::savepoint_name()
+{
+	std::ostringstream o;
+
+	o << "LIBCXX_SAVEPOINT" << transaction_scope_level;
+
+	return o.str();
+}
+
+void connectionimplObj::begin_work(const std::string &options)
+{
+	// Need to create these before taking the lock
+
+	auto newstmt=do_create_newstatement();
+	auto stmt=newstmt->newstmt();
+
+	std::lock_guard<std::mutex> lock(objmutex);
+
+	if (transaction_scope_level == 0)
+	{
+		// Initial transaction
+
+		CONN_ATTR(SQL_ATTR_AUTOCOMMIT, uint, SQL_AUTOCOMMIT_ON);
+
+		std::string sql="START TRANSACTION";
+
+		if (!options.empty())
+			sql += " ";
+
+		newstmt->prepare(stmt, sql + options)->execute();
+	}
+	else
+	{
+		// Nested transaction implemented using a savepoint
+
+		if (!(transaction_scope_level+1))
+			throw EXCEPTION(_TXT(_txt("Transaction scope level exceeds maximum")));
+		newstmt->prepare(stmt, "SAVEPOINT " + savepoint_name())
+			->execute();
+	}
+	++transaction_scope_level;
+}
+
+void connectionimplObj::commit_work()
+{
+	// Need to create these before taking the lock
+
+	auto newstmt=do_create_newstatement();
+	auto stmt=newstmt->newstmt();
+
+	std::lock_guard<std::mutex> lock(objmutex);
+
+	commit_rollback_work(newstmt, stmt,
+			     --transaction_scope_level
+			     ? "RELEASE SAVEPOINT "+savepoint_name()
+			     : "COMMIT WORK");
+}
+
+void connectionimplObj::rollback_work()
+{
+	auto newstmt=do_create_newstatement();
+	auto stmt=newstmt->newstmt();
+
+	std::lock_guard<std::mutex> lock(objmutex);
+
+	commit_rollback_work(newstmt, stmt,
+			     --transaction_scope_level
+			     ? "ROLLBACK TO SAVEPOINT "+savepoint_name()
+			     : "ROLLBACK WORK");
+}
+
+void connectionimplObj::commit_rollback_work(const ref<newstatementimplObj>
+					     &stmt,
+					     const ref<statementimplObj>
+					     &newstmt,
+					     const std::string &cmd)
+{
+	try {
+		stmt->prepare(newstmt, cmd)->execute();
+	} catch (...) {
+
+		// If we fail here, the connection is in an unknown state.
+		// Just give up.
+
+		try {
+			do_disconnect();
+		} catch (const LIBCXX_NAMESPACE::exception &e) {
+			LOG_ERROR(e);
+			LOG_TRACE(e->backtrace);
+		}
+
+		throw;
+	}
+}
+
+transaction::transaction(const connection &connArg) : conn(connArg),
+						      committed(true)
+{
+	conn->begin_work();
+	committed=false;
+}
+
+void transaction::commit_work()
+{
+	committed=true;
+	conn->commit_work();
+}
+
+void transaction::rollback_work()
+{
+	committed=true;
+	conn->rollback_work();
+}
+
+LOG_FUNC_SCOPE_DECL(LIBCXX_NAMESPACE::sql::transaction::~transaction,
+		    transactionDestructor);
+
+transaction::~transaction() noexcept
+{
+	LOG_FUNC_SCOPE(transactionDestructor);
+
+	if (!committed)
+	{
+		try {
+			rollback_work();
+		} catch (const LIBCXX_NAMESPACE::exception &e)
+		{
+			LOG_ERROR(e);
+			LOG_TRACE(e->backtrace);
+		}
+	}
+};
 
 #if 0
 {

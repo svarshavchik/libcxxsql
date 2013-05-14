@@ -37,8 +37,12 @@ newstatementimplObj::~newstatementimplObj() noexcept
 
 statement newstatementimplObj::prepare(const std::string &sql)
 {
-	auto s=newstmt();
+	return prepare(newstmt(), sql);
+}
 
+statement newstatementimplObj::prepare(const ref<statementimplObj> &s,
+				       const std::string &sql)
+{
 	s->ret(SQLPrepare(s->h, to_sqlcharptr(sql), SQL_NTS), "SQLPrepare");
 	s->save_num_params();
 	return s;

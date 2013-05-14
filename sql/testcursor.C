@@ -221,6 +221,73 @@ void testcursor(const std::string &connection,
 			      conn->config_get_keyset_cursor_attributes1(),
 			      conn->config_get_keyset_cursor_attributes2());
 	}
+
+	alarm(60);
+
+	int cnt;
+
+	{
+		LIBCXX_NAMESPACE::sql::transaction tran(conn2);
+
+		conn2->execute("INSERT INTO temptbl VALUES(10, 10)");
+
+		conn->execute("SELECT COUNT(*) FROM temptbl")->fetch(0, cnt);
+
+		if (cnt != 10)
+			throw EXCEPTION("Another connection should not see a new record");
+
+		{
+			LIBCXX_NAMESPACE::sql::transaction tran(conn2);
+
+			conn2->execute("INSERT INTO temptbl VALUES(11, 11)");
+
+			tran.commit_work();
+		}
+
+		int dummy;
+
+		conn2->execute("SELECT COUNT(*) FROM temptbl where intkey=11")
+			->fetch(0, dummy);
+
+		if (!dummy)
+			throw EXCEPTION("Savepoint unexpectedly rolled back");
+
+
+		{
+			LIBCXX_NAMESPACE::sql::transaction tran(conn2);
+
+			conn2->execute("DELETE FROM temptbl where intkey=11");
+
+			LIBCXX_NAMESPACE::sql::transaction tran2(conn2);
+
+			conn2->execute("DELETE FROM temptbl where intkey=10");
+		}
+
+		conn2->execute("SELECT COUNT(*) FROM temptbl where intkey=11")
+			->fetch(0, dummy);
+
+		if (!dummy)
+			throw EXCEPTION("Savepoint unexpectedly committed");
+	}
+
+	conn->execute("SELECT COUNT(*) FROM temptbl")->fetch(0, cnt);
+
+	if (cnt != 10)
+		throw EXCEPTION("A rolled back transaction wasn't");
+
+	{
+		LIBCXX_NAMESPACE::sql::transaction tran(conn2);
+
+		conn2->execute("INSERT INTO temptbl VALUES(10, 10)");
+
+		tran.commit_work();
+	}
+
+	conn->execute("SELECT COUNT(*) FROM temptbl")->fetch(0, cnt);
+
+	if (cnt != 11)
+		throw EXCEPTION("A committed transaction wasn't");
+	alarm(0);
 }
 
 int main(int argc, char **argv)

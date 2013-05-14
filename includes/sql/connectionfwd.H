@@ -68,6 +68,54 @@ class connectionBase;
 //! reference to connection object goes out of scope and gets destroyed.
 //! disconnect() explicitly close the connection. It is no longer valid.
 //!
+//! \par Transactions
+//!
+//! \code
+//! conn->autocommit(false);
+//! conn->commit();
+//! conn->rollback();
+//! conn->autocommit(true);
+//!
+//! conn->begin_work();
+//! conn->commit_work();
+//! conn->rollback_work();
+//! \endcode
+//!
+//! autocommit() sets the connection's autocommit flag: whether all succesfully
+//! executed statements get automatically commited. If \c false, then
+//! an explicit commit() commits all changes, or rollback() rolls them back;
+//! then the next successfully executed statement opens another transaction.
+//!
+//! Most databases do not support certain statements, like schema changes, from
+//! being a part of a transaction.
+//!
+//! Both commit() and rollback() take an optional \c bool parameter. If
+//! set to true, the autocommit flag gets turned on automatically, as part of
+//! the commit or rollback.
+//!
+//! autocommit(), commit(), and rollback() use the underlying ODBC transaction
+//! API. Most current database drivers implement START TRANSACTION and
+//! SAVEPOINT SQL that allows for nested logical transactions.
+//!
+//! begin_work(), commit_work(), and rollback_work() implement logical
+//! transactions that can be nested. begin_work() opens a transaction,
+//! until it's closed by commit_work() or rollback_work(). While a transaction
+//! is open, invoking begin_work() again opens a nested transaction.
+//!
+//! The next call to commit_work() or rollback_work() closes the nested
+//! transaction. The nested transaction's changes get either commited to
+//! the original transaction, or undone, leaving the original transaction in
+//! its state prior to the nested transaction's start. The original transaction
+//! remains open until its own matching commit_work() or rollback_work().
+//!
+//! \note
+//!
+//! In addition to throwing an exception, a failed commit_work() or
+//! rollback_work() automatically disconnect()s, since the database connection's
+//! state can no longer be determined.
+//!
+//! See also: \ref transaction "INSERT_LIBX_NAMESPACE::sql::transaction"
+//!
 //! \par Catalog functions
 //!
 //! \code

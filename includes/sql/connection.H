@@ -111,6 +111,38 @@ envObj::connect(const std::string &argname,
 	return connect(argsCpy, flags);
 }
 
+//! Stack-based transaction guard
+
+//! Instantiate this on the stack. The constructor calls
+//! connection->begin_work().
+//!
+//! Unless commit_work() or rollback_work() gets invoked, the destructor
+//! invokes rollback_work();
+
+class transaction {
+
+	//! This transaction's connection
+	connection conn;
+
+	//! If its been committed
+	bool committed;
+
+public:
+	//! The constructor invokes connection->begin_work()
+
+	transaction(const connection &connArg);
+
+	//! Invoke connection->commit_work()
+	void commit_work();
+
+	//! Invoke connection->rollback_work()
+	void rollback_work();
+
+	//! Invoke rollback_work(), unless commit_work() or rollback_work() already invoked.
+	~transaction() noexcept;
+};
+
+
 #if 0
 {
 	{

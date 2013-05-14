@@ -123,6 +123,43 @@ public:
 	template<typename firstArg, typename ...Args>
 	newstatement create_newstatement(firstArg &&arg, Args ...args);
 
+	//! Set/clear autocommit flag
+	virtual void autocommit(bool value)=0;
+
+	//! Manual commit
+	virtual void commit(//! Whether to turn on the autocommit flag simultaneously with the commit
+			    bool turn_on_autocommit=false)=0;
+
+	//! Rollback
+	virtual void rollback(//! Whether to turn on the autocommit flag simultaneously with the rollback
+			    bool turn_on_autocommit=false)=0;
+
+	//! Begin transactional scope
+
+	//! The first call executes "START TRANSACTION" SQL. Subsequent
+	//! calls, without intervening calls to commit_work() or rollback_work()
+	//! execute "SAVEPOINT" SQL.
+
+	void begin_work();
+
+	//! Begin transactional scope
+
+	//! \overload
+	virtual void begin_work(//! Database driver-specific options
+				const std::string &options)=0;
+
+	//! Commit transactional scope
+
+	//! Executes RELEASE SAVEPOINT or COMMIT WORK SQL
+	virtual void commit_work()=0;
+
+	//! Rollback transactional scope
+
+	//! This is the same as calling rollback() with the disable autocommit
+	//! flag.
+
+	virtual void rollback_work()=0;
+
 private:
 
 	//! No more options given to create_newstatement()
