@@ -8,6 +8,7 @@
 #include "x/sql/connection.H"
 #include "x/sql/statement.H"
 #include "x/sql/exception.H"
+#include "x/sql/insertblob.H"
 #include "x/options.H"
 #include "x/join.H"
 #include <iostream>
@@ -288,6 +289,40 @@ void testcursor(const std::string &connection,
 	if (cnt != 11)
 		throw EXCEPTION("A committed transaction wasn't");
 	alarm(0);
+
+	conn->execute("create table temptbl2(intkey int not null, strval text, primary key(intkey))");
+
+	{
+		std::string largeblob(16384, 'A');
+
+		conn->execute("INSERT INTO temptbl2(intkey, strval) VALUES(?, ?)",
+			      0,
+			      LIBCXX_NAMESPACE::sql::insertblob::create(largeblob.begin(),
+									largeblob.end()));
+	}
+
+	bool created=false;
+
+	try {
+		conn->execute("create table temptbl3(intkey int not null, strval1 blob, strval2 blob, primary key(intkey))");
+		created=true;
+	} catch (...) {
+	}
+
+	if (created)
+	{
+		std::vector<unsigned char> blob1, blob2;
+
+		blob1.insert(blob1.end(), 32000, 'A');
+		blob2.insert(blob2.end(), 32000, 'B');
+
+		conn->execute("INSERT INTO temptbl3(intkey, strval1, strval2) VALUES(?, ?, ?)",
+			      0,
+			      LIBCXX_NAMESPACE::sql::insertblob::create(blob1.begin(),
+									blob1.end()),
+			      LIBCXX_NAMESPACE::sql::insertblob::create(blob2.begin(),
+									blob2.end()));
+	} 
 }
 
 int main(int argc, char **argv)

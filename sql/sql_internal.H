@@ -516,6 +516,9 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 		std::vector<SQLLEN> strlen_or_ind;
 		ptr<obj> extrabuffer;
 
+		const insertblob *blobptr;
+		size_t blobindex;
+
 		strlen_or_ind_buffer_t();
 		~strlen_or_ind_buffer_t() noexcept;
 	};
@@ -574,6 +577,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 
 	void process_input_parameter(size_t param_number, const std::string *s, const bitflag *nullflags, size_t nvalues, size_t nnullvalues) override;
 	void process_input_parameter(size_t param_number, const char **s, const bitflag *nullflags, size_t nvalues, size_t nnullvalues) override;
+	void process_input_parameter(size_t param_number, const insertblob *blobs, const bitflag *nullflags, size_t nvalues, size_t nnullvalues) override;
 
 	void verify_vector_execute(const std::vector<bitflag> &retvalues)
 		override;

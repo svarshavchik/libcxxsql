@@ -21,6 +21,7 @@ libcxxsql_la_SOURCES=\
 	env.C \
 	exception.C \
 	gettext_in.h \
+	insertblob.C \
 	newstatement.C \
 	statement.C \
 	sql_internal.H \

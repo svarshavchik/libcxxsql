@@ -10,6 +10,7 @@
 #include <x/chrcasecmp.H>
 #include <x/sql/connectionfwd.H>
 #include <x/sql/newstatementfwd.H>
+#include <x/sql/insertblobfwd.H>
 #include <vector>
 #include <unistd.h>
 
@@ -835,6 +836,9 @@ private:
 		process_input_parameter(param_number, &p, nullflags,
 					nvalues, nnullvalues);
 	}
+
+	//! Process input parameter
+	virtual void process_input_parameter(size_t param_number, const insertblob *blobs, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)=0;
 
 	//! Some drivers do not throw an exception on a partial vector insert failure
 	virtual void verify_vector_execute(const std::vector<bitflag> &retvalues)=0;

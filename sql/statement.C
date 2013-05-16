@@ -16,6 +16,7 @@
 #include "x/tostring.H"
 #include "x/join.H"
 #include "x/messages.H"
+#include "x/sql/insertblob.H"
 
 LOG_CLASS_INIT(LIBCXX_NAMESPACE::sql::statementimplObj);
 
@@ -215,7 +216,67 @@ void statementimplObj::process_execute_params(size_t param_number)
 						 param_number),
 					   param_number));
 
-	auto retval=SQLExecute(h);
+	decltype(SQLExecute(h)) retval;
+
+	if ((retval=SQLExecute(h)) == SQL_NEED_DATA)
+	{
+		// There are blobs to insert, here.
+
+		SQLPOINTER blob;
+
+		while ((retval=SQLParamData(h, &blob)) == SQL_NEED_DATA)
+		{
+			strlen_or_ind_buffer_t *paramdata
+				=(strlen_or_ind_buffer_t *)blob;
+
+			// The next non-NULL parameter.
+
+			while (paramdata->blobindex <
+			       paramdata->strlen_or_ind.size())
+			{
+				if (paramdata->
+				    strlen_or_ind[paramdata->blobindex]
+				    != SQL_NULL_DATA)
+					break;
+				++paramdata->blobindex;
+			}
+
+			if (paramdata->blobindex >=
+			    paramdata->strlen_or_ind.size())
+				throw EXCEPTION("Internal error: insert blob index exceeds vector size");
+
+			const insertblob *current_blob=
+				paramdata->blobptr + paramdata->blobindex;
+			++paramdata->blobindex; // For next time.
+
+			size_t bufsize=fdbaseObj::get_buffer_size();
+			char buffer[bufsize];
+
+			try {
+				size_t s;
+
+				// We need to call SQLPutData() at least once.
+				bool first=true;
+
+				while ((s=(*current_blob)
+					->fill(buffer, bufsize)) > 0 || first)
+				{
+					first=false;
+					ret(SQLPutData(h, buffer, s),
+					    "SQLPutData");
+				}
+			} catch (...) {
+
+				SQLCancel(h);
+				std::fill(param_status_ptr,
+					  param_status_ptr+
+					  param_status_buf.size(), 0);
+				param_status_buf.clear();
+				strlen_buffer.clear();
+				throw;
+			}
+		}
+	}
 
 	// Process per-row results, for vector inserts.
 	// Replace "unavailable" status from ODBC with the results of the
@@ -715,6 +776,65 @@ void statementimplObj::process_input_parameter(size_t param_number,
 {
 	process_string_input_parameter(param_number, nullptr, s, nullflags,
 				       nvalues, nnullvalues);
+}
+
+// Plaseholder for insert blobs.
+
+void statementimplObj::process_input_parameter(size_t param_number,
+					       const insertblob *blobs,
+					       const bitflag *nullflags,
+					       size_t nvalues,
+					       size_t nnullvalues)
+{
+	auto &buffer=create_lengths_buffer(nullflags, nvalues, nnullvalues);
+	SQLLEN *lengths=&buffer.strlen_or_ind[0];
+
+	// Check if the ODBC driver needs to know how big it is.
+
+	bool need_long_data_len=conn->config_get_need_long_data_len();
+
+	for (size_t i=0; i<nnullvalues; ++i)
+	{
+		if (lengths[i] == SQL_NULL_DATA)
+			continue;
+
+		if (need_long_data_len)
+		{
+			size_t s=blobs[i]->blobsize();
+
+			if (s == (size_t)-1)
+				throw EXCEPTION(_TXT(_txt("Cannot use input iterators for blobs")));
+
+			// Sanity check: s too big?
+
+			std::remove_reference<decltype(lengths[i])>::type v;
+
+			if ((size_t)(decltype(v))s != s ||
+
+			    // SQL_LEN_DATA_AT_EXEC should return a negative
+			    // value.
+
+			    (v=SQL_LEN_DATA_AT_EXEC(s)) > 0)
+				blobs[i]->blobtoobig();
+
+			lengths[i]=v;
+
+		}
+		else
+		{
+			lengths[i]=SQL_DATA_AT_EXEC;
+		}
+	}
+
+	buffer.blobptr=blobs;
+	buffer.blobindex=0;
+
+	bind_input_parameter(param_number,
+			     (*blobs)->sqltype(),
+			     sizeof(*blobs), 0,
+			     (*blobs)->datatype(),
+			     (SQLPOINTER)&buffer, 0, lengths);
+
 }
 
 size_t statementimplObj::size()
