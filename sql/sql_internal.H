@@ -7,6 +7,7 @@
 #include "x/sql/connection.H"
 #include "x/sql/statement.H"
 #include "x/logger.H"
+#include <x/refiterator.H>
 #include <sql.h>
 #include <sqlext.h>
 #include <list>
@@ -304,6 +305,14 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 
 	void bind_next(size_t column_number, std::string *s, bitflag *nullflag) override;
 
+	void bind_next(size_t column_number,
+		       const fetchblob<char> *factory,
+		       bitflag *nullflag) override;
+
+	void bind_next(size_t column_number,
+		       const fetchblob<unsigned char> *factory,
+		       bitflag *nullflag) override;
+
 	size_t fetch_into() override;
 
 	size_t row_array_size;
@@ -432,6 +441,119 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 			~bookmarksObj() noexcept;
 			void bind(const bound_indicator &indicators,
 				  statementimplObj &statement) override;
+		};
+
+		// Base class for processing blob columns. Takes care of
+		// retrieving the blob's contents, which the subclass dumps
+		// into the output iterator
+		class blobBaseObj : public baseObj {
+
+		public:
+			int datatype;
+			size_t column_number;
+
+			// Constructor
+			blobBaseObj(// SQL_C_CHAR or SQL_C_BINARY
+				    int datatypeArg,
+
+				    // Column number.
+				    size_t column_numberArg);
+
+			// Destructor
+			~blobBaseObj() noexcept;
+
+			// Process bind results.
+			void bind(const bound_indicator &indicators,
+				  statementimplObj &statement) override;
+
+			// Dump a chunk of data into the output iterator
+			virtual void chunk(size_t row_number,
+					   const char *ptr,
+					   size_t cnt)=0;
+
+			// Finished dumping a chunk of data.
+			virtual void finish()=0;
+		};
+
+		// Save a char or a binary blob
+
+		template<typename char_type, int datatype_val>
+		class blobObj : public blobBaseObj {
+
+		public:
+			// The output iterator factory from the caller.
+			fetchblob<char_type> factory;
+
+			// The output iterator that we're writing to
+			// This is a list of one. We create an output iterator
+			// for the column, and save it together with its
+			// close callback here. This way, these objects will
+			// get automatically destroyed, if we get destroyed
+			// to.
+			//
+			// finish() calls fetchclose callback, and empties
+			// the list, before we move to the next column,
+			std::list<std::pair<outputrefiterator<char_type>,
+					    fetchclose>
+				  > current_iterator_container;
+
+			// The pointer to the raw iterator, for speed
+
+			outputrefiteratorObj<char_type> *current_iterator;
+
+			// Constructor
+			blobObj(const fetchblob<char_type> &factoryArg,
+				size_t column_numberArg)
+				: blobBaseObj(datatype_val, column_numberArg),
+				  factory(factoryArg),
+				  current_iterator(nullptr)
+			{
+			}
+
+			~blobObj() noexcept
+			{
+			}
+
+			void chunk(size_t row_number,
+				   const char *ptr,
+				   size_t cnt)
+			{
+				if (!current_iterator)
+				{
+					// First time, time to create an output
+					// iterator.
+					current_iterator_container
+						.push_back(factory->create
+							   (row_number));
+
+					current_iterator=
+						&*current_iterator_container
+						.back().first;
+				}
+
+				while (cnt)
+				{
+					*current_iterator=*ptr++;
+					--cnt;
+				}
+			}
+
+			void finish()
+			{
+				if (current_iterator)
+				{
+					// Save the close callback.
+					auto cpy=current_iterator_container
+						.back().second;
+
+					// Clean up
+					current_iterator=nullptr;
+					current_iterator_container.clear();
+
+					// Invoke the close callback
+					cpy->close();
+				}
+			}
 		};
 
 		bound_indicator(bitflag *indicator_bools_iterArg,

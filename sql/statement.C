@@ -17,6 +17,7 @@
 #include "x/join.H"
 #include "x/messages.H"
 #include "x/sql/insertblob.H"
+#include "x/sql/fetchblob.H"
 
 LOG_CLASS_INIT(LIBCXX_NAMESPACE::sql::statementimplObj);
 
@@ -144,6 +145,7 @@ void statementimplObj::begin_execute_params(bitflag *status,
 	SET_ATTR(SQL_ATTR_PARAMS_PROCESSED_PTR, ptr, &param_status_processed);
 	param_status_processed=0;
 	SET_ATTR(SQL_ATTR_PARAMSET_SIZE, ulen, execute_rows);
+	SET_ATTR(SQL_ATTR_MAX_LENGTH, ulen, 0);
 }
 
 // Called right after prepare() to retrieve the number of parameters.
@@ -1165,6 +1167,90 @@ statementimplObj::bound_indicator::bookmarksObj
 {
 }
 
+// Common base class for binding character and binary blobs
+
+statementimplObj::bound_indicator::blobBaseObj
+::blobBaseObj(int datatypeArg, size_t column_numberArg)
+	: datatype(datatypeArg), column_number(column_numberArg)
+{
+}
+
+statementimplObj::bound_indicator::blobBaseObj::~blobBaseObj() noexcept
+{
+}
+
+void statementimplObj::bound_indicator::blobBaseObj
+::bind(const bound_indicator &indicators,
+       statementimplObj &statement)
+{
+	size_t bufsize=fdbaseObj::get_buffer_size();
+	char buffer[bufsize];
+	SQLLEN retlen;
+
+	for (size_t i=0; i<statement.row_array_size; ++i)
+	{
+		// Call SQLSetPos only if we really need to. Avoid trolling
+		// for driver bugs :-(
+
+		if (statement.row_array_size > 1)
+		{
+			statement.ret(SQLSetPos(statement.h, i+1, SQL_POSITION,
+						SQL_LOCK_NO_CHANGE),
+				      "SQLSetPos");
+		}
+
+		// Clear the null flag, if given.
+
+		if (indicators.indicator_bools)
+			indicators.indicator_bools[i]=0;
+
+		// Repeatedly call SQLGetData(), until we're done.
+
+		bool done=false;
+
+		do
+		{
+			auto ret=SQLGetData(statement.h, column_number,
+					    datatype,
+					    (SQLPOINTER)buffer,
+					    sizeof(buffer),
+					    &retlen);
+
+			if (retlen == SQL_NULL_DATA)
+			{
+				// This is a NULL value.
+
+				if (indicators.indicator_bools)
+					indicators.indicator_bools[i]=1;
+				break;
+			}
+
+			statement.ret(ret, "SQLGetData");
+
+			size_t c=sizeof(buffer);
+
+			if (retlen != SQL_NO_TOTAL)
+			{
+				if ((size_t)retlen <= c)
+				{
+					// Last chunk.
+					c=retlen;
+					done=true;
+				}
+			}
+
+			// For char blobs, we want to stop at the \0 byte.
+
+			if (datatype == SQL_C_CHAR)
+				c=strnlen(buffer, c);
+
+			chunk(i, buffer, c);
+			if (done)
+				finish();
+		} while (!done);
+	}				    
+}
+
 void statementimplObj::bound_indicator::bookmarksObj::bind(const
 							   bound_indicator &b,
 							   statementimplObj
@@ -1455,6 +1541,23 @@ void statementimplObj::bind_next(size_t i,
 	ind.installed();
 }
 
+void statementimplObj::bind_next(size_t column_number,
+				 const fetchblob<char> *factory,
+				 bitflag *nullflag)
+{
+	indicator(this, nullflag, row_array_size,
+		  ref<bound_indicator::blobObj<char, SQL_C_CHAR>>
+		  ::create(*factory, column_number+1)).installed();
+}
+
+void statementimplObj::bind_next(size_t column_number,
+				 const fetchblob<unsigned char> *factory,
+				 bitflag *nullflag)
+{
+	indicator(this, nullflag, row_array_size,
+		  ref<bound_indicator::blobObj<unsigned char, SQL_C_BINARY>>
+		  ::create(*factory, column_number+1)).installed();
+}
 
 // Everything leads up to this point.
 

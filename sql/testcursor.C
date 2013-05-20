@@ -9,11 +9,13 @@
 #include "x/sql/statement.H"
 #include "x/sql/exception.H"
 #include "x/sql/insertblob.H"
+#include "x/sql/fetchblob.H"
 #include "x/options.H"
 #include "x/join.H"
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
+#include <random>
 
 static std::set<std::string>
 get_tables(const LIBCXX_NAMESPACE::sql::connection &conn,
@@ -145,8 +147,306 @@ static void keyset_cursor(const LIBCXX_NAMESPACE::sql::connection &conn1,
 	testcursortype(conn1, conn2, stmt, a1, a2);
 }
 
+class randblob {
+
+public:
+	std::mt19937 &re;
+
+	std::uniform_int_distribution<size_t> randlen;
+	std::uniform_int_distribution<char> characters;
+
+	randblob(std::mt19937 &reArg)
+		: re(reArg),
+		  randlen(4000, 48000),
+		  characters('A', 'Z')
+	{
+	}
+
+	template<typename vec_type>
+	void fill(vec_type &vec)
+	{
+		randblob *p=this;
+
+		std::generate_n(std::back_insert_iterator<vec_type>(vec),
+				randlen(re),
+				[p, this]
+				{
+					return p->characters(re);
+				});
+	}
+};
+
+template<typename char_type>
+void testblobs(const LIBCXX_NAMESPACE::sql::connection &conn,
+	       std::mt19937 &re,
+	       bool skip_fetch_vector_blobs)
+{
+	typedef std::vector<char_type> vec_t;
+
+	vec_t largeblobs[4];
+
+	{
+		randblob r(re);
+
+		r.fill(largeblobs[0]);
+		r.fill(largeblobs[1]);
+		r.fill(largeblobs[2]);
+		r.fill(largeblobs[3]);
+	}
+
+	conn->execute("DELETE FROM temptbl2");
+
+	for (size_t i=0; i<4; ++i)
+	{
+		vec_t &largeblob=largeblobs[i];
+
+		conn->execute("INSERT INTO temptbl2(intkey, strval) VALUES(?, ?)",
+			      i,
+			      LIBCXX_NAMESPACE::sql::insertblob::create(largeblob.begin(),
+									largeblob.end()));
+	}
+
+	int close_called=0;
+
+	{
+		auto stmt=conn->execute("SELECT intkey, strval FROM temptbl2 ORDER BY intkey");
+
+		int intkey;
+		vec_t strval;
+
+		if (!stmt->fetch("intkey", intkey,
+				 "strval",
+				 LIBCXX_NAMESPACE::sql::fetchblob<char_type>
+				 ::create([&strval]
+					  (size_t rownum)
+					  {
+						  strval.clear();
+						  return std::back_insert_iterator<vec_t>
+							  (strval);
+					  })))
+			throw EXCEPTION("Unexpected EOF when fetching 1st blob");
+		if (intkey != 0 || strval != largeblobs[0])
+			throw EXCEPTION("Unexpected result of fetching 1st blob");
+
+		std::pair<LIBCXX_NAMESPACE::sql::fetchblob<char_type>,
+			  LIBCXX_NAMESPACE::sql::bitflag> strval_null
+			(LIBCXX_NAMESPACE::sql::fetchblob<char_type>::create
+			 ([&strval, &close_called]
+			  (size_t rownum)
+			  {
+				  strval.clear();
+				  return std::make_pair(std::back_insert_iterator<vec_t>
+							(strval),
+							[&close_called]
+							(std::back_insert_iterator<vec_t> dummy)
+							{
+								++close_called;
+							});
+			  }), 0);
+
+		if (!stmt->fetch(0, intkey,
+				 1, strval_null))
+			throw EXCEPTION("Unexpected EOF when fetching 2nd blob");
+		if (intkey != 1 || strval != largeblobs[1])
+			throw EXCEPTION("Unexpected result of fetching 2nd blob");
+		if (close_called != 1)
+			throw EXCEPTION("Close callback was not invoked for 2nd blob");
+
+		std::map<std::string, LIBCXX_NAMESPACE::sql::fetchblob<char_type>>
+			strval_map;
+
+		strval_map.insert(std::make_pair("strval",
+						 strval_null.first));
+
+		if (!stmt->fetch(0, intkey,
+				 strval_map))
+			throw EXCEPTION("Unexpected EOF when fetching 3rd blob");
+
+		if (intkey != 2 || strval != largeblobs[2])
+			throw EXCEPTION("Unexpected result of fetching 3rd blob");
+		if (close_called != 2)
+			throw EXCEPTION("Close callback was not invoked for 3rd blob");
+
+		std::map<std::string, std::pair<LIBCXX_NAMESPACE::sql::fetchblob<char_type>,
+						LIBCXX_NAMESPACE::sql::bitflag>
+			 > strval_map_null;
+
+		strval_map_null.insert(std::make_pair("strval",
+						      std::make_pair(strval_null
+								     .first,
+								     0)));
+		if (!stmt->fetch(0, intkey,
+				 strval_map_null))
+			throw EXCEPTION("Unexpected EOF when fetching 4th blob");
+		if (intkey != 3 || strval != largeblobs[3])
+			throw EXCEPTION("Unexpected result of fetching 4th blob");
+		if (close_called != 3)
+			throw EXCEPTION("Close callback was not invoked for 4th blob");
+	}
+
+	if (skip_fetch_vector_blobs)
+		return;
+
+	std::vector<vec_t> fetchblobs;
+	std::set<size_t> fetch_close_called;
+
+	auto stmt=conn->execute("SELECT intkey, strval FROM temptbl2 ORDER BY intkey");
+
+	fetchblobs.resize(4);
+	stmt->fetch_vectors
+		(4, 1, 
+		 LIBCXX_NAMESPACE::sql::fetchblob<char_type>
+		 ::create([&fetchblobs,
+			   &fetch_close_called]
+			  (size_t rownum)
+			  {
+				  fetchblobs[rownum].clear();
+				  return std::make_pair
+					  (std::back_insert_iterator<vec_t>
+					   (fetchblobs[rownum]),
+					   [&fetch_close_called, rownum]
+					   (std::back_insert_iterator<vec_t> dummy)
+					   {
+						   fetch_close_called
+							   .insert(rownum);
+					   });
+			  }));
+
+	if (fetchblobs[0] != largeblobs[0] ||
+	    fetchblobs[1] != largeblobs[1] ||
+	    fetchblobs[2] != largeblobs[2] ||
+	    fetchblobs[3] != largeblobs[3])
+		throw EXCEPTION("Vector blob fetch failed");
+
+	if (fetch_close_called != std::set<size_t>({0, 1, 2, 3}))
+		throw EXCEPTION("Vector blob close called flag check failed");
+
+	std::cout << "Tested vector blob fetches" << std::endl;
+
+	std::vector<LIBCXX_NAMESPACE::sql::insertblob> vector_insert;
+
+	for (size_t i=0; i<4; ++i)
+		vector_insert.push_back(LIBCXX_NAMESPACE::sql
+					::insertblob
+					::create(largeblobs[i].begin(),
+						 largeblobs[i].end()));
+	std::vector<LIBCXX_NAMESPACE::sql::bitflag> flags;
+	std::vector<int> intkeys={10, 11, 12, 13};
+	flags.resize(4);
+
+	conn->execute_vector("INSERT INTO temptbl2(intkey, strval) VALUES(?, ?)",
+			     flags, intkeys, vector_insert);
+
+	stmt=conn->execute("SELECT intkey, strval FROM temptbl2 WHERE intkey >= 10 and intkey <= 13 ORDER BY intkey");
+
+	LIBCXX_NAMESPACE::sql::fetchblob<char_type> fetchblob=
+		LIBCXX_NAMESPACE::sql::fetchblob<char_type>
+		::create([&fetchblobs]
+			 (size_t rownum)
+			 {
+				 fetchblobs[rownum].clear();
+				 return std::back_insert_iterator<vec_t>
+				 (fetchblobs[rownum]);
+			 });
+	fetchblobs.clear();
+	fetchblobs.resize(4);
+	stmt->fetch_vectors(4, 1, fetchblob);
+
+	if (fetchblobs[0] != largeblobs[0] ||
+	    fetchblobs[1] != largeblobs[1] ||
+	    fetchblobs[2] != largeblobs[2] ||
+	    fetchblobs[3] != largeblobs[3])
+		throw EXCEPTION("Vector blob fetch #2 failed");
+	std::cout << "Tested vector blob fetches #2" << std::endl;
+
+	std::pair<std::vector<LIBCXX_NAMESPACE::sql::insertblob>,
+		  std::vector<LIBCXX_NAMESPACE::sql::bitflag>>
+		vector_null_insert;
+
+	for (size_t i=0; i<4; ++i)
+		vector_null_insert.first
+			.push_back(LIBCXX_NAMESPACE::sql::insertblob
+				   ::create(largeblobs[i].begin(),
+					    largeblobs[i].end()));
+
+	vector_null_insert.second={0, 1, 0, 0};
+	intkeys={20, 21, 22, 23};
+	conn->execute_vector("INSERT INTO temptbl2(intkey, strval) VALUES(?, ?)",
+			     flags, intkeys, vector_null_insert);
+
+	fetchblobs.clear();
+	fetchblobs.resize(4);
+	std::pair<LIBCXX_NAMESPACE::sql::fetchblob<char_type>,
+		  std::vector<LIBCXX_NAMESPACE::sql::bitflag> >
+		fetchblobs_null_ind=
+		std::make_pair(LIBCXX_NAMESPACE::sql::fetchblob<char_type>
+			       ::create([&fetchblobs]
+					(size_t rownum)
+		{
+			return std::back_insert_iterator<vec_t>(fetchblobs[rownum]);
+		}), std::vector<LIBCXX_NAMESPACE::sql::bitflag>());
+
+	stmt=conn->execute("SELECT strval FROM temptbl2 WHERE intkey >= 20 and intkey <= 23 ORDER BY intkey");
+
+	stmt->fetch_vectors(4, "strval", fetchblobs_null_ind);
+
+	if (fetchblobs_null_ind.second !=
+	    std::vector<LIBCXX_NAMESPACE::sql::bitflag>({0, 1, 0, 0}))
+		throw EXCEPTION("Vector blob fetch #3 null flag fail");
+
+	if (fetchblobs[0] != largeblobs[0] ||
+	    fetchblobs[2] != largeblobs[2] ||
+	    fetchblobs[3] != largeblobs[3])
+		throw EXCEPTION("Vector blob fetch #3 failed");
+
+	std::cout << "Tested vector blob fetches #3" << std::endl;
+	std::list<decltype(vector_null_insert)> vector_null_insert_list;
+
+	{
+		vector_null_insert_list
+			.push_front(decltype(vector_null_insert)());
+
+		auto &vec=vector_null_insert_list.front();
+
+		for (size_t i=0; i<4; ++i)
+			vec.first.push_back(LIBCXX_NAMESPACE::sql::insertblob
+					    ::create(largeblobs[i].begin(),
+						     largeblobs[i].end()));
+
+		vec.second={0, 1, 0, 0};
+		intkeys={30, 31, 32, 33};
+		conn->execute_vector("INSERT INTO temptbl2(intkey, strval) VALUES(?, ?)",
+				     flags, intkeys, vector_null_insert_list);
+	}
+
+	fetchblobs.clear();
+	fetchblobs.resize(4);
+
+	std::map<std::string, decltype(fetchblobs_null_ind)>
+		fetchblobs_null_ind_map;
+
+	fetchblobs_null_ind_map.insert(std::make_pair("strval",
+						      fetchblobs_null_ind));
+
+	stmt=conn->execute("SELECT strval FROM temptbl2 WHERE intkey >= 30 and intkey <= 33 ORDER BY intkey");
+
+	stmt->fetch_vectors(4, fetchblobs_null_ind_map);
+
+	if (fetchblobs_null_ind_map.begin()->second.second !=
+	    std::vector<LIBCXX_NAMESPACE::sql::bitflag>({0, 1, 0, 0}))
+		throw EXCEPTION("Vector blob fetch #4 null flag fail");
+
+	if (fetchblobs[0] != largeblobs[0] ||
+	    fetchblobs[2] != largeblobs[2] ||
+	    fetchblobs[3] != largeblobs[3])
+		throw EXCEPTION("Vector blob fetch #4 failed");
+	std::cout << "Tested vector blob fetches #4" << std::endl;
+}
+
 void testcursor(const std::string &connection,
-		int flags)
+		int flags,
+		std::mt19937 &re,
+		bool skip_fetch_vector_blobs)
 {
 	auto env=LIBCXX_NAMESPACE::sql::env::create();
 	env->set_login_timeout(10);
@@ -290,16 +590,9 @@ void testcursor(const std::string &connection,
 		throw EXCEPTION("A committed transaction wasn't");
 	alarm(0);
 
-	conn->execute("create table temptbl2(intkey int not null, strval text, primary key(intkey))");
+	conn->execute("create table temptbl2(intkey int not null, strval text null, primary key(intkey))");
 
-	{
-		std::string largeblob(16384, 'A');
-
-		conn->execute("INSERT INTO temptbl2(intkey, strval) VALUES(?, ?)",
-			      0,
-			      LIBCXX_NAMESPACE::sql::insertblob::create(largeblob.begin(),
-									largeblob.end()));
-	}
+	testblobs<char>(conn, re, skip_fetch_vector_blobs);
 
 	bool created=false;
 
@@ -311,6 +604,8 @@ void testcursor(const std::string &connection,
 
 	if (created)
 	{
+		testblobs<unsigned char>(conn, re, skip_fetch_vector_blobs);
+
 		std::vector<unsigned char> blob1, blob2;
 
 		blob1.insert(blob1.end(), 32000, 'A');
@@ -322,6 +617,7 @@ void testcursor(const std::string &connection,
 									blob1.end()),
 			      LIBCXX_NAMESPACE::sql::insertblob::create(blob2.begin(),
 									blob2.end()));
+		std::cout << "Tested binary blob data type" << std::endl;
 	} 
 }
 
@@ -334,6 +630,25 @@ int main(int argc, char **argv)
 
 	LIBCXX_NAMESPACE::option::string_value connect_value(LIBCXX_NAMESPACE::option::string_value::create());
 
+	/*
+	  Bug in mysql's ODBC connector.
+
+	  SQLGetData (results.c):
+
+	  length= irrec->row.datalen;
+
+	  In a multi-row fetch, this is set to the length of this column in the
+	  last row, and when we iterate over all rows, for this column, this
+	  gets used in every row. Bad.
+	*/
+
+	auto skip_fetch_vector_blobs=
+		LIBCXX_NAMESPACE::option::bool_value::create();
+
+	auto seed_value=LIBCXX_NAMESPACE::ref<LIBCXX_NAMESPACE::option
+					      ::valueObj<time_t>>
+		::create(time(NULL));
+
 	options->add(connect_value, 'c', L"connect",
 		     LIBCXX_NAMESPACE::option::list::base::hasvalue,
 		     L"Make a test connection",
@@ -341,7 +656,14 @@ int main(int argc, char **argv)
 		.add(flags_value, 'f', L"flags",
 		     LIBCXX_NAMESPACE::option::list::base::hasvalue,
 		     L"Connection flag",
-		     L"flag");
+		     L"flag")
+		.add(seed_value, 's', L"seed",
+		     LIBCXX_NAMESPACE::option::list::base::hasvalue,
+		     L"Random seed",
+		     L"n")
+		.add(skip_fetch_vector_blobs, 0, L"skip-fetch-vector-blobs",
+		     0,
+		     L"Skip fetch vector blobs test, until someone fixes http://bugs.mysql.com/bug.php?id=61991");
 
 	options->addDefaultOptions();
 
@@ -354,14 +676,23 @@ int main(int argc, char **argv)
 	    parser->validate())
 		exit(1);
 
+	auto seed=seed_value->value;
 	try {
 		if (connect_value->isSet())
 		{
+			std::cout << "Seed " << seed << std::endl;
+
+			std::mt19937 re;
+			re.seed(seed);
+
 			testcursor(connect_value->value,
-				   flags_value->value);
+				   flags_value->value, re,
+				   skip_fetch_vector_blobs->value);
 		}
 	} catch (const LIBCXX_NAMESPACE::exception &e) {
 		std::cout << e << std::endl;
+		std::cout << e->backtrace;
+		std::cout << "Seed " << seed << std::endl;
 		exit(1);
 	}
 	return 0;

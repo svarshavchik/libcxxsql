@@ -334,6 +334,10 @@ public:
 //! including their unsigned varieties, floats and doubles. A \c std::string
 //! accepts character string column values.
 //!
+//! Depending on the database driver, a blob is handled by passing
+//! an \ref fetchblob "INSERT_LIBX_NAMESPACE::sql::fetchblob<char_type>"
+//! in place of an lvalue.
+//!
 //! \code
 //! std::pair<std::vector<std::string>,
 //!           std::vector<INSERT_LIBX_NAMESPACE::sql::bitflag>> titles;

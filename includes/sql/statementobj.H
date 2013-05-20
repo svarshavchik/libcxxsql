@@ -7,10 +7,13 @@
 #define x_sql_statementobj_H
 
 #include <x/obj.H>
+#include <x/ptrfwd.H>
 #include <x/chrcasecmp.H>
+#include <x/refiteratorfwd.H>
 #include <x/sql/connectionfwd.H>
 #include <x/sql/newstatementfwd.H>
 #include <x/sql/insertblobfwd.H>
+#include <x/sql/fetchblobfwd.H>
 #include <vector>
 #include <unistd.h>
 
@@ -325,7 +328,6 @@ public:
 	virtual const columnmap_t &get_columnmap()=0;
 
 private:
-
 	//! Helper class used to process the first argument to fetch() when it's a bookmark
 
 	template<typename firstArgType> class fetch_first_arg {
@@ -430,7 +432,6 @@ public:
 	}
 
 private:
-
 	//! No more resultset values to bind.
 
 	inline void bind_all()
@@ -501,6 +502,28 @@ private:
 	inline void bind_1(size_t n, argType &arg)
 	{
 		bind_column<argType>::bind_next(*this, n, &arg);
+	}
+
+	//! Bind a blob, by name
+
+	//! Blobs can be passed as rvalues, which the above lvalue template
+	//! won't match. We'll explicitly match the fetchblob rvalue here,
+	//! and do the right thing.
+
+	template<typename char_type>
+	inline void bind_1(const std::string &column_name,
+			   const fetchblob<char_type> &blob)
+	{
+		bind_1(bind_column_name(column_name), blob);
+	}
+
+	//! Bind a blob, by number
+
+	template<typename char_type>
+	inline void bind_1(size_t n,
+			   const fetchblob<char_type> &blob)
+	{
+		bind_column<fetchblob<char_type>>::bind_next(*this, n, &blob);
 	}
 
 	//! No more resultset vectors to bind.
@@ -594,6 +617,30 @@ private:
 		bind_next(n, &arg.first[0], &arg.second[0]);
 	}
 
+	//! Bind a single resultset blob column, without a null indicator
+
+	//! Blobs are not given as vectors, but as output iterator factories.
+	//!
+	template<typename char_type>
+	void bind_1_vector_arg(size_t n, size_t rowsize,
+			       const fetchblob<char_type> &arg)
+	{
+		bind_next(n, &arg, nullptr);
+	}
+
+	//! Bind a single resultset blob column, with a null indicator
+
+	//! \overload
+	//!
+	template<typename char_type>
+	void bind_1_vector_arg(size_t n, size_t rowsize,
+			       std::pair<fetchblob<char_type>,
+			       std::vector<bitflag>> &arg)
+	{
+		arg.second.resize(rowsize);
+		bind_next(n, &arg.first, &arg.second[0]);
+	}
+
 	//! Starting to bind columns.
 
 	virtual void clear_binds(size_t row_array_sizeArg)=0;
@@ -645,6 +692,16 @@ private:
 
 	//! Bind a resultset string column
 	virtual void bind_next(size_t column_number, std::string *s, bitflag *nullflag)=0;
+
+	//! Bind a character blob
+	virtual void bind_next(size_t column_number,
+			       const fetchblob<char> *factory,
+			       bitflag *nullflag)=0;
+
+	//! Bind a binary blob
+	virtual void bind_next(size_t column_number,
+			       const fetchblob<unsigned char> *factory,
+			       bitflag *nullflag)=0;
 
 	//! Fetch bound columns
 	virtual size_t fetch_into()=0;
@@ -927,6 +984,26 @@ class statementObj::bind_column<std::pair<argType, bitflag>> {
 				     std::pair<argType, bitflag> *arg)
 	{
 		s.bind_next(n, &arg->first, &arg->second);
+	}
+};
+
+//! Specialization, binding a blob without a null flag
+
+//! We need this specialization to accept a blob that gets passed directly
+//! as an argument to fetch(), so it is a const.
+
+template<typename char_type>
+class statementObj::bind_column<fetchblob<char_type>> {
+
+ public:
+
+	//! Bind the blob column
+
+	static inline void bind_next(statementObj &s,
+				     size_t n,
+				     const fetchblob<char_type> *arg)
+	{
+		s.bind_next(n, arg, nullptr);
 	}
 };
 

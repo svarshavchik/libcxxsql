@@ -21,6 +21,7 @@ libcxxsql_la_SOURCES=\
 	env.C \
 	exception.C \
 	gettext_in.h \
+	fetchblob.C \
 	insertblob.C \
 	newstatement.C \
 	statement.C \
@@ -46,5 +47,5 @@ check-am: $(noinst_PROGRAMS)
 	./testenv
 	test -f private.mysql || exit 0; ./testenv --connect "`cat private.mysql`"
 	test -f private.postgres || exit 0; ./testenv --connect "`cat private.postgres`"
-	test -f private.mysql || exit 0; ./testcursor --connect "`cat private.mysql`"
+	test -f private.mysql || exit 0; ./testcursor --connect "`cat private.mysql`" --skip-fetch-vector-blobs
 	test -f private.postgres || exit 0; ./testcursor --connect "`cat private.postgres`"
