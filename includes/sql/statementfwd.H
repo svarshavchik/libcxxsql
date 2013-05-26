@@ -535,6 +535,39 @@ public:
 //! the remaining parameters, if any, specifying any parameter values;
 //! any parameter value that's accepted by
 //! execute.
+//!
+//! \par SQL batches, row counts
+//!
+//! \code
+//! size_t row_count=stmt->row_count();
+//!
+//! bool flag=stmt->more();
+//! \endcode
+//!
+//! row_count() returns the number of rows modified by the executed non-SELECT
+//! SQL statement (an UPDATE or a DELETE). When the executed SQL contains more
+//! than one statement, the first call to row_count(), fetch(), or
+//! fetch_vectors() reports the results of the first statement in the batch.
+//! Use more() to advance to the next statement in the batch(). Afterwards,
+//! row_count(), fetch(), and fetch_vectors() use the results of the next
+//! statement in the batch.
+//!
+//! more() returns \c true if the statement succeeds, or \c false if there
+//! are no more statements in the batch. Semantics of error handling depend
+//! on the database driver. Some database drivers throw an exception from
+//! execute() if any statement in the batch had an error. Other database
+//! drivers throw an exception from execute() if the first statement in the
+//! batch had an error, and more() throws an exception if the next statement
+//! in the batch had an error. If the executed statement contains a batch,
+//! this means that a thrown exception from execute() (and perhaps
+//! execute_vector() as well) and more() still leaves the statement object
+//! in a usable state for additional calls to more().
+//!
+//! It also means that the SQL batch must be explicitly prepare()d, in order
+//! to obtain the statement handle; then executed. Invoking
+//! execute() on a connection object, with an implicit prepare() means that
+//! the statement handle will not be available if execute() throws an
+//! exception.
 
 typedef ref<statementObj, statementBase> statement;
 

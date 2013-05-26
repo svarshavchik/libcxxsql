@@ -612,6 +612,34 @@ void testcursor(const std::string &connection,
 			       conn->config_get_keyset_cursor_attributes2());
 	}
 
+
+	std::cout << "Batch support: "
+		  << LIBCXX_NAMESPACE::join(conn->config_get_batch_support(),
+					    ", ")
+		  << std::endl;
+
+	{
+		auto stmt2=conn2->execute("DELETE FROM temptbl WHERE intkey=?; INSERT INTO temptbl(intkey, strval) VALUES(?, ?); UPDATE temptbl SET strval=''; UPDATE temptbl SET strval=intkey", 2, 2, "2");
+
+		if (!stmt2->more())
+			throw EXCEPTION("Where's more?");
+
+		if (stmt2->row_count() != 1)
+			throw EXCEPTION("Rowcount is not 1");
+
+		if (!stmt2->more())
+			throw EXCEPTION("Where's more?");
+
+		if (!stmt2->more())
+			throw EXCEPTION("Where's more?");
+
+		if (stmt2->row_count() != 10)
+			throw EXCEPTION("Rowcount is not 10");
+
+		if (stmt2->more())
+			throw EXCEPTION("What more there is to it?");
+	}
+
 	alarm(60);
 
 	int cnt;

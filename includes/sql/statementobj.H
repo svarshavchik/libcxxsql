@@ -446,6 +446,13 @@ public:
 			->execute(std::forward<Args>(args)...);
 	}
 
+
+	//! Move to the next resultset or executed statement in an SQL batch
+	virtual bool more()=0;
+
+	//! Return number of rows affected by the current executed statement.
+	virtual size_t row_count()=0;
+
 private:
 	//! No more resultset values to bind.
 

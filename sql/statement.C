@@ -127,7 +127,7 @@ void statementimplObj::begin_execute_params(bitflag *status,
 	if (execute_rows <= 0)
 		throw EXCEPTION(_TXT(_txt("Row array size not positive")));
 
-	have_columns=false;
+	next_resultset();
 
 	// Unbind any existing bound parameters. Clear all buffers.
 
@@ -1645,6 +1645,33 @@ std::string statementimplObj::get_cursor_name()
 	ret(SQLGetCursorName(h, buf, length+1, &length), "SQLGetCursorName");
 
 	return std::string(buf, buf+length);
+}
+
+bool statementimplObj::more()
+{
+	auto rc=SQLMoreResults(h);
+
+	if (rc == SQL_NO_DATA)
+		return false;
+	next_resultset();
+	ret(rc, "SQLMoreResults");
+	return true;
+}
+
+// Prepare for the next resultset. Currently -- not so much stuff is here.
+
+void statementimplObj::next_resultset()
+{
+	have_columns=false;
+}
+
+size_t statementimplObj::row_count()
+{
+	SQLLEN c;
+
+	ret(SQLRowCount(h, &c), "SQLRowCount");
+
+	return c;
 }
 
 template statement connectionObj::execute(const char * &&);

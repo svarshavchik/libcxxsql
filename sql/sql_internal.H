@@ -713,6 +713,10 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 					     const std::string &sql) override;
 
 	std::string get_cursor_name();
+
+	bool more() override;
+	size_t row_count() override;
+	void next_resultset();
 };
 
 #if 0
