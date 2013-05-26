@@ -43,6 +43,10 @@ statement newstatementimplObj::prepare(const std::string &sql)
 statement newstatementimplObj::prepare(const ref<statementimplObj> &s,
 				       const std::string &sql)
 {
+	if (!cursor_name.empty())
+		s->ret(SQLSetCursorName(s->h, to_sqlcharptr(cursor_name),
+					SQL_NTS), "SQLSetCursorName");
+
 	s->ret(SQLPrepare(s->h, to_sqlcharptr(sql), SQL_NTS), "SQLPrepare");
 	s->save_num_params();
 	return s;
@@ -115,6 +119,11 @@ void newstatementimplObj::option(const std::string &name,
 			STMT_ATTR(SQL_ATTR_USE_BOOKMARKS, ulen, SQL_UB_OFF);
 			return;
 		}
+	}
+	else if (is(name, "CURSOR_NAME"))
+	{
+		cursor_name=setting;
+		return;
 	}
 	else
 	{

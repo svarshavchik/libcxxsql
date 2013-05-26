@@ -40,7 +40,8 @@ static void testcursortype(const LIBCXX_NAMESPACE::sql::connection &conn1,
 			   const LIBCXX_NAMESPACE::sql::connection &conn2,
 			   const LIBCXX_NAMESPACE::sql::statement &stmt,
 			   const LIBCXX_NAMESPACE::sql::config_bitmask_t &a1,
-			   const LIBCXX_NAMESPACE::sql::config_bitmask_t &a2)
+			   const LIBCXX_NAMESPACE::sql::config_bitmask_t &a2,
+			   const char *cursortype)
 {
 	std::cout << LIBCXX_NAMESPACE::join(a1, ", ") << std::endl;
 	std::cout << LIBCXX_NAMESPACE::join(a2, ", ") << std::endl;
@@ -118,6 +119,69 @@ static void testcursortype(const LIBCXX_NAMESPACE::sql::connection &conn1,
 
 		std::cout << "Bookmark ok!" << std::endl;
 	}
+
+	if (a1.count("SQL_CA1_POSITIONED_UPDATE"))
+	{
+		std::vector<int> intkey;
+		std::vector<std::string> strval;
+
+		auto stmt2=conn2->create_newstatement("CURSOR_TYPE",
+						      cursortype)->
+			execute("SELECT intkey, strval FROM temptbl"
+				" ORDER BY intkey FOR UPDATE");
+
+		if (stmt2->fetch_vectors(2, 0, intkey, 1, strval) != 2 ||
+		    stmt2->fetch_vectors(1, 0, intkey, 1, strval) != 1 ||
+		    intkey[0] != 2)
+		{
+			throw EXCEPTION("POSITIONED_UPDATE fetch failed");
+		}
+
+		stmt2->modify_fetched_row(0, "UPDATE temptbl SET strval=?",
+					  "2modified");
+		std::vector<std::string> newval;
+
+		newval.resize(conn2->execute("SELECT strval FROM temptbl ORDER BY intkey")->fetch_vectors(20, "strval", newval));
+
+		auto result=LIBCXX_NAMESPACE::join(newval, ", ");
+
+		if (result != "0, 1, 2modified, 3, 4, 5, 6, 7, 8, 9")
+			throw EXCEPTION("Unexpected positioned update result: "
+					+ result);
+
+		std::cout << "POSITIONED_UPDATE ok!" << std::endl;
+	}
+
+	if (a1.count("SQL_CA1_POSITIONED_DELETE"))
+	{
+		std::vector<int> intkey;
+		std::vector<std::string> strval;
+
+		auto stmt2=conn2->create_newstatement("CURSOR_TYPE",
+						      cursortype)->
+			execute("SELECT intkey, strval FROM temptbl"
+				" ORDER BY intkey FOR UPDATE");
+
+		if (stmt2->fetch_vectors(2, 0, intkey, 1, strval) != 2 ||
+		    stmt2->fetch_vectors(1, 0, intkey, 1, strval) != 1)
+		{
+			throw EXCEPTION("POSITIONED_DELETE fetch failed");
+		}
+
+		stmt2->modify_fetched_row(0, "DELETE from temptbl");
+		std::vector<std::string> newval;
+
+		newval.resize(conn2->execute("SELECT strval FROM temptbl ORDER BY intkey")->fetch_vectors(20, "strval", newval));
+
+		auto result=LIBCXX_NAMESPACE::join(newval, ", ");
+
+		if (result != "0, 1, 3, 4, 5, 6, 7, 8, 9")
+			throw EXCEPTION("Unexpected positioned update result: "
+					+ result);
+
+		std::cout << "POSITIONED_DELETE ok!" << std::endl;
+		conn2->execute("INSERT INTO temptbl(intkey, strval) values(2, '2')");
+	}
 }
 
 static void forward_cursor(const LIBCXX_NAMESPACE::sql::connection &conn1,
@@ -126,7 +190,7 @@ static void forward_cursor(const LIBCXX_NAMESPACE::sql::connection &conn1,
 			   const LIBCXX_NAMESPACE::sql::config_bitmask_t &a1,
 			   const LIBCXX_NAMESPACE::sql::config_bitmask_t &a2)
 {
-	testcursortype(conn1, conn2, stmt, a1, a2);
+	testcursortype(conn1, conn2, stmt, a1, a2, "FORWARD");
 }
 
 static void static_cursor(const LIBCXX_NAMESPACE::sql::connection &conn1,
@@ -135,7 +199,7 @@ static void static_cursor(const LIBCXX_NAMESPACE::sql::connection &conn1,
 			  const LIBCXX_NAMESPACE::sql::config_bitmask_t &a1,
 			  const LIBCXX_NAMESPACE::sql::config_bitmask_t &a2)
 {
-	testcursortype(conn1, conn2, stmt, a1, a2);
+	testcursortype(conn1, conn2, stmt, a1, a2, "STATIC");
 }
 
 static void keyset_cursor(const LIBCXX_NAMESPACE::sql::connection &conn1,
@@ -144,7 +208,16 @@ static void keyset_cursor(const LIBCXX_NAMESPACE::sql::connection &conn1,
 			  const LIBCXX_NAMESPACE::sql::config_bitmask_t &a1,
 			  const LIBCXX_NAMESPACE::sql::config_bitmask_t &a2)
 {
-	testcursortype(conn1, conn2, stmt, a1, a2);
+	testcursortype(conn1, conn2, stmt, a1, a2, "KEYSET(100)");
+}
+
+static void dynamic_cursor(const LIBCXX_NAMESPACE::sql::connection &conn1,
+			   const LIBCXX_NAMESPACE::sql::connection &conn2,
+			   const LIBCXX_NAMESPACE::sql::statement &stmt,
+			   const LIBCXX_NAMESPACE::sql::config_bitmask_t &a1,
+			   const LIBCXX_NAMESPACE::sql::config_bitmask_t &a2)
+{
+	testcursortype(conn1, conn2, stmt, a1, a2, "DYNAMIC");
 }
 
 class randblob {
@@ -487,9 +560,10 @@ void testcursor(const std::string &connection,
 	if (has_bookmarks)
 		opts["BOOKMARKS"]="ON";
 
-	std::cout << "Forward cursor" << std::endl;
 	if (supported_cursor_types.count("SQL_SO_FORWARD_ONLY"))
 	{
+		std::cout << "Forward cursor" << std::endl;
+
 		forward_cursor(conn, conn2,
 			       conn->create_newstatement("CURSOR_TYPE",
 							 "FORWARD",
@@ -499,9 +573,10 @@ void testcursor(const std::string &connection,
 			       conn->config_get_forward_only_cursor_attributes2());
 	}
 
-	std::cout << "Static cursor" << std::endl;
 	if (supported_cursor_types.count("SQL_SO_STATIC"))
 	{
+		std::cout << "Static cursor" << std::endl;
+
 		static_cursor(conn, conn2,
 			      conn->create_newstatement("CURSOR_TYPE",
 							"STATIC",
@@ -511,9 +586,10 @@ void testcursor(const std::string &connection,
 			      conn->config_get_static_cursor_attributes2());
 	}
 
-	std::cout << "Dynamic cursor" << std::endl;
 	if (supported_cursor_types.count("SQL_SO_KEYSET_DRIVEN"))
 	{
+		std::cout << "Keyset cursor" << std::endl;
+
 		keyset_cursor(conn, conn2,
 			      conn->create_newstatement("CURSOR_TYPE",
 							"KEYSET(100)",
@@ -521,6 +597,19 @@ void testcursor(const std::string &connection,
 			      ->execute("SELECT intkey, strval FROM temptbl"),
 			      conn->config_get_keyset_cursor_attributes1(),
 			      conn->config_get_keyset_cursor_attributes2());
+	}
+
+	if (supported_cursor_types.count("SQL_SO_DYNAMIC"))
+	{
+		std::cout << "Dynamic cursor" << std::endl;
+
+		dynamic_cursor(conn, conn2,
+			       conn->create_newstatement("CURSOR_TYPE",
+							 "DYNAMIC",
+							 opts)
+			       ->execute("SELECT intkey, strval FROM temptbl"),
+			       conn->config_get_keyset_cursor_attributes1(),
+			       conn->config_get_keyset_cursor_attributes2());
 	}
 
 	alarm(60);

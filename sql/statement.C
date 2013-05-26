@@ -87,7 +87,7 @@ void statementObj::prep_retvalues(std::vector<bitflag> &retvaluesArg)
 }
 
 statementimplObj::statementimplObj(const ref<connectionimplObj> &connArg)
-	: h(nullptr), conn(connArg), have_columns(false),
+	: h(nullptr), conn(connArg), num_rows_fetched(0), have_columns(false),
 	  have_parameters(false), num_params_val(0), param_status_processed(0)
 {
 	if (!SQL_SUCCEEDED(SQLAllocHandle(SQL_HANDLE_STMT, conn->h, &h)))
@@ -300,6 +300,7 @@ void statementimplObj::process_execute_params(size_t param_number)
 		       });
 	param_status_buf.clear();
 	strlen_buffer.clear();
+	num_rows_fetched=0;
 
 	if (retval == SQL_NO_DATA)
 		return; // UPDATE, INSERT, DELETE that did not affect any rows
@@ -1610,9 +1611,46 @@ verify_vector_execute(const std::vector<bitflag> &retvalues)
 		throw diagnostics("SQLExecute", h, SQL_HANDLE_STMT).e;
 }
 
+statement statementimplObj::prepare_modify_fetched_row(size_t rownum,
+						       const std::string &sql)
+{
+	if (rownum >= num_rows_fetched)
+	{
+		if (num_rows_fetched == 0)
+			throw EXCEPTION(_TXT(_txt("update_fetched_row called after no rows were fetched")));
+		
+		throw EXCEPTION((std::string)
+				gettextmsg(_TXT(_txt("update_fetched_row called for row #%1% when the last fetched row is row #%2%")),
+					   rownum,
+					   num_rows_fetched-1));
+	}
+
+	if (num_rows_fetched > 1) // Only if necessary
+	{
+		ret(SQLSetPos(h, rownum+1, SQL_POSITION, SQL_LOCK_NO_CHANGE),
+		    "SQLSetPos");
+	}
+
+	return conn->prepare(sql + " WHERE CURRENT OF " + get_cursor_name());
+}
+
+std::string statementimplObj::get_cursor_name()
+{
+	SQLSMALLINT length;
+
+	ret(SQLGetCursorName(h, nullptr, 0, &length), "SQLGetCursorName");
+
+	SQLCHAR buf[length+1];
+
+	ret(SQLGetCursorName(h, buf, length+1, &length), "SQLGetCursorName");
+
+	return std::string(buf, buf+length);
+}
+
 template statement connectionObj::execute(const char * &&);
 template statement connectionObj::execute(std::string &&);
 template statement newstatementObj::execute(const std::string &);
+template bitflag statementObj::modify_fetched_row(size_t, const std::string &);
 
 #if 0
 {

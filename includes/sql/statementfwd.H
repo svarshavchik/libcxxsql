@@ -517,6 +517,24 @@ public:
 //! \c INSERT_LIBX_NAMESPACE::sql::fetch::atbookmark fetches a row or vector of
 //! rows starting with the previously-obtained bookmark row, with an optional
 //! relative offset.
+//!
+//! \par Positioned UPDATEs and DELETEs
+//!
+//! \code
+//! stmt->modify_fetched_row(0, "UPDATE memos SET memo_text=?", "New memo text");
+//! \endcode
+//!
+//! UPDATEs or DELETEs the contents of one row in the last resultset returned
+//! from fetch() or fetch_vectors().
+//! The first parameter is a 0-based row number, which is always zero with
+//! single row resultsets obtained from fetch.
+//! Specify a 0-based row number to reference the appropriate row
+//! in a multi-result resultset from fetch_vectors().
+//! The second parameter is an
+//! \c UPDATE or \c DELETE, with
+//! the remaining parameters, if any, specifying any parameter values;
+//! any parameter value that's accepted by
+//! execute.
 
 typedef ref<statementObj, statementBase> statement;
 

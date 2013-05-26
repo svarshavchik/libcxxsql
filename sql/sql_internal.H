@@ -231,6 +231,8 @@ class LIBCXX_HIDDEN newstatementimplObj : public newstatementObj {
 
 	std::map<SQLINTEGER, std::pair<const char *, SQLULEN>> ulen_attributes;
 
+	std::string cursor_name;
+
 #define STMT_ATTR(n, type, value) \
 	set_attribute_ ## type(n, "SQLSetStmtAttr(" #type ", " #value ")", value)
 
@@ -657,6 +659,9 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 	// How many parameter rows were processed.
 	SQLULEN param_status_processed;
 
+	// How many rows were retrieved
+	size_t rows_retrieved;
+
 	bitflag execute() override;
 	void begin_execute_params(bitflag *, size_t) override;
 	void process_execute_params(size_t param_number);
@@ -703,6 +708,11 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 
 	void verify_vector_execute(const std::vector<bitflag> &retvalues)
 		override;
+
+	statement prepare_modify_fetched_row(size_t rownum,
+					     const std::string &sql) override;
+
+	std::string get_cursor_name();
 };
 
 #if 0

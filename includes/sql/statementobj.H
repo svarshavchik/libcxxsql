@@ -431,6 +431,21 @@ public:
 			functor(n);
 	}
 
+	//! Positioned update or delete
+	template<typename ...Args>
+	bitflag modify_fetched_row(//! Row number of current resultset
+				   size_t rownum,
+
+				   //! UPDATE or DELETE for this row
+				   const std::string &sql,
+
+				   //! Arguments to execute()
+				   Args && ...args)
+	{
+		return prepare_modify_fetched_row(rownum, sql)
+			->execute(std::forward<Args>(args)...);
+	}
+
 private:
 	//! No more resultset values to bind.
 
@@ -899,6 +914,11 @@ private:
 
 	//! Some drivers do not throw an exception on a partial vector insert failure
 	virtual void verify_vector_execute(const std::vector<bitflag> &retvalues)=0;
+
+	//! Prepare a positioned update/delete
+	virtual statement prepare_modify_fetched_row(size_t rownum,
+						     const std::string &sql)=0;
+
 };
 
 //! Specialization
@@ -1097,6 +1117,10 @@ template<typename param_type, typename ...otherArgs>
 void process_execute_params(size_t param_number,
 			    const std::vector<char *> &parameters,
 			    otherArgs &&...args);
+
+#ifndef DOXYGEN
+extern template bitflag statementObj::modify_fetched_row(size_t, const std::string &);
+#endif
 
 #if 0
 {
