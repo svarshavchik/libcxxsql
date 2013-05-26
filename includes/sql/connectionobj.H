@@ -27,6 +27,22 @@ namespace LIBCXX_NAMESPACE {
 
 typedef std::set<const char *, chrcasecmp::str_less> config_bitmask_t;
 
+//! First parameter to connection->special_columns().
+
+enum class rowid_t {
+	unique, //!< Unique identifier for a row, primary key or db-specific rowid
+	version, //!< Row version, is modified if row changes
+		};
+
+//! Second parameter to connection->special_columns().
+
+enum class scope_t {
+	currow, //!< identifier persists only while positioned on that row.
+		
+	transaction, //!< identifier valid for the duration of current transaction.
+	session, //!< identifier persists across transactions
+		};
+
 //! SQL connection
 
 class connectionObj : virtual public obj {
@@ -62,15 +78,182 @@ private:
 		}
 	};
 
+	//! Helper class determines presence of optional initial \c bool arg to table_privileges()
+
+	template<typename argType> class table_privilegesFirstArg {
+	public:
+
+		//! Default implementation, \c bool initial parameter not given.
+
+		//! Default it to \c false.
+
+		template<typename ...Arg>
+		static inline statement table_privileges(connectionObj &obj,
+							 Arg && ...arg)
+		{
+			return obj.table_privileges_catalog(false, std::forward<Arg>(arg)...);
+		}
+	};
+
+	//! Helper class determines presence of optional initial \c bool arg to columns()
+
+	template<typename argType> class columnsFirstArg {
+	public:
+
+		//! Default implementation, \c bool initial parameter not given.
+
+		//! Default it to \c false.
+
+		template<typename ...Arg>
+		static inline statement columns(connectionObj &obj,
+						Arg && ...arg)
+		{
+			return obj.columns_catalog(false,
+						   std::forward<Arg>(arg)...);
+		}
+	};
+
+	//! Helper class determines presence of optional initial \c bool arg to column_privileges()
+
+	template<typename argType> class column_privilegesFirstArg {
+	public:
+
+		//! Default implementation, \c bool initial parameter not given.
+
+		//! Default it to \c false.
+
+		template<typename ...Arg>
+		static inline statement column_privileges(connectionObj &obj,
+							  Arg && ...arg)
+		{
+			return obj.column_privileges_catalog(false,
+							     std::forward<Arg>
+							     (arg)...);
+		}
+	};
+
+	//! Helper class determines presence of optional initial \c bool arg to foreign_keys()
+
+	template<typename argType> class foreign_keysFirstArg {
+	public:
+
+		//! Default implementation, \c bool initial parameter not given.
+
+		//! Default it to \c false.
+
+		template<typename ...Arg>
+		static inline statement foreign_keys(connectionObj &obj,
+						     Arg && ...arg)
+		{
+			return obj.foreign_keys_catalog(false,
+							std::forward<Arg>
+							(arg)...);
+		}
+	};
+
+	//! Helper class determines presence of optional initial \c bool arg to primary_keys()
+
+	template<typename argType> class primary_keysFirstArg {
+	public:
+
+		//! Default implementation, \c bool initial parameter not given.
+
+		//! Default it to \c false.
+
+		template<typename ...Arg>
+		static inline statement primary_keys(connectionObj &obj,
+						     Arg && ...arg)
+		{
+			return obj.primary_keys_catalog(false,
+							std::forward<Arg>
+							(arg)...);
+		}
+	};
+
+	//! Helper class determines presence of optional initial \c bool arg to procedure_columns()
+
+	template<typename argType> class procedure_columnsFirstArg {
+	public:
+
+		//! Default implementation, \c bool initial parameter not given.
+
+		//! Default it to \c false.
+
+		template<typename ...Arg>
+		static inline statement procedure_columns(connectionObj &obj,
+							  Arg && ...arg)
+		{
+			return obj.procedure_columns_catalog(false,
+							     std::forward<Arg>
+							     (arg)...);
+		}
+	};
+
+	//! Helper class determines presence of optional initial \c bool arg to procedures()
+
+	template<typename argType> class proceduresFirstArg {
+	public:
+
+		//! Default implementation, \c bool initial parameter not given.
+
+		//! Default it to \c false.
+
+		template<typename ...Arg>
+		static inline statement procedures(connectionObj &obj,
+						   Arg && ...arg)
+		{
+			return obj.procedures_catalog(false,
+						      std::forward<Arg>
+						      (arg)...);
+		}
+	};
+
+	//! Helper class determines presence of optional initial \c bool arg to special_columns()
+
+	template<typename argType> class special_columnsFirstArg {
+	public:
+
+		//! Default implementation, \c bool initial parameter not given.
+
+		//! Default it to \c false.
+
+		template<typename ...Arg>
+		static inline statement special_columns(connectionObj &obj,
+						   Arg && ...arg)
+		{
+			return obj.special_columns_catalog(false,
+						      std::forward<Arg>
+						      (arg)...);
+		}
+	};
+
+	//! Helper class determines presence of optional initial \c bool arg to statistics()
+
+	template<typename argType> class statisticsFirstArg {
+	public:
+
+		//! Default implementation, \c bool initial parameter not given.
+
+		//! Default it to \c false.
+
+		template<typename ...Arg>
+		static inline statement statistics(connectionObj &obj,
+						   Arg && ...arg)
+		{
+			return obj.statistics_catalog(false,
+						      std::forward<Arg>
+						      (arg)...);
+		}
+	};
 public:
-	//! Enumerate available tables()
+	//! Enumerate available tables
 
 	statement tables()
 	{
 		return tables_catalog(false);
 	}
 
-	//! Enumerate available tables()
+	//! Enumerate available tables
 
 	//! \overload
 	template<typename firstArg, typename ...Args>
@@ -84,6 +267,183 @@ public:
 				 std::forward<firstArg>(arg),
 				 std::forward<Args>(args)...);
 	}
+
+	//! Enumerate table privileges
+
+	//! \overload
+	template<typename firstArg, typename ...Args>
+	statement table_privileges(firstArg &&arg,
+				   Args && ...args)
+	{
+		return table_privilegesFirstArg<typename std::remove_cv<
+			typename std::remove_reference
+					      <firstArg>::type>::type>
+			::table_privileges(*this,
+				 std::forward<firstArg>(arg),
+				 std::forward<Args>(args)...);
+	}
+
+	//! Enumerate available columns
+	statement columns()
+	{
+		return columns_catalog(false);
+	}
+
+	//! Enumerate available columns
+
+	//! \overload
+	template<typename firstArg, typename ...Args>
+	statement columns(firstArg &&arg,
+			  Args && ...args)
+	{
+		return columnsFirstArg<typename std::remove_cv<
+			typename std::remove_reference
+					       <firstArg>::type>::type>
+			::columns(*this,
+				  std::forward<firstArg>(arg),
+				  std::forward<Args>(args)...);
+	}
+
+	//! Enumerate available column_privileges
+	statement column_privileges()
+	{
+		return column_privileges_catalog(false);
+	}
+
+	//! Enumerate available column_privileges
+
+	//! \overload
+	template<typename firstArg, typename ...Args>
+	statement column_privileges(firstArg &&arg,
+				    Args && ...args)
+	{
+		return column_privilegesFirstArg
+			<typename std::remove_cv<
+				typename std::remove_reference
+				 <firstArg>::type>::type>
+			::column_privileges(*this,
+					    std::forward<firstArg>(arg),
+					    std::forward<Args>(args)...);
+	}
+
+	//! Enumerate available foreign_keys
+	statement foreign_keys()
+	{
+		return foreign_keys_catalog(false);
+	}
+
+	//! Enumerate available foreign_keys
+
+	//! \overload
+	template<typename firstArg, typename ...Args>
+	statement foreign_keys(firstArg &&arg,
+			       Args && ...args)
+	{
+		return foreign_keysFirstArg
+			<typename std::remove_cv<
+				typename std::remove_reference
+				 <firstArg>::type>::type>
+			::foreign_keys(*this,
+				       std::forward<firstArg>(arg),
+				       std::forward<Args>(args)...);
+	}
+
+	//! Enumerate available primary_keys
+
+	//! \overload
+	template<typename firstArg, typename ...Args>
+	statement primary_keys(firstArg &&arg,
+			       Args && ...args)
+	{
+		return primary_keysFirstArg
+			<typename std::remove_cv<
+				typename std::remove_reference
+				 <firstArg>::type>::type>
+			::primary_keys(*this,
+				       std::forward<firstArg>(arg),
+				       std::forward<Args>(args)...);
+	}
+
+	//! Enumerate available procedure_columns
+	statement procedure_columns()
+	{
+		return procedure_columns_catalog(false);
+	}
+
+	//! Enumerate available procedure_columns
+
+	//! \overload
+	template<typename firstArg, typename ...Args>
+	statement procedure_columns(firstArg &&arg,
+				    Args && ...args)
+	{
+		return procedure_columnsFirstArg
+			<typename std::remove_cv<
+				typename std::remove_reference
+				 <firstArg>::type>::type>
+			::procedure_columns(*this,
+					    std::forward<firstArg>(arg),
+					    std::forward<Args>(args)...);
+	}
+
+	//! Enumerate available procedures
+	statement procedures()
+	{
+		return procedures_catalog(false);
+	}
+
+	//! Enumerate available procedures
+
+	//! \overload
+	template<typename firstArg, typename ...Args>
+	statement procedures(firstArg &&arg,
+			     Args && ...args)
+	{
+		return proceduresFirstArg
+			<typename std::remove_cv<
+				typename std::remove_reference
+				 <firstArg>::type>::type>
+			::procedures(*this,
+				     std::forward<firstArg>(arg),
+				     std::forward<Args>(args)...);
+	}
+
+	//! Enumerate available special_columns
+
+	template<typename firstArg, typename ...Args>
+	statement special_columns(firstArg &&arg,
+				  Args && ...args)
+	{
+		return special_columnsFirstArg
+			<typename std::remove_cv<
+				typename std::remove_reference
+				 <firstArg>::type>::type>
+			::special_columns(*this,
+					  std::forward<firstArg>(arg),
+					  std::forward<Args>(args)...);
+	}
+
+	//! Enumerate available statistics
+
+	template<typename firstArg, typename ...Args>
+	statement statistics(firstArg &&arg,
+				  Args && ...args)
+	{
+		return statisticsFirstArg
+			<typename std::remove_cv<
+				typename std::remove_reference
+				 <firstArg>::type>::type>
+			::statistics(*this,
+				     std::forward<firstArg>(arg),
+				     std::forward<Args>(args)...);
+	}
+
+	//! Enumerate available types
+	virtual statement type_info()=0;
+
+	//! Enumerate available types
+	virtual statement type_info(//! One of the SQL types, like "varchar"
+				    const std::string &sqltype)=0;
 
 	//! Prepare a new statement
 	virtual statement prepare(const std::string &)=0;
@@ -189,6 +549,78 @@ private:
 					 const std::string &table="",
 					 const std::string &type="")=0;
 
+	//! Retrieve table privileges
+
+	virtual statement table_privileges_catalog(bool literal_ids,
+						   const std::string &table,
+						   const std::string &catalog="",
+						   const std::string &schema="")=0;
+
+	//! Retrieve column catalogs
+
+	virtual statement columns_catalog(bool literal_ids,
+					  const std::string &catalog="",
+					  const std::string &schema="",
+					  const std::string &table="",
+					  const std::string &columnname="")=0;
+
+	//! Retrieve column privileges catalogs
+
+	virtual statement column_privileges_catalog(bool literal_ids,
+						    const std::string &catalog="",
+						    const std::string &schema="",
+						    const std::string &table="",
+						    const std::string &columnname="")=0;
+
+	//! Retrieve primary keys catalog
+	virtual statement primary_keys_catalog(bool literal_ids,
+					       const std::string &table,
+					       const std::string &catalog="",
+					       const std::string &schema="")=0;
+
+	//! Retrieve foreign keys catalog
+	virtual statement foreign_keys_catalog(bool literal_ids,
+					       const std::string &pk_catalog="",
+					       const std::string &pk_schema="",
+					       const std::string &pk_table="",
+					       const std::string &fk_catalog="",
+					       const std::string &fk_schema="",
+					       const std::string &fk_table="")
+	=0;
+
+	//! Retrieve procedure columns catalog
+	virtual statement procedure_columns_catalog(bool literal_ids,
+						    const std::string &catalog="",
+						    const std::string &schema="",
+						    const std::string &proc="",
+						    const std::string &column=""
+						    )=0;
+
+	//! Retrieve procedure columns catalog
+	virtual statement procedures_catalog(bool literal_ids,
+					     const std::string &catalog="",
+					     const std::string &schema="",
+					     const std::string &proc=""
+					     )=0;
+
+	//! Retrieve special columns catalog
+	virtual statement special_columns_catalog(bool literal_ids,
+						  rowid_t rowid,
+						  scope_t scope,
+						  const std::string &table,
+						  bool nullable=true,
+						  const std::string &catalog="",
+						  const std::string &schema=""
+						  )=0;
+
+	//! Retrieve special columns catalog
+	virtual statement statistics_catalog(bool literal_ids,
+					     const std::string &table,
+					     bool unique_only=false,
+					     bool force=false,
+					     const std::string &catalog="",
+					     const std::string &schema=""
+					     )=0;
 };
 
 //! Specialization: there's an initial initial \c bool arg to tables()
@@ -204,6 +636,162 @@ public:
 				       Arg && ...arg)
 	{
 		return obj.tables_catalog(flag, std::forward<Arg>(arg)...);
+	}
+};
+
+//! Specialization: there's an initial initial \c bool arg to table_privileges()
+
+template<> class connectionObj::table_privilegesFirstArg<bool> {
+public:
+
+	//! Forward the initial bool parameter value.
+
+	template<typename ...Arg>
+	static inline statement table_privileges(connectionObj &obj,
+						 bool flag,
+						 Arg && ...arg)
+	{
+		return obj.table_privileges_catalog(flag, std::forward<Arg>(arg)...);
+	}
+};
+
+//! Specialization: there's an initial initial \c bool arg to columns()
+
+template<> class connectionObj::columnsFirstArg<bool> {
+public:
+
+	//! Forward the initial bool parameter value.
+
+	template<typename ...Arg>
+	static inline statement columns(connectionObj &obj,
+					bool flag,
+					Arg && ...arg)
+	{
+		return obj.columns_catalog(flag,
+					   std::forward<Arg>(arg)...);
+	}
+};
+
+//! Specialization: there's an initial \c bool arg to column_privileges()
+
+template<> class connectionObj::column_privilegesFirstArg<bool> {
+public:
+
+	//! Forward the initial bool parameter value.
+
+	template<typename ...Arg>
+	static inline statement column_privileges(connectionObj &obj,
+						  bool flag,
+						  Arg && ...arg)
+	{
+		return obj.column_privileges_catalog(flag,
+						     std::forward<Arg>
+						     (arg)...);
+	}
+};
+
+//! Specialization: there's an initial \c bool arg to foreign_keys()
+
+template<> class connectionObj::foreign_keysFirstArg<bool> {
+public:
+
+	//! Forward the initial bool parameter value.
+
+	template<typename ...Arg>
+	static inline statement foreign_keys(connectionObj &obj,
+					     bool flag,
+					     Arg && ...arg)
+	{
+		return obj.foreign_keys_catalog(flag,
+						std::forward<Arg>
+						(arg)...);
+	}
+};
+
+//! Specialization: there's an initial \c bool arg to primary_keys()
+
+template<> class connectionObj::primary_keysFirstArg<bool> {
+public:
+
+	//! Forward the initial bool parameter value.
+
+	template<typename ...Arg>
+	static inline statement primary_keys(connectionObj &obj,
+					     bool flag,
+					     Arg && ...arg)
+	{
+		return obj.primary_keys_catalog(flag,
+						std::forward<Arg>
+						(arg)...);
+	}
+};
+
+//! Specialization: there's an initial \c bool arg to procedure_columns()
+
+template<> class connectionObj::procedure_columnsFirstArg<bool> {
+public:
+
+	//! Forward the initial bool parameter value.
+
+	template<typename ...Arg>
+	static inline statement procedure_columns(connectionObj &obj,
+						  bool flag,
+						  Arg && ...arg)
+	{
+		return obj.procedure_columns_catalog(flag,
+						     std::forward<Arg>
+						     (arg)...);
+	}
+};
+
+//! Specialization: there's an initial \c bool arg to procedures()
+
+template<> class connectionObj::proceduresFirstArg<bool> {
+public:
+
+	//! Forward the initial bool parameter value.
+
+	template<typename ...Arg>
+	static inline statement procedures(connectionObj &obj,
+						  bool flag,
+						  Arg && ...arg)
+	{
+		return obj.procedures_catalog(flag,
+					      std::forward<Arg>(arg)...);
+	}
+};
+
+//! Specialization: there's an initial \c bool arg to special_columns()
+
+template<> class connectionObj::special_columnsFirstArg<bool> {
+public:
+
+	//! Forward the initial bool parameter value.
+
+	template<typename ...Arg>
+	static inline statement special_columns(connectionObj &obj,
+						  bool flag,
+						  Arg && ...arg)
+	{
+		return obj.special_columns_catalog(flag,
+						   std::forward<Arg>(arg)...);
+	}
+};
+
+//! Specialization: there's an initial \c bool arg to statistics()
+
+template<> class connectionObj::statisticsFirstArg<bool> {
+public:
+
+	//! Forward the initial bool parameter value.
+
+	template<typename ...Arg>
+	static inline statement statistics(connectionObj &obj,
+					   bool flag,
+					   Arg && ...arg)
+	{
+		return obj.statistics_catalog(flag,
+					      std::forward<Arg>(arg)...);
 	}
 };
 

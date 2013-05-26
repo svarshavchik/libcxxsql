@@ -118,6 +118,16 @@ class connectionBase;
 //!
 //! \par Catalog functions
 //!
+//! The following catalog functions enumerate various kind of database objects.
+//! They return a statement with a resultset that can be fetch()ed like any
+//! of the resultset.
+//!
+//! The exact semantics of each catalog function depend on the database driver.
+//!
+//! Most of them also take an optional \c bool flag as a first parameter,
+//! that specifies whether or not their remaining arguments are treated
+//! as patterns or literal strings.
+//!
 //! \code
 //! std::string catalog, schema, table, type;
 //!
@@ -139,6 +149,65 @@ class connectionBase;
 //! tables() returns a statement handle with a resultset. Process the SQL
 //! statement as if it was an execute()d statement with a resultset. The
 //! resultset enumerates the available tables.
+//!
+//! \code
+//! INSERT_LIBX_NAMESPACE::sql::statement stmt=conn->columns(catalog, schema, table, column);
+//!
+//! INSERT_LIBX_NAMESPACE::sql::statement stmt=conn->column_privileges(catalog, schema, table, column);
+//! \endcode
+//!
+//! columns() enumerates table columns. column_privileges() enumerates
+//! permissions on the columns.
+//!
+//! \code
+//! INSERT_LIBX_NAMESPACE::sql::statement stmt=conn->primary_keys(table, catalog, schema);
+//! \endcode
+//!
+//! columns() enumerates a table's primary keys. The \c table parameter is
+//! required.
+//!
+//! \code
+//! INSERT_LIBX_NAMESPACE::sql::statement stmt=conn->foreign_keys(pk_catalog, pk_schema, pk_table, fk_catalog, fk_schema, fk_table);
+//! \endcode
+//!
+//! foreign_keys() enumerates foreign keys: either all foreign keys in a
+//! primary key table, or all primary keys to the foreign key table.
+//!
+//! \code
+//! INSERT_LIBX_NAMESPACE::sql::rowid_t rowid_type;
+//! INSERT_LIBX_NAMESPACE::sql::scope_t scope;
+//! bool nullable;
+//! std::string table;
+//! std::string catalog;
+//! std::string schema;
+//!
+//! INSERT_LIBX_NAMESPACE::sql::statement stmt=conn->special_columns(rowid_type, scope, table, nullable, catalog, schema);
+//! \endcode
+//!
+//! special_columns() enumerates database-specific special columns for the
+//! given table.
+//!
+//! \code
+//! INSERT_LIBX_NAMESPACE::sql::statement stmt=conn->type_info();
+//!
+//! INSERT_LIBX_NAMESPACE::sql::statement stmt=conn->type_info("varchar");
+//! \endcode
+//!
+//! type_info() returns information about the database server's supported
+//! datatypes. type_info() takes an optional parameter that names a specific
+//! datatype, otherwise information about all datatypes gets returned.
+//!
+//! \code
+//! std::string catalog, schema, proc, column;
+//!
+//! INSERT_LIBX_NAMESPACE::sql::statement stmt=conn->procedures(catalog, schema, proc);
+//!
+//! INSERT_LIBX_NAMESPACE::sql::statement stmt=conn-&gt;procedure_columns(catalog, schema, proc, column);
+//! \endcode
+//!
+//! procedures() returns the list of stored procedures.
+//! procedure_columns() returns the list of parameters
+//! and resultset columns for stored procedures.
 
 typedef ref<connectionObj, connectionBase> connection;
 

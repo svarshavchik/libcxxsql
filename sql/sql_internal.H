@@ -122,6 +122,72 @@ class LIBCXX_HIDDEN connectionimplObj : public connectionObj {
 				 const std::string &schema,
 				 const std::string &table,
 				 const std::string &type) override;
+
+	statement table_privileges_catalog(bool literal_ids,
+					   const std::string &table,
+					   const std::string &catalog,
+					   const std::string &schema) override;
+
+	statement columns_catalog(bool literal_ids,
+				  const std::string &catalog,
+				  const std::string &schema,
+				  const std::string &table,
+				  const std::string &columnname) override;
+
+
+	statement column_privileges_catalog(bool literal_ids,
+					    const std::string &catalog,
+					    const std::string &schema,
+					    const std::string &table,
+					    const std::string &columnname)
+		override;
+
+	statement primary_keys_catalog(bool literal_ids,
+				       const std::string &table,
+				       const std::string &catalog,
+				       const std::string &schema) override;
+
+	statement foreign_keys_catalog(bool literal_ids,
+				       const std::string &pk_catalog,
+				       const std::string &pk_schema,
+				       const std::string &pk_table,
+				       const std::string &fk_catalog,
+				       const std::string &fk_schema,
+				       const std::string &fk_table) override;
+
+	statement procedure_columns_catalog(bool literal_ids,
+					    const std::string &catalog,
+					    const std::string &schema,
+					    const std::string &proc,
+					    const std::string &column
+					    ) override;
+
+	statement procedures_catalog(bool literal_ids,
+				     const std::string &catalog,
+				     const std::string &schema,
+				     const std::string &proc
+				     ) override;
+
+	statement special_columns_catalog(bool literal_ids,
+					  rowid_t rowid,
+					  scope_t scope,
+					  const std::string &table,
+					  bool nullable,
+					  const std::string &catalog,
+					  const std::string &schema
+					  ) override;
+
+	statement statistics_catalog(bool literal_ids,
+				     const std::string &table,
+				     bool unique_only,
+				     bool force,
+				     const std::string &catalog,
+				     const std::string &schema
+				     ) override;
+
+	statement type_info() override;
+	statement type_info(const std::string &) override;
+
 	statement prepare(const std::string &sql) override;
 
 	newstatement create_newstatement() override;

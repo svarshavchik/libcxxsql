@@ -86,6 +86,35 @@ get_tables(const LIBCXX_NAMESPACE::sql::connection &conn,
 	return names;
 }
 
+static void dump(const LIBCXX_NAMESPACE::sql::statement &stmt)
+{
+	const auto &s=stmt->get_columns();
+
+	std::map<std::string, std::string> columns;
+	const char *sep="";
+
+	for (const auto &col:s)
+	{
+		columns[col.name];
+
+		std::cout << sep << col.name;
+		sep="\t";
+	}
+	std::cout << std::endl;
+
+	while (stmt->fetch(columns))
+	{
+		sep="";
+
+		for (const auto &col:s)
+		{
+			std::cout << sep << columns[col.name];
+			sep="\t";
+		}
+		std::cout << std::endl;
+	}
+}
+
 void testconnect(const std::string &connection,
 		 int flags)
 {
@@ -115,6 +144,26 @@ void testconnect(const std::string &connection,
 	std::cout << "Scroll: "
 		  << LIBCXX_NAMESPACE::join(conn->config_get_scroll_options(),
 					    ", ") << std::endl;
+
+	std::cout << "Columns: " << std::endl;
+	dump(conn->columns());
+
+	try {
+		std::cout << "Column Privileges: " << std::endl;
+		dump(conn->column_privileges("", "", "temptbl1"));
+	} catch (const LIBCXX_NAMESPACE::exception &e)
+	{
+		std::cout << e << std::endl;
+	}
+	std::cout << "Foreign keys: " << std::endl;
+	dump(conn->foreign_keys("", "", "tmptbl1"));
+	dump(conn->type_info());
+	dump(conn->type_info("varchar"));
+	std::cout << "Procedures:" << std::endl;
+	dump(conn->procedures("", "", "temp%"));
+
+	std::cout << "Procedure Columns:" << std::endl;
+	dump(conn->procedure_columns("", "", "temp%", "%"));
 
 	{
 		auto tables=conn->tables("", "", "tmptbl%");
@@ -158,6 +207,7 @@ void testconnect(const std::string &connection,
 
 		for (const auto &table_name:tables)
 		{
+			std::cout << "Table: " << table_name << std::endl;
 			conn->prepare("drop table " + table_name)->execute();
 		}
 	}
@@ -177,13 +227,29 @@ void testconnect(const std::string &connection,
 	}
 
 	conn->prepare("create table tmptbl1(int_col int not null, varchar_col varchar(255) null);")->execute();
-	conn->prepare("create table tmptbl2(bigint_col bigint not null, char_col char(4) null, text_col text, primary key(bigint_col));")->execute();
+	conn->prepare("create table tmptbl2(bigint_col bigint not null, char_col char(4) null, text_col text, child_col bigint null, primary key(bigint_col), foreign key(child_col) references tmptbl2(bigint_col));")->execute();
+	std::cout << "tmptbl2 primary keys:" << std::endl;
+	dump(conn->primary_keys("tmptbl2"));
+	std::cout << "tmptbl2 foreign keys:" << std::endl;
+	dump(conn->foreign_keys("", "", "tmptbl2"));
+	dump(conn->foreign_keys("", "", "", "", "", "tmptbl2"));
 
 	if (get_tables(conn, false, "tmptbl%").count("tmptbl1") != 1)
 		throw EXCEPTION("get_tables test 1 failed");
 
 	if (get_tables(conn, false, "\"tmptbl1\"").count("tmptbl1") != 0)
 		throw EXCEPTION("get_tables test 2 failed");
+
+	dump(conn->special_columns(LIBCXX_NAMESPACE::sql::rowid_t::unique,
+				   LIBCXX_NAMESPACE::sql::scope_t::session,
+				   "tmptbl2"));
+
+	dump(conn->special_columns(LIBCXX_NAMESPACE::sql::rowid_t::version,
+				   LIBCXX_NAMESPACE::sql::scope_t::session,
+				   "tmptbl2"));
+	dump(conn->statistics("tmptbl2"));
+	std::cout << "Table privileges:" << std::endl;
+	dump(conn->table_privileges("tmptbl2"));
 
 #if 0
 	if (get_tables(conn, true, "tmptbl%").count("tmptbl1") != 0)

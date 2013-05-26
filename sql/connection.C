@@ -213,6 +213,217 @@ statement connectionimplObj::tables_catalog(bool literal_ids,
 	return s;
 }
 
+statement connectionimplObj::table_privileges_catalog(bool literal_ids,
+						      const std::string &table,
+						      const std::string &catalog,
+						      const std::string &schema)
+{
+	auto s=do_create_newstatement()->newstmt();
+
+	s->SET_ATTR(SQL_ATTR_METADATA_ID, ulen, literal_ids ? SQL_TRUE:SQL_FALSE);
+	s->ret(SQLTablePrivileges(s->h,
+				  to_sqlcharptr_null(catalog), SQL_NTS,
+				  to_sqlcharptr_null(schema), SQL_NTS,
+				  to_sqlcharptr(table), SQL_NTS),
+	       "SQLTablePrivileges");
+
+	return s;
+}
+
+statement connectionimplObj::columns_catalog(bool literal_ids,
+					     const std::string &catalog,
+					     const std::string &schema,
+					     const std::string &table,
+					     const std::string &columnname)
+{
+	auto s=do_create_newstatement()->newstmt();
+
+	s->SET_ATTR(SQL_ATTR_METADATA_ID, ulen, literal_ids ? SQL_TRUE:SQL_FALSE);
+	s->ret(SQLColumns(s->h,
+			  to_sqlcharptr_null(catalog), SQL_NTS,
+			  to_sqlcharptr_null(schema), SQL_NTS,
+			  to_sqlcharptr_null(table), SQL_NTS,
+			  to_sqlcharptr_null(columnname), SQL_NTS),
+	       "SQLColumns");
+
+	return s;
+}
+
+statement connectionimplObj::column_privileges_catalog(bool literal_ids,
+						       const std::string &catalog,
+						       const std::string &schema,
+						       const std::string &table,
+						       const std::string &columnname)
+{
+	auto s=do_create_newstatement()->newstmt();
+
+	s->SET_ATTR(SQL_ATTR_METADATA_ID, ulen, literal_ids ? SQL_TRUE:SQL_FALSE);
+	s->ret(SQLColumnPrivileges(s->h,
+				   to_sqlcharptr_null(catalog), SQL_NTS,
+				   to_sqlcharptr_null(schema), SQL_NTS,
+				   to_sqlcharptr(table), SQL_NTS,
+				   to_sqlcharptr_null(columnname), SQL_NTS),
+	       "SQLColumnPrivileges");
+
+	return s;
+}
+
+statement connectionimplObj::primary_keys_catalog(bool literal_ids,
+						  const std::string &table,
+						  const std::string &catalog,
+						  const std::string &schema)
+{
+	auto s=do_create_newstatement()->newstmt();
+
+	s->SET_ATTR(SQL_ATTR_METADATA_ID, ulen, literal_ids ? SQL_TRUE:SQL_FALSE);
+	s->ret(SQLPrimaryKeys(s->h,
+			      to_sqlcharptr_null(catalog), SQL_NTS,
+			      to_sqlcharptr_null(schema), SQL_NTS,
+			      to_sqlcharptr(table), SQL_NTS),
+	       "SQLPrimaryKeys");
+
+	return s;
+}
+
+statement connectionimplObj::foreign_keys_catalog(bool literal_ids,
+						  const std::string &pk_catalog,
+						  const std::string &pk_schema,
+						  const std::string &pk_table,
+						  const std::string &fk_catalog,
+						  const std::string &fk_schema,
+						  const std::string &fk_table)
+{
+	auto s=do_create_newstatement()->newstmt();
+
+	s->SET_ATTR(SQL_ATTR_METADATA_ID, ulen, literal_ids ? SQL_TRUE:SQL_FALSE);
+	s->ret(SQLForeignKeys(s->h,
+			      to_sqlcharptr_null(pk_catalog), SQL_NTS,
+			      to_sqlcharptr_null(pk_schema), SQL_NTS,
+			      to_sqlcharptr_null(pk_table), SQL_NTS,
+			      to_sqlcharptr_null(fk_catalog), SQL_NTS,
+			      to_sqlcharptr_null(fk_schema), SQL_NTS,
+			      to_sqlcharptr_null(fk_table), SQL_NTS),
+	       "SQLForeignKeys");
+
+	return s;
+}
+
+statement connectionimplObj::procedure_columns_catalog(bool literal_ids,
+						       const std::string &catalog,
+						       const std::string &schema,
+						       const std::string &proc,
+						       const std::string &column)
+{
+	auto s=do_create_newstatement()->newstmt();
+
+	s->SET_ATTR(SQL_ATTR_METADATA_ID, ulen, literal_ids ? SQL_TRUE:SQL_FALSE);
+
+	s->ret(SQLProcedureColumns(s->h,
+				   to_sqlcharptr(catalog), SQL_NTS,
+				   to_sqlcharptr(schema), SQL_NTS,
+				   to_sqlcharptr(proc), SQL_NTS,
+				   to_sqlcharptr(column), SQL_NTS),
+	       "SQLProcedureColumns");
+
+	return s;
+}
+
+statement connectionimplObj::procedures_catalog(bool literal_ids,
+						const std::string &catalog,
+						const std::string &schema,
+						const std::string &proc)
+{
+	auto s=do_create_newstatement()->newstmt();
+
+	s->SET_ATTR(SQL_ATTR_METADATA_ID, ulen, literal_ids ? SQL_TRUE:SQL_FALSE);
+
+	s->ret(SQLProcedures(s->h,
+			     to_sqlcharptr(catalog), SQL_NTS,
+			     to_sqlcharptr(schema), SQL_NTS,
+			     to_sqlcharptr(proc), SQL_NTS),
+	       "SQLProcedures");
+
+	return s;
+}
+
+statement connectionimplObj::special_columns_catalog(bool literal_ids,
+						     rowid_t rowid,
+						     scope_t scope,
+						     const std::string &table,
+						     bool nullable,
+						     const std::string &catalog,
+						     const std::string &schema
+						     )
+{
+	auto s=do_create_newstatement()->newstmt();
+
+	s->SET_ATTR(SQL_ATTR_METADATA_ID, ulen, literal_ids ? SQL_TRUE:SQL_FALSE);
+
+	s->ret(SQLSpecialColumns(s->h,
+				 rowid == rowid_t::unique ?
+				 SQL_BEST_ROWID:SQL_ROWVER,
+				 to_sqlcharptr_null(catalog), SQL_NTS,
+				 to_sqlcharptr_null(schema), SQL_NTS,
+				 to_sqlcharptr(table), SQL_NTS,
+				 scope == scope_t::currow ?
+				 SQL_SCOPE_CURROW:
+				 scope == scope_t::transaction ?
+				 SQL_SCOPE_TRANSACTION:SQL_SCOPE_SESSION,
+				 nullable ? SQL_NULLABLE:SQL_NO_NULLS
+				 ),
+	       "SQLSpecialColumns");
+
+	return s;
+}
+
+statement connectionimplObj::statistics_catalog(bool literal_ids,
+						const std::string &table,
+						bool unique_only,
+						bool force,
+						const std::string &catalog,
+						const std::string &schema
+						)
+{
+	auto s=do_create_newstatement()->newstmt();
+
+	s->SET_ATTR(SQL_ATTR_METADATA_ID, ulen, literal_ids ? SQL_TRUE:SQL_FALSE);
+
+	s->ret(SQLStatistics(s->h,
+			     to_sqlcharptr_null(catalog), SQL_NTS,
+			     to_sqlcharptr_null(schema), SQL_NTS,
+			     to_sqlcharptr(table), SQL_NTS,
+			     unique_only ? SQL_INDEX_UNIQUE:SQL_INDEX_ALL,
+			     force ? SQL_ENSURE:SQL_QUICK), "SQLStatistics");
+
+	return s;
+}
+
+statement connectionimplObj::type_info()
+{
+	return type_info(std::string());
+}
+
+statement connectionimplObj::type_info(const std::string &name)
+{
+	SQLSMALLINT t=SQL_ALL_TYPES;
+
+	if (!name.empty())
+	{
+		auto tn=name_to_type(name.c_str());
+
+		if (tn == SQL_UNKNOWN_TYPE)
+			throw EXCEPTION((std::string)
+					gettextmsg(_TXT(_txt("\"%1%\" is not a valid SQL type")),
+						   name));
+		t=tn;
+	}
+
+	auto s=do_create_newstatement()->newstmt();
+	s->ret(SQLGetTypeInfo(s->h, t), "SQLGetTypeInfo");
+
+	return s;
+}
+
 // Common shortcuts
 
 statement connectionimplObj::prepare(const std::string &sql)
