@@ -520,6 +520,10 @@ public:
 
 	virtual void rollback_work()=0;
 
+	//! Return native SQL string
+
+	virtual std::string native_sql(const std::string &sql)=0;
+
 private:
 
 	//! No more options given to create_newstatement()

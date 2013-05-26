@@ -344,6 +344,10 @@ void testconnect(const std::string &connection,
 			throw EXCEPTION("GOT THIS INSTEAD: " + got);
 	}
 
+	std::cout << "Native: "
+		  << conn->native_sql("SELECT * FROM tmptbl1")
+		  << std::endl;
+
 	{
 		auto stmt=conn->execute("SELECT * FROM tmptbl1 ORDER BY int_col");
 

@@ -219,6 +219,7 @@ class LIBCXX_HIDDEN connectionimplObj : public connectionObj {
 	void begin_work(const std::string &options) override;
 	void commit_work() override;
 	void rollback_work() override;
+	std::string native_sql(const std::string &sql) override;
 };
 
 class LIBCXX_HIDDEN newstatementimplObj : public newstatementObj {

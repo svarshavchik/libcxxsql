@@ -622,6 +622,21 @@ transaction::~transaction() noexcept
 	}
 };
 
+std::string connectionimplObj::native_sql(const std::string &sql)
+{
+	SQLINTEGER outlen;
+
+	ret(SQLNativeSql(h, to_sqlcharptr(sql), SQL_NTS,
+			 nullptr, 0, &outlen), "SQLNativeSQL");
+
+	SQLCHAR buffer[outlen+1];
+
+	ret(SQLNativeSql(h, to_sqlcharptr(sql), SQL_NTS,
+			 buffer, outlen+1, &outlen), "SQLNativeSQL");
+
+	return std::string(buffer, buffer+outlen);
+}
+
 #if 0
 {
 	{
