@@ -1,0 +1,1403 @@
+<!--
+
+Copyright 2013 Double Precision, Inc.
+See COPYING for distribution information.
+
+-->
+
+<chapter id="sqlstatement">
+  <title>Executing &SQL; statements</title>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+#include &lt;&ns;/sql/connection.H&gt;
+#include &lt;&ns;/sql/statement.H&gt;
+
+&ns;::sql::connection conn=henv->connect("DSN=dev").first;
+
+&ns;::sql::statement stmt=conn->prepare("INSERT INTO books(name, price) VALUES(?, ?)");
+
+stmt->execute("Around the world in 80 days", 9.99);
+stmt->execute("Moby Dick", 9.99);
+
+std::string s="War and Peace";
+
+stmt->execute(s, nullptr);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    Invoking a <link linkend="sqlconnection">connection object</link>'s
+    <methodname>prepare</methodname>() creates and returns an
+    <ulink url="&link-typedef-x--sql-statement;"><classname>&ns;::sql::statement</classname></ulink>,
+    which is a reference to a
+    <ulink url="&link-refobj;">reference-counted object</ulink>,
+    that represents an &SQL; statement.
+    <methodname>prepare</methodname>() does not execute the statement,
+    but may (depending on the database driver) throw an exception if the
+    &SQL; statement is not acceptable.
+  </para>
+
+  <para>
+    <methodname>execute</methodname>() executes the &SQL; statement. Pass
+    any values for placeholders in the &SQL; statement
+    as additional arguments to
+    <methodname>execute</methodname>(). The number of additional parameters
+    to <methodname>execute</methodname>() must match the number of parameters
+    in the &SQL; statement.
+  </para>
+
+  <para>
+    The additional parameters can be a mixture of different types:
+    natural integer types, <classname>float</classname>s,
+    <classname>double</classname>s,
+    <ulink url="&link-intervals;"><classname>&ns;::ymd</classname> and
+    <classname>&ns;::hms</classname></ulink> (which are converted to
+    equivalent &SQL; data types),
+    and text strings given either as
+    <classname>std::string</classname>s or as literal character strings.
+    A <literal>nullptr</literal> indicates a <literal>NULL</literal> value
+    for the corresponding placeholder.
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+std::list&lt;std::pair&lt;std::string, &ns;::sql::bitflag&gt;&gt; args;
+
+args.emplace_back({"Through the Looking-Glass", 0});
+args.emplace_back({"", 1});
+
+stmt->execute(args);
+
+args.emplace_back({"Alice in Wonderland", 0});
+args.emplace_back({"9.99", 0});
+
+stmt->execute(args);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    Alternatively, construct a <classname>std::list</classname> that
+    contains a <classname>std::pair</classname> of any type that can otherwise
+    be passed to <methodname>execute</methodname>(), and a
+    <ulink url="&link-typedef-x--sql-bitflag;"><classname>&ns;::sql::bitflag</classname></ulink>.
+    Setting the <classname>&ns;::sql::bitflag</classname>
+    value to a non-zero value
+    specifies a <literal>NULL</literal>; a value of zero in the
+    <classname>&ns;::sql::bitflag</classname>
+    takes the value of the corresponding parameter
+    from <classname>std::pair</classname> type.
+  </para>
+
+  <para>
+    The above example is equivalent to
+    <quote><literal>stmt->execute("Through the Looking-Glass", nullptr);</literal></quote>
+    and
+    <quote><literal>stmt->execute("Alice in Wonderland", "9.99");</literal></quote>.
+    This approach, of course, is naturally restricted to a
+    parameters of the same type, however:
+  </para>
+
+  <itemizedlist>
+    <listitem>
+      <para>
+	Most database servers convert between types automatically.
+      </para>
+    </listitem>
+
+    <listitem>
+      <para>
+	<classname>std::list</classname>s are combinable with explicit
+	literal parameters:
+      </para>
+
+      <blockquote>
+	<informalexample>
+	  <programlisting>
+std::list&lt;std::pair&lt;std::string, bool&gt;&gt; args;
+
+args.emplace_back({"Through the Looking-Glass", 0});
+
+stmt->execute(args, 9.99);</programlisting>
+	</informalexample>
+      </blockquote>
+    </listitem>
+  </itemizedlist>
+
+  <para>
+    The <classname>std::pair</classname> is optional when
+    <literal>NULL</literal> values are not needed. Just declare a
+    <classname>std::list</classname> with the parameter type.
+    The previous example is equivalent to:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+std::list&lt;std::string&gt; args;
+
+args.emplace_back("Through the Looking-Glass");
+
+stmt->execute(args, 9.99);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    In all cases, the number of parameters passed as standalone values, or in
+    <classname>std::list</classname>s must be equal to the number of
+    placeholders in the &SQL; statement.
+  </para>
+
+  <para>
+    An &SQL; error results in <methodname>prepare</methodname>() or
+    <methodname>execute</methodname>() throwing an exception.
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+size_t n=stmt->num_params();
+
+std::vector&lt;&ns;::sql::statement::base::parameter&gt;
+    params=stmt->get_parameters();
+
+for (const auto &amp;param:params)
+{
+    std::cout &lt;&lt; param.data_type &lt;&lt; "(" &lt;&lt; param.parameter_size;
+
+    if (param.decimal_digits)
+        std::cout &lt;&lt; "," &lt;&lt; param.decimal_digits;
+    std::cout &lt;&lt; ")";
+
+    if (param.nullable)
+        std::cout &lt;&lt; " nullable";
+    std::cout &lt;&lt; std::endl;
+}</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    <methodname>num_params</methodname>() returns the number of parameters
+    the &SQL; statement requires for execution.
+    <methodname>get_parameters</methodname>() returns a vector of
+    <ulink url="&link-x--sql--statementObj--parameter;"><classname>&ns;::sql::statement::base::parameter</classname></ulink>s
+    that describe the statement's parameters.
+  </para>
+
+  <note>
+    <para>
+      Not all database drivers implement
+      <methodname>get_parameters</methodname>().
+    </para>
+  </note>
+
+  <para>
+    An <classname>&ns;::sql::statement</classname>
+    saves an internal reference on its
+    <classname>&ns;::sql::connection</classname>.
+    If the <classname>&ns;::sql::connection</classname> is no longer needed,
+    it can go out of the application's scope. When the
+    last reference on the <classname>&ns;::sql::statement</classname> goes
+    out of scope and it gets destroyed, the last
+    reference to the <classname>&ns;::sql::connection</classname> goes
+    out of scope, and the connection to the database gets automatically
+    closed.
+  </para>
+
+  <section id="sqlconnexecute">
+    <title>Combining <methodname>prepare</methodname>() with <methodname>execute</methodname>()</title>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+&ns;::sql::statement stmt=
+    conn->execute("INSERT INTO books(name, price) VALUES(?, ?)",
+        "Around the world in 80 days", 9.99);</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      A connection handle's
+      <methodname>execute</methodname>() method combines
+      <methodname>prepare</methodname>() with an
+      <methodname>execute</methodname>() on the resulting statement handle.
+      If desired, the connection handle's
+      <methodname>execute</methodname>() also returns the resulting
+      statement handle, already <methodname>execute</methodname>()d.
+    </para>
+
+    <para>
+      The first parameter to a connection handle's
+      <methodname>execute</methodname>() method is an &SQL; statement
+      that gets forwarded to <methodname>prepare</methodname>(), the remaining
+      parameters, if any are forwarded to the statement handle's
+      <methodname>execute</methodname>(), as is.
+    </para>
+
+    <para>
+      This also applies when the &SQL; statement is a <literal>SELECT</literal>.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+try {
+    auto stmt=conn-&gt;execute_vector("insert into videos(titles, prices) values(?, ?)",
+                        status, titles, prices);
+} catch (...) {
+    // ...
+}
+
+if (!(status[0] &amp; 1) ||
+     !(status[1] &amp; 1))</programlisting>
+	</informalexample>
+      </blockquote>
+
+    <para>
+      Calling a connection handle's <methodname>execute_vector</methodname>()
+      is equivalent to calling
+      <link linkend="sqlstatement"><methodname>prepare</methodname></link>(),
+      then passing the remaining argument to
+      the new statement handle's
+      <link linkend="sqlstatementvectorparams"><methodname>execute_vector</methodname></link>().
+    </para>
+
+  </section>
+
+  <section id="sqlstatementvectorparams">
+    <title>Vector parameters</title>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+std::vector&lt;std::string&gt; titles={"Hare Brush", "Hare Tonic"};
+std::pair&lt;std::vector&lt;double&gt;,
+          std::vector&lt;&ns;::sql::bitflag&gt;&gt; prices={
+      std::vector&lt;double&gt;({0.99, 0}),
+      std::vector&lt;&ns;::sql::bitflag&gt;({0, 1})
+};
+
+std::vector&lt;&ns;::sql::bitflag&gt; status;
+status.resize(2);
+
+auto stmt=conn-&gt;prepare("insert into videos(titles, prices) values(?, ?)");
+
+try {
+    stmt-&gt;execute_vector(status, titles, prices);
+} catch (...) {
+    // ...
+}
+
+if (!(status[0] &amp; 1) ||
+     !(status[1] &amp; 1))
+     // ...</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <methodname>execute_vector</methodname>()
+      executes the prepared statement with multiple sets of parameters.
+      This is usually used to bulk-insert rows into a table.
+      The parameter values are given as vectors. Each vector specifies the
+      value for the corresponding parameter in each row. It's a column vector.
+    </para>
+
+    <para>
+      All vectors, including the first parameter, must be of the same size.
+      The first parameter is a status vector, of
+      <ulink url="&link-typedef-x--sql-bitflag;"><classname>&ns;::sql::bitflag</classname></ulink>.
+      When <methodname>execute_vector</methodname>() returns,
+      each <classname>&ns;::sql::bitflag</classname> reports what happened
+      to that row. The lowest bit indicates whether the row was processed,
+      with the entire value of the bitflag giving more detail.
+      The possible numerical values are:
+    </para>
+
+    <variablelist>
+      <varlistentry>
+	<term>0</term>
+	<listitem>
+	  <para>
+	    Unspecified error. The &SQL; statement probably had an error in it.
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>1</term>
+	<listitem>
+	  <para>
+	    This row was processed.
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>2</term>
+	<listitem>
+	  <para>
+	    This row was not processed as a result of another error, some
+	    database drivers stop when an error occured processing one row,
+	    and will not process the remaining rows.
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>3</term>
+	<listitem>
+	  <para>
+	    This row processed, with modifications (usually a truncated string
+	    value, with some database drivers, other database drivers
+	    truncate silently).
+	  </para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+
+    <para>
+      The numerical values are subject to change.
+      An error is usually indicated by a thrown exception, but the status
+      vector gets initialized in all cases.
+    </para>
+
+    <para>
+      The remaining parameters are any combination of:
+    </para>
+
+    <variablelist>
+      <varlistentry>
+	<term>A <classname>std::vector</classname></term>
+	<listitem>
+	  <para>
+	    Specifies a non-<literal>NULL</literal> value of this parameter in
+	    each row.
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>A <classname>std::pair</classname> of two <classname>std::vectors</classname></term>
+	<listitem>
+	  <para>
+	  <para>
+	    Specifies a non-<literal>NULL</literal> value of this parameter in
+	    each row from the first vector when the corresponding value in the
+	    second vector is zero; or a <literal>NULL</literal> value
+	    for this row if the second vector's value for this row is non-zero.
+	  </para>
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>A <classname>std::list</classname> of <classname>std::vector</classname>s</term>
+	<listitem>
+	  <para>
+	    This is equivalent to specifying each
+	    <classname>std::vector</classname>
+	    directly as a parameter to
+	    <methodname>execute_vector</methodname>().
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>A <classname>std::list</classname> of <classname>std::pair</classname> of two <classname>std::vectors</classname></term>
+	<listitem>
+	  <para>
+	    This is equivalent to specifying each
+	    <classname>std::pair</classname>
+	    directly as a parameter to
+	    <methodname>execute_vector</methodname>().
+	  </para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+
+    <para>
+      When a <classname>std::pair</classname> of vectors gets specified,
+      the second vector in the pair is always a vector of
+      <classname>&ns;::sql::bitflag</classname>s.
+      A non-zero value specifies a <literal>NULL</literal>
+      value for the corresponding row's value of its column parameter. A zero
+      takes the value for that row from the corresponding value in the first
+      vector. Specifying just a vector, instead of a
+      <classname>std::pair</classname> of vectors, has the effect of
+      specifying non-<literal>NULL</literal> values for all rows of that column.
+    </para>
+
+    <note>
+      <para>
+	The underlying <acronym>ODBC</acronym>
+	<acronym>API</acronym> is a C
+	<acronym>API</acronym>.
+	A vector of C++ <classname>std::string</classname>s must be copied
+	into a single buffer which uses the same fixed size for each string
+	value. <methodname>execute_vector</methodname>() automatically
+	takes the longest string in the vector, and allocates the appropriate
+	buffer.
+      </para>
+
+      <para>
+	But this means that if one of the strings in a 1000-element string
+	vector is 100 characters long, this creates a char[100*1000] buffer,
+	even if all other strings are only one character long.
+      </para>
+    </note>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+&ns;::sql::statement stmt=conn->prepare("INSERT INTO books(name, price) VALUES(?, ?)");
+&ns;::sql::bitflag result=stmt->execute("Around the world in 80 days", 9.99);</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      Technically, a non-vector execute is equivalent to a vector execute with
+      a one-row vector, with <methodname>execute</methodname>() returning
+      the sole row's status. Since an error executing an &SQL; statement
+      usually results in a thrown exception, the expected return value
+      should always indicate a success.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+&ns;::sql::bitflag result;
+
+&ns;::sql::statement stmt=conn->execute(result, "INSERT INTO books(name, price) VALUES(?, ?)", "Around the world in 80 days", 9.99);</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      A connection handle's <methodname>execute</methodname>() optionally
+      takes an
+      <classname>&ns;::sql::bitflag</classname>
+      lvalue parameter, before the &SQL; statement.
+      This sets the lvalue to the return value from the
+      real <methodname>execute</methodname>(), with the same caveats.
+    </para>
+  </section>
+
+  <section id="sqlstatementfetch">
+    <title>Fetching <literal>SELECT</literal> results</title>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+&ns;::sql::statement stmt=
+    conn->execute("SELECT name, price FROM books");
+
+std::string name;
+std::pair&lt;float, &ns;::sql::bitflag&gt; price;
+
+while (stmt->fetch("name", name, "price", price))
+{
+    if (price.second)
+    {
+       // ... price is NULL
+    }
+    else
+    {
+       // price.first is the price
+    }
+
+    // ...
+}</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <methodname>fetch</methodname>() retrieves the next row of a
+      <literal>SELECT</literal> resultset, returning <literal>true</literal>;
+      or <literal>false</literal> when there are no more rows.
+      <methodname>fetch</methodname>()'s parameters specify the columns
+      to retrieve. Specify the name of each column, and either an
+      lvalue for the column's value, or an lvalue of a
+      <classname>std::pair</classname> with the column's value going into
+      the pair's first value, and a
+      <classname>&ns;::sql::bitflag</classname> in the pair's second value,
+      which gets set to a non-zero value> when the column's value is
+      <literal>NULL</literal>.
+    </para>
+
+    <para>
+      The column value lvalue types
+      can be a mixture of lvalues to different types:
+      natural integer types, <classname>float</classname>s,
+      <classname>double</classname>s,
+      <ulink url="&link-intervals;"><classname>&ns;::ymd</classname> and
+	<classname>&ns;::hms</classname></ulink> (which are converted to
+      equivalent &SQL; data types),
+      and <classname>std::string</classname>s,
+      for character text columns.
+      "Bit" data type, if supported by the database, get fetched into a
+      <ulink url="&link-typedef-x--sql-bitflag;"><classname>&ns;::sql::bitflag</classname></ulink>.
+      The columns can be identified by column number instead of a name.
+      This is slightly faster:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+while (stmt->fetch(0, name, 1, price))
+{
+    // ...
+}</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <note>
+      <para>
+	Column numbers are 0-based. The first column in the resultset is
+	column #0.
+      </para>
+    </note>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+const std::vector&lt;&ns;::sql::statement::base::column&gt; &amp;columns=stmt->get_columns();
+
+for (const &ns;::sql::statement::base::column : columns)
+{
+    std::cout &lt;&lt; column.name &lt;&lt; std::endl;
+}</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <methodname>get_columns</methodname>() returns a vector of
+      <ulink url="&link-x--sql--statementObj--column;"><classname>&ns;::sql::statement::base::column</classname></ulink>s,
+      which describe each column in the statement's resultset.
+      Instead of explicitly enumerating each column in the parameters for
+      <methodname>fetch</methodname>(), this allows the list of parameters
+      to be supplied indirectly:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+const auto &amp;columns=stmt->get_columnmap();
+
+std::map&lt;std::string, std::pair&lt;std::string, &ns;::sql::bitflag&gt;&gt; cols;
+
+for (const auto &amp;col:columns)
+{
+    cols.insert(std::make_pair(col.first, std::make_pair("", 0)));
+}
+
+while (tables->fetch(table))
+{
+    // ...
+}</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <methodname>get_columnmap</methodname>() is an alternative
+      to <methodname>get_columns</methodname>() which returns an
+      <classname>&ns;::sql::statement::base::columnmap_t</classname>,
+      which is a <classname>std::map</classname> keyed by case-insensitive
+      <quote>column.name</quote>, with the value being
+      <classname>&ns;::sql::statement::base::column</classname>
+      (a reference to one, actually). This is convenient for accessing
+      column metadata by name.
+    </para>
+      
+    <para>
+      Passing a <classname>std::map</classname> parameter to
+      <methodname>fetch</methodname>() results in
+      <methodname>fetch</methodname>() returning columns identified by the
+      <classname>std::map</classname>'s keys. The map can be keyed by
+      <classname>std::string</classname>s (identifying columns by their name)
+      or by
+      <classname>size_t</classname>s (identifying columns by their 0-based
+      column numbers).
+    </para>
+
+    <para>
+      The map's value must be a <classname>std::pair</classname>. The value
+      of each column goes into the first pair value, for
+      non-<literal>NULL</literal> values, with the second pair value, a
+      <classname>&ns;::sql::bitflag</classname> set to zero. A non zero
+      &ns;::sql::bitflag specifies
+      <literal>NULL</literal> values.
+    </para>
+
+    <para>
+      The above example fetches all columns into
+      <classname>std::string</classname>s. All values in a map, of course,
+      must be of the same type, however <methodname>fetch</methodname>()
+      accepts maps together with explicit columns, or other maps:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+std::map&lt;int, std::pair&lt;std::string, <classname>&ns;::sql::bitflag</classname>&gt;&gt; titledesc;
+
+std::map&lt;std::string, std::pair&lt;float, <classname>&ns;::sql::bitflag</classname>&gt;&gt; prices;
+
+std::pair&lt;int, &ns;::sql::bitflag&gt; instock;
+
+titledesc.insert({0, {"", 0}});
+titledesc.insert({1, {"", 0}});
+
+prices.insert({"price", {0, 0}});
+prices.insert({"discount", {0, 0}});
+
+while (tables->fetch(titledesc, prices, "instock", instock))
+{
+    // ...
+}</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      This examples fetches the first two columns in the resultset by column
+      number, columns 0 and 1, as character strings; the
+      <quote>price</quote> and <quote>discount</quote> fields as
+      <classname>float</classname>s, and an integer
+      <quote>instock</quote> field, which may be <literal>NULL</literal>.
+    </para>
+  </section>
+
+  <section id="sqlstatementfetchbulk">
+    <title>Bulk <literal>SELECT</literal> fetches</title>
+
+    <para>
+      <link linkend="sqlstatementfetch"><methodname>fetch</methodname></link>()
+      retrieves one row from a <literal>SELECT</literal> resultset at a time.
+      This is fine for small queries, but each call to
+      <methodname>fetch</methodname>() involves non-trivial amount of
+      overhead, that's not very efficient when processing large results.
+      Using <methodname>fetch_vectors</methodname>() is more effective with
+      large resultsets.
+      <methodname>fetch_vectors</methodname>() implements fetching of
+      multi-row resultsets.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+auto stmt=conn-&gt;execute("SELECT int_col, varchar_col, FROM tmptbl1 ORDER BY int_col");
+
+std::pair&lt;std::vector&lt;int&gt;, std::vector&lt;&ns;::sql::bitflag&gt;&gt; n;
+std::pair&lt;std::vector&lt;std::string&gt;, std::vector&lt;&ns;::sql::bitflag&gt;&gt; str;
+
+size_t c;
+
+while ((c=stmt-&gt;fetch_vectors(1000, 0, n, 1, str)) &gt; 0)
+{
+    for (size_t i=0; i&lt;c; ++i)
+    {
+        // ...
+    }
+}</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <methodname>fetch_vectors</methodname>() differs from
+      <methodname>fetch</methodname>() as follows.
+    </para>
+
+    <itemizedlist>
+      <listitem>
+	<para>
+	  The first parameter is a positive row array size.
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  Like
+	  <methodname>fetch</methodname>(), columns are specified by
+	  0-based column number, or a name. The value of each column gets
+	  places into the first a
+	  <classname>std::vector</classname> instead of a single value, the
+	  first <classname>std::vector</classname> in the
+	  <classname>std::pair</classname>, with the second vector specifying
+	  a null value indicator, a
+	  <classname>std::vector&lt;<ulink url="&link-typedef-x--sql-bitflag;">&ns;::sql::bitflag</ulink>&gt;</classname> instead
+	  of a single <classname>bool</classname> value (the specialized
+	  <classname>std::vector&lt;bool&gt;</classname> would not be very
+	  efficient here).
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  <methodname>fetch_vectors</methodname>() resizes
+	  all vectors to the
+	  specified array row size value, and fetches up to the given number
+	  of rows, and returns the number of rows fetched from the resultset
+	  (which will be 0 when there are no more results).
+	  The above example fetches up to a 1000 rows at a time.
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  <methodname>fetch_vectors</methodname>() returns with all vectors
+	  resized to the specified array row size, even if fewer rows were
+	  ultimately returned from the resultset.
+	</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>
+      The vectors specify the value for their corresponding columns, in each
+      row. They are column vectos.
+      Indirectly specifying columns with
+      <methodname>fetch_vectors</methodname>() is similar how its done
+      with <methodname>fetch</methodname>(), except that the map value is
+      a <classname>std::pair</classname> of vectors:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+std::map&lt;std::string, std::pair&lt;std::vector&lt;std::string&gt;,
+    std::vector&lt;&ns;::sql::bitflag&gt;&gt;&gt; columns;
+
+// Side effect of operator[] is to insert these columns, that's
+// what we want here:
+
+auto &amp;int_col=columns["int_col"];
+auto &amp;varchar_col=columns["varchar_col"];
+
+size_t c;
+
+while ((c=stmt-&gt;fetch_vectors(1000, columns) &gt; 0)
+{
+    std::vector&lt;int&gt; &amp;n=int_col.first;
+    std::vector&lt;&ns;::sql::bitflag&gt; &amp;n_null=int_col.second;
+    std::vector&lt;std::string&gt; &amp;str=varchar_col.first;
+    std::vector&lt;&ns;::sql::bitflag&gt; &amp;str_null=varchar_col.second;
+
+    for (size_t i=0; i&lt;c; ++i)
+    {
+        // If n_null[i] or str_null[i], the corresponding value is null,
+        // otherwise see n[i] and str[i]
+    }
+}</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <methodname>fetch_vectors</methodname>() is better than
+      with <methodname>fetch</methodname>() for large resultsets,
+      and
+      <methodname>fetch_vectors_all</methodname>() is better than
+      <methodname>fetch_vectors</methodname>():
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+std::map&lt;std::string, std::pair&lt;std::vector&lt;std::string&gt;,
+    std::vector&lt;&ns;::sql::bitflag&gt;&gt;&gt; columns;
+
+// Side effect of operator[] is to insert these columns, that's
+// what we want here:
+
+auto &amp;int_col=columns["int_col"];
+auto &amp;varchar_col=columns["varchar_col"];
+
+stmt->fetch_vectors_all(1000,
+    [&amp;]
+    (size_t c)
+    {
+        std::vector&lt;int&gt; &amp;n=int_col.first;
+        std::vector&lt;&ns;::sql::bitflag&gt; &amp;n_null=int_col.second;
+        std::vector&lt;std::string&gt; &amp;str=varchar_col.first;
+        std::vector&lt;&ns;::sql::bitflag&gt; &amp;str_null=varchar_col.second;
+
+        for (size_t i=0; i&lt;c; ++i)
+        {
+           // If n_null[i] or str_null[i], the corresponding value is null,
+           // otherwise see n[i] and str[i]
+        }
+   }, columns);</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <methodname>fetch_vectors_all</methodname>() takes an additional
+      lambda/functor parameter after the row size, and before the column
+      parameters.
+      <methodname>fetch_vectors_all</methodname>() is equivalent to
+      repeatedly calling
+      <methodname>fetch_vectors</methodname>() until it returns 0, and
+      invoking the lambda/functor each time, passing the number of retrieved
+      rows as its sole parameter.
+    </para>
+
+    <para>
+      The lambda/functor presumably captures the returned value vectors by
+      reference, however the lambda/functor must not modify the value
+      vectors, it can only read them. Modifying the actual values in the
+      vectors is fine, if necessary, just that the vectors themselves cannot
+      be resized, cleared, etc...
+      <methodname>fetch_vectors_all</methodname>() returns the entire
+      resultset, in chunks, with a minimum of overhead. All requested columns
+      are tied to the given vector buffers once, and are not rebound with
+      every <methodname>fetch</methodname>().
+    </para>
+
+    <para>
+      The lambda/functor is allowed to throw an exception, to abort processing
+      of the resultset.
+    </para>
+
+    <note>
+      <para>
+	The underlying <acronym>ODBC</acronym>
+	<acronym>API</acronym> is a C
+	<acronym>API</acronym>.
+	Full buffers must be allocated for each fetched value.
+	Retrieving 1000 rows of a <literal>VARCHAR(100)</literal> column
+	requires allocating <literal>char[100*1000]</literal> worth of
+	memory. Afterwards, 1000 values gets copied to the 1000
+	<classname>std::string</classname>s, which uses additional memory.
+      </para>
+
+      <para>
+	The <literal>char[100*1000]</literal> buffer gets freed only after
+	the <classname>&ns;::sql::statement</classname> goes out of scope
+	and gets destroyed, or when another call to one of the fetch
+	methods gets made. All buffers used by a previous fetch call get
+	freed before allocating buffers for the next fetch.
+      </para>
+
+      <para>
+	 The temporary buffers are needed only for C++ specific value types,
+	 namely
+	 <classname>std::string</classname>s and <classname>bool</classname>
+	 resultset values.
+	 Natural numeric values &mdash; <classname>int</classname>s,
+	 <classname>float</classname>s, and other C-compatible types &mdash;
+	 do not require intermediate buffers.
+      </para>
+    </note>
+  </section>
+
+  <section id="sqlstatementoptions">
+    <title>Creating scrollable cursors</title>
+
+    <anchor id="cursorcapabilities" />
+    <blockquote>
+      <informalexample>
+	<programlisting>
+auto capabilities=conn->config_get_static_cursor_attributes1();
+
+bool has_absolute_positioning=capabilities.count("SQL_CA1_ABSOLUTE");
+bool has_relative_positioning=capabilities.count("SQL_CA1_RELATIVE");
+bool has_bookmarks=capabilities.count("SQL_CA1_BOOKMARK");
+
+&ns;::sql::newstament newstatement=conn->create_newstatement();
+
+newstatement->option("CURSOR_TYPE", "STATIC");
+
+if (has_bookmarks)
+    newstatement->option("BOOKMARKS", "ON");
+
+&ns;::sql::stament statement=newstatement->prepare("SELECT title, price from books order by stock_id");
+
+statement->execute();</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      Not all database drivers support all types of cursors, and cursor
+      positioning capabilities.
+      Use <link linkend="sqlconnectionsettings"><methodname>config_get_dynamic_cursor_attributes1</methodname>(),
+	<methodname>config_get_forward_only_cursor_attributes1</methodname>(),
+	<methodname>config_get_keyset_cursor_attributes1</methodname>(), or
+	<methodname>config_get_static_cursor_attributes1</methodname>()</link>
+      to determine which cursor types are supported to which extent.
+      The <literal>SQL_CA1_ABSOLUTE</literal> flag indicates that
+      <literal>&ns;::sql::fetch::first</literal>,
+      <literal>&ns;::sql::fetch::last</literal>, and
+      <literal>&ns;::sql::fetch::absolute</literal> scrolling directions
+      are supported.
+
+      The <literal>SQL_CA1_RELATIVE</literal> flag indicates that
+      <literal>&ns;::sql::fetch::prior</literal>, and
+      <literal>&ns;::sql::fetch::relative</literal> scrolling directions
+      are supported.
+
+      The <literal>SQL_CA1_BOOKMARKS</literal> flag indicates that
+      bookmarks can be enabled, and that the
+      <literal>&ns;::sql::fetch::atbookmark</literal> scrolling direction
+      is supported.
+    </para>
+
+    <para>
+      Cursor are enabled by calling a connection object's
+      <methodname>create_newstatement</methodname>() which returns an
+      <ulink url="&link-typedef-x--sql-newstatement;"><classname>&ns;::sql::newstatement</classname></ulink>.
+      This is an intermediate object that sets non-default statement
+      options before preparing or executing a new
+      <classname>&ns;::sql::statement</classname>.
+      It can be considered as a statement factory.
+      <methodname>option</methodname>() sets non-default statement options,
+      and <methodname>prepare</methodname>() prepares a new statement, using
+      the previously-set options.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+&ns;::sql::statement statement=newstatement->execute("SELECT title, price from books where title like ? order by stock_id",
+    "War%");</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <methodname>execute</methodname>() and
+      <methodname>execute_vector</methodname>() is equivalent to calling
+      <methodname>prepare</methodname>(), then
+      <methodname>execute</methodname>() or
+      <methodname>execute_vector</methodname>() on the new
+      <classname>&ns;::sql::statement</classname> object.
+    </para>
+
+    <para>
+      Calling <methodname>&ns;::sql::connection</methodname>'s
+      <methodname>prepare</methodname>(),
+      <methodname>execute</methodname>(), or
+      <methodname>execute_vector</methodname>() is equivalent to calling
+      <methodname>create_newstatement</methodname>(), followed by
+      <methodname>prepare</methodname>(),
+      <methodname>execute</methodname>(), or
+      <methodname>execute_vector</methodname>() without setting any
+      non-default options.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+std::map&lt;std::string, std::string&gt; options;
+
+if (has_bookmarks)
+    options["BOOKMARKS"]="ON";
+
+&ns;::sql::statement statement=
+    conn->create_newstatement("CURSOR_TYPE", "STATIC", options)
+        ->prepare("SELECT title, price from books order by stock_id");</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <methodname>create_newstatement</methodname>() takes an optional list
+      of explicit settings. This is equivalent to constructing a
+      <classname>&ns;::sql::newstatement</classname>, then using
+      <methodname>option</methodname>() to set the given options.
+      <methodname>create_newstatement</methodname>() takes a variadic list
+      of settings either as an explicit name/value tuple, or as a
+      string <classname>std::map</classname>, whose key/value tuples correspond
+      to option names and values.
+    </para>
+
+    <para>
+      The options are:
+    </para>
+
+    <variablelist>
+      <varlistentry>
+	<term><literal>BOOKMARKS</literal></term>
+	<listitem>
+	  <para>
+	    Setting this option to <quote>ON</quote> enables bookmarks.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term><literal>CURSOR_TYPE</literal></term>
+	<listitem>
+	  <para>
+	    Specifies the type of the <literal>SELECT</literal> cursor.
+	    See the <acronym>ODBC</acronym> documentation for a more
+	    complete description of each cursor type. The possible values are:
+	  </para>
+
+	  <variablelist>
+	    <varlistentry>
+	      <term><literal>FORWARD</literal></term>
+	      <listitem>
+		<para>
+		  The default <quote>FORWARD</quote> cursor is an ordinary
+		  <literal>SELECT</literal> that returns a non-scrollable
+		  row sequence.
+		</para>
+	      </listitem>
+	    </varlistentry>
+	    <varlistentry>
+	      <term><literal>STATIC</literal></term>
+	      <listitem>
+		<para>
+		  A scrollable, static resultset of rows.
+		</para>
+	      </listitem>
+	    </varlistentry>
+	    <varlistentry>
+	      <term><literal>DYNAMIC</literal></term>
+	      <listitem>
+		<para>
+		  A scrollable resultset that reflects any
+		  concurrent changes to the underlying rows, during
+		  scrolling.
+		</para>
+	      </listitem>
+	    </varlistentry>
+	    <varlistentry>
+	      <term><literal>KEYSET(<replaceable>n</replaceable>)</literal></term>
+	      <listitem>
+		<para>
+		  A combination of a static and a dynamic cursor.
+		  <quote><replaceable>n</replaceable></quote> specifies the
+		  number of rows in the keyset.
+		</para>
+
+		<blockquote>
+		  <informalexample>
+		    <programlisting>
+newstatement->option("CURSOR_TYPE", "KEYSET(100)");</programlisting>
+		  </informalexample>
+		</blockquote>
+
+		<para>
+		  This example creates a cursor with a 100 row keyset.
+		  If the keyset size is equal or greater than the number
+		  of rows in the entire resultset, a keyset cursor becomes
+		  equivalent of a static cursor. When the keyset's size
+		  is less than the resultset's size, the keyset cursor becomes
+		  equivalent to a static cursor for the number of rows
+		  in the keyset. When the cursor gets scrolled beyond the
+		  end of the keyset, a new keyset gets created, to cover the
+		  next subset of rows in the resultset.
+		</para>
+	      </listitem>
+	    </varlistentry>
+	  </variablelist>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </section>
+
+  <section id="sqlstatementscroll">
+    <title>Using scrollable cursors</title>
+
+    <para>
+      An optional last argument to <methodname>fetch</methodname>() and
+      <methodname>fetch_vectors</methodname>() defaults to
+      <literal>&ns;::sql::fetch::next</literal>, which normally returns the
+      next row or vector of rows from the resultset:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+float price;
+std::vector&lt;float&gt; prices;
+
+stmt->fetch("prices", price, &ns;::sql::fetch::next);
+
+size_t cnt=stmt->fetch_vectors(1000, "prices", prices, &ns;::sql::fetch::next);</programlisting>
+    </informalexample>
+    </blockquote>
+
+    <para>
+      This is the default action, if omitted, that fetches the next row or
+      vector of rows from the cursor. 
+      <link linkend="cursorcapabilities">Depending on the cursor type, and
+      the database drivers</link>, other possible values are:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+float price;
+std::vector&lt;float&gt; prices;
+
+stmt->fetch("prices", price, &ns;::sql::fetch::prior);
+
+size_t cnt=stmt->fetch_vectors(1000, "prices", prices, &ns;::sql::fetch::prior);</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <literal>&ns;::sql::fetch::prior</literal> fetches the previous row or
+      vector of rows from the cursor.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+float price;
+std::vector&lt;float&gt; prices;
+
+stmt->fetch("prices", price, &ns;::sql::fetch::first);
+
+size_t cnt=stmt->fetch_vectors(1000, "prices", prices, &ns;::sql::fetch::first);</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <literal>&ns;::sql::fetch::first</literal> fetches the first row or
+      vector of rows from the cursor.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+float price;
+std::vector&lt;float&gt; prices;
+
+stmt->fetch("prices", price, &ns;::sql::fetch::last);
+
+size_t cnt=stmt->fetch_vectors(1000, "prices", prices, &ns;::sql::fetch::last);</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <literal>&ns;::sql::fetch::last</literal> fetches the last row or vector
+      of rows from the cursor.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+float price;
+std::vector&lt;float&gt; prices;
+
+stmt->fetch("prices", price, &ns;::sql::fetch::absolute(100));
+
+size_t cnt=stmt->fetch_vectors(1000, "prices", prices, &ns;::sql::fetch::absolute(0));</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <literal>&ns;::sql::fetch::absolute(<replaceable>n</replaceable>)</literal>
+      fetches a row or vector of rows starting with the given absolute row
+      number from the cursor. The row numbers are 0-based.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+float price;
+std::vector&lt;float&gt; prices;
+
+stmt->fetch("prices", price, &ns;::sql::fetch::relative(-1));
+
+size_t cnt=stmt->fetch_vectors(1000, "prices", prices, &ns;::sql::fetch::relative(10));</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <literal>&ns;::sql::fetch::relative(<replaceable>n</replaceable>)</literal>
+      fetches a row or vector of
+      rows starting with the given offset from the start of the current
+      resultset row or row vector.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+float price;
+std::vector&lt;float&gt; prices;
+
+&ns;::sql::bookmark bookmark;
+
+std::vector&lt;&ns;::sql::bookmark&gt; bookmarks;
+
+auto stmt=conn->create_newstatement("BOOKMARKS", "ON", "CURSOR_TYPE", "STATIC")->execute("SELECT prices FROM books order by stock_id");
+
+stmt->fetch(bookmark, "price", price);
+
+stmt->fetch_vectors(100, bookmarks, "price", price);
+
+stmt->fetch("prices", price, &ns;::sql::fetch::atbookmark(bookmark, -1));
+
+size_t cnt=stmt->fetch_vectors(1000, "prices", prices, &ns;::sql::fetch::atbookmark(bookmark));</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      An <ulink url="&link-x--sql--bookmark;"><classname>&ns;::sql::bookmark</classname></ulink>
+      is an opaque object that stores a row's <quote>bookmark</quote>.
+      In static cursors it's equivalent to the number of the row in the
+      resultset. Dynamic cursors' row numbers can change, but a given row's
+      bookmark remains the same (unless the row gets deleted), allowing the
+      cursor to get repositioned to the same row even if other rows
+      were added or deleted from the cursor's resultset, shifting its position.
+    </para>
+
+    <para>
+      An optional bookmark passed as the first lvalue parameter to
+      <methodname>fetch</methodname>(); or a vector of bookmarks gets passed
+      as the first vector to <methodname>fetch_fectors</methodname>().
+      This retrieves each row's bookmark. The bookmark lvalue must be the
+      first lvalue parameter.
+    </para>
+
+    <para>
+      <literal>&ns;::sql::fetch::atbookmark</literal> fetches a row or vector of
+      rows starting with the previously-obtained bookmark row, with an optional
+      relative offset.
+    </para>
+  </section>
+
+  <section id="sqlmodifyfetchedrow">
+    <title>Modifying fetched rows</title>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+auto a1=conn->config_get_static_cursor_attributes1();
+auto has_positioned_update=a1.count("SQL_CA1_POSITIONED_UPDATE");
+auto has_positioned_delete=a1.count("SQL_CA1_POSITIONED_DELETE");
+
+auto stmt=conn->create_newstatement("CURSOR_TYPE", "STATIC")
+    ->execute("SELECT memo_id, memo_text FROM memos");
+
+int memo_id;
+std::string memo_text;
+
+stmt->fetch("memo_id", memo_id, "memo_text", memo_text);
+
+stmt->modify_fetched_row(0, "UPDATE memos SET memo_text=?", "New memo text");</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <methodname>modify_fetched_row</methodname>() executes an
+      <acronym>SQL</acronym>
+      <literal>UPDATE</literal> or <literal>DELETE</literal> statement
+      for one of the rows in a resultset.
+      The first parameter is a 0-based row number, which is always zero with
+      single row resultsets obtained from <methodname>fetch</methodname>().
+      Specify a 0-based row number to reference the appropriate row
+      in a multi-result resultset from <methodname>fetch_vectors</methodname>()
+      (which, sadly, <link linkend="sqlbugs">may not work correctly</link>).
+      The second parameter is an
+      <literal>UPDATE</literal> or <literal>DELETE</literal> statement, with
+      the remaining parameters, if any, specifying any parameter values;
+      any parameter value that's accepted by
+      <link linkend="sqlstatement"><methodname>execute</methodname></link>().
+    </para>
+
+    <para>
+      The <acronym>SQL</acronym> statement does not have a
+      <quote><literal>WHERE</literal></quote> clause. It automatically affects
+      only the specified row of the resultset. Not all database drivers
+      implement positioned updates and deletes for all cursor types.
+      Use the <link linkend="sqlconnectionsettings">appropriate
+	config() setting</link>,
+      <methodname>config_get_forward_only_cursor_attributes1</methodname>(),
+      <methodname>config_get_static_cursor_attributes1</methodname>(),
+      <methodname>config_get_dynamic_cursor_attributes1</methodname>(), or
+      <methodname>config_get_keyset_cursor_attributes1</methodname>();
+      and check if the cursor supports the
+      <literal>SQL_CA1_POSITIONED_UPDATE</literal> or
+      <literal>SQL_CA1_POSITIONED_DELETE</literal>, respectively.
+    </para>
+  </section>
+
+  <section id="sqlbatches">
+    <title>Batches and row counts</title>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+auto batch_support=conn->config_get_batch_support();
+bool select_explicit=batch_support->count("SQL_BS_SELECT_EXPLICIT");
+bool row_count_explicit=batch_support->count("SQL_BS_ROW_COUNT_EXPLICIT");
+bool select_proc=batch_support->count("SQL_BS_SELECT_PROC");
+bool row_count_proc=batch_support->count("SQL_BS_ROW_COUNT_PROC");
+
+int memo_id;
+std::string memo_code;
+
+auto stmt=conn->prepare("DELETE FROM memotbl WHERE memo_id=?;"
+                        "UPDATE memotbl SET printed=1 WHERE memo_code=?;"
+                        "SELECT memo_text FROM memotbl WHERE printed=1");
+
+stmt->execute(memo_id, memo_code);
+
+size_t rows_deleted=stmt->row_count();
+
+stmt->more();
+
+size_t rows_updates=stmt->row_count();
+
+stmt->more();
+
+std::string memo_text;
+
+while (stmt->fetch("memo_text", memo_text))
+{
+   // ...
+}</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      Most database drivers support &SQL; batches (executing more than one
+      &SQL; statement at a time). Use
+      <link linkend="sqlconnectionsettings"><methodname>config_get_batch_support</methodname></link>()
+      to verify whether the database driver supports &SQL; batches with
+      <literal>SELECT</literal> statements, or other &SQL; statements that
+      update or delete rows (except <link linkend="sqlbugs">when they're
+	not</link>).
+    </para>
+
+    <para>
+      <methodname>row_count</methodname>() returns the number of rows modified
+      by the executed non-<literal>SELECT</literal> &SQL; statement (an
+      <literal>UPDATE</literal> or a <literal>DELETE</literal>).
+      When the executed &SQL; contains more than one statement, the first call
+      to <methodname>row_count</methodname>(),
+      <methodname>fetch</methodname>(), or
+      <methodname>fetch_vectors</methodname>() reports the results of the
+      first statement in the batch. Use <methodname>more</methodname>() to
+      advance to the next statement in the batch(). Afterwards,
+      <methodname>row_count</methodname>(), <methodname>fetch</methodname>(),
+      and <methodname>fetch_vectors</methodname>() use the results of the next
+      statement in the batch.
+    </para>
+
+    <para>
+      <methodname>more</methodname>() returns <literal>true</literal> if the
+      statement succeeds, or <literal>false</literal> if there are no more
+      statements in the batch. Semantics of error handling depend on the
+      database driver. Some database drivers throw an exception from
+      <methodname>execute</methodname>() if any statement in the batch had
+      an error. Other database drivers throw an exception from
+      <methodname>execute</methodname>() if the first statement in the
+      batch had an error, and <methodname>more</methodname>() throws an
+      exception if the next statement in the batch had an error. If the
+      executed statement contains a batch, this means that a thrown exception
+      from <methodname>execute</methodname>() (and perhaps
+      <methodname>execute_vector</methodname>() as well)
+      and <methodname>more</methodname>() still leaves the statement object
+      in a usable state for additional calls to <methodname>more</methodname>().
+    </para>
+
+    <para>
+      It also means that the &SQL; batch must be
+      explicitly <methodname>prepare</methodname>()d, in order
+      to obtain the statement handle; then executed. Invoking
+      <methodname>execute</methodname>() on a connection object, with an
+      implicit <methodname>prepare</methodname>() means that the statement
+      handle will not be available if <methodname>execute</methodname>()
+      throws an exception.
+    </para>
+  </section>
+</chapter>
+<!--
+Local Variables:
+mode: sgml
+sgml-parent-document: ("book.xml" "book" "chapter")
+End:
+-->

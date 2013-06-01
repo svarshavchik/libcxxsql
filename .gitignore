@@ -2,6 +2,8 @@
 *.gz
 ABOUT-NLS
 ChangeLog
+Doxyfile
+INSTALL
 Makefile
 Makefile.in
 aclocal.m4
@@ -13,6 +15,9 @@ config.status
 config.sub
 configure
 depcomp
+/doctags
+/header.html
+/html
 install-sh
 libcxx_config.h
 libcxx_config.h.in
@@ -23,3 +28,4 @@ ltmain.sh
 missing
 rpm
 stamp-h1
+/xml

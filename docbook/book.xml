@@ -1,0 +1,164 @@
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+ "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+
+<!ENTITY % entity-list SYSTEM "entities">
+
+<!ENTITY app "<application><emphasis>LIBCXX</emphasis> SQL Library</application>">
+<!ENTITY libcxx "<ulink url='/'><application>LIBCXX</application></ulink>">
+<!ENTITY SQL "<acronym>SQL</acronym>">
+<!ENTITY install SYSTEM "install.xml">
+<!ENTITY sqlenv SYSTEM "sqlenv.xml">
+<!ENTITY sqlconnection SYSTEM "sqlconnection.xml">
+<!ENTITY sqlstatement SYSTEM "sqlstatement.xml">
+<!ENTITY sqltransactions SYSTEM "sqltransactions.xml">
+<!ENTITY sqlblobs SYSTEM "sqlblobs.xml">
+<!ENTITY sqlcatalogs SYSTEM "sqlcatalogs.xml">
+<!ENTITY ns "x">
+<!ENTITY ref "<classname>&ns;::ref</classname>">
+<!ENTITY ptr "<classname>&ns;::ptr</classname>">
+<!ENTITY const_ref "<classname>&ns;::const_ref</classname>">
+<!ENTITY const_ptr "<classname>&ns;::const_ptr</classname>">
+<!ENTITY link-refobj "../refobj.html">
+<!ENTITY link-exceptions "../exceptions.html">
+<!ENTITY link-properties "../properties.html">
+<!ENTITY link-intervals "../intervals.html">
+
+%entity-list;
+
+]>
+
+<!--
+
+Copyright 2012 Double Precision, Inc.
+See COPYING for distribution information.
+
+-->
+
+<book id="book">
+  <title>&app;</title>
+
+  <preface id="index">
+    <title>&app;</title>
+
+    <section id="intro">
+      <title>Introduction</title>
+      <para>
+	This is an optional add-on library to &libcxx;, which adds
+	classes and templates that use
+	the <ulink url="http://www.unixodbc.org">unixODBC</ulink> library
+	and provide SQL access to any database server with an
+	<acronym>ODBC</acronym> driver.
+	Use the following classes and templates after
+	<link linkend="INSTALL">installing</link> this library, then
+	linking with <option>-lcxxsql</option>.
+      </para>
+
+      <para>
+	First, an <link linkend="sqlenv">environment</link> object
+	enumerates configured <acronym>ODBC</acronym> drivers and data
+	sources.
+	A <link linkend="sqlconnection">connection object</link> establishes
+	a connection or a login to a database, and executes individual
+	<link linkend="sqlstatement">statement</link>s, which update
+	table content or <link linkend="sqlstatementfetch">fetch
+	resultsets.</link>
+      </para>
+
+      <para>
+	A <link linkend="sqlstatement">statement</link> object can be used only
+	by one thread a time.
+	The <link linkend="sqlenv">environment</link> and
+	<link linkend="sqlconnection">connection object</link>s are
+	generally thread safe. Note, though, that
+	<link linkend="sqltransactions">transaction</link> scope affects an
+	entire connection. A thread that starts a transaction puts all
+	statements executed by other threads within the same transaction.
+	When using transactions, it's generally easier to have a separate
+	connection object for each thread.
+      </para>
+
+      <note id="sqlbugs">
+	<para>
+	  Not all database-specific <acronym>ODBC</acronym> drivers support
+	  every feature, and some drivers have known limitations, or bugs with
+	  some obscure features. This is a list of known issues, at this time:
+	</para>
+
+	<itemizedlist>
+	  <listitem>
+	    <para>
+	      The current MySQL driver makes severals calls to setlocale()
+	      which changes the
+	      application's global locale, which affects all threads.
+	      Even if the application initializes a global locale at startup,
+	      for the entire application lifetime, other threads may find
+	      their locale changing unexpectedly.
+	    </para>
+	  </listitem>
+
+	  <listitem>
+	    <para>
+	      MySQL's <acronym>ODBC</acronym> connector does not implement
+	      <link linkend="sqlblobs">inserting blobs</link> with
+	      <link linkend="sqlstatementvectorparams">execute_vector</link>().
+	      <link linkend="sqlstatementfetchbulk">fetch_vector</link>() will
+	      also not work with blobs until
+	      <ulink url="http://bugs.mysql.com/bug.php?id=61991">http://bugs.mysql.com/bug.php?id=61991</ulink>
+	      gets fixed (the referenced bug affects only blobs, non-blob columns,
+	      which &app; fetches using bound columns, do not appear to be
+	      affected).
+	    </para>
+	  </listitem>
+
+	  <listitem>
+	    <para>
+	      Blob support with PostgreSQL requires some
+	      <ulink url="http://www.postgresql.org/docs/9.2/static/lo.html">additional
+	      setup</ulink> for what it calls <quote>large objects</quote>.
+	    </para>
+	  </listitem>
+
+	  <listitem>
+	    <para>
+	      Positioned updates and deletes do not work with MySQL resultsets
+	      that have more than one row, retrieved by
+	      <link linkend="sqlstatementvectorparams">execute_vector</link>().
+	      It looks like MySQL's ODBC driver always executes a positioned
+	      update or delete for the first row in the resultset.
+	    </para>
+	  </listitem>
+
+	  <listitem>
+	    <para>
+	      MySQL connections require a connection parameter named
+	      <quote>option</quote> set to "67108864" to enable &SQL; batches.
+	      See MySQL documentation for more information. However,
+	      <link linkend="sqlconnectionsettings"><methodname>config_get_batch_support</methodname></link>()
+	      still shows support for batches even if the option is not set.
+	    </para>
+	  </listitem>
+	</itemizedlist>
+      </note>
+    </section>
+    &install;
+  </preface>
+
+  &sqlenv;
+  &sqlconnection;
+  &sqlstatement;
+  &sqltransactions;
+  &sqlblobs;
+  &sqlcatalogs;
+
+  <appendix id="COPYING">
+    <title>COPYING</title>
+
+    <para role="COPYING">
+      &app; SQL classes and templates is free software, distributed under the
+      terms of the GPL, version 3:
+    </para>
+    <blockquote>
+      <literallayout><xi:include href="../COPYING" parse="text" xmlns:xi="http://www.w3.org/2001/XInclude" /></literallayout>
+    </blockquote>
+  </appendix>
+</book>

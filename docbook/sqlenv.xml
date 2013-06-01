@@ -1,0 +1,53 @@
+<!--
+
+Copyright 2012 Double Precision, Inc.
+See COPYING for distribution information.
+
+-->
+
+<chapter id="sqlenv">
+  <title>Creating an SQL environment</title>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+#include &lt;&ns;/sql/env.H&gt;
+
+&ns;::sql::env henv=&ns;::sql::env::create();
+
+std::map&lt;std::string, std::string&gt; drivers, data_sources;
+
+henv-&gt;get_drivers(drivers);
+
+henv-&gt;get_data_sources(data_sources);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    It is necessary to create an
+    <ulink url="&link-typedef-x--sql-env;"><classname>&ns;::sql::env</classname></ulink>
+    reference to a
+    <ulink url="&link-refobj;">reference-counted object</ulink> 
+    before connecting to an &SQL; server.
+    <methodname>get_drivers</methodname>() enumerates available &SQL;
+    drivers.
+    <methodname>get_data_sources</methodname>() enumerates available &SQL;
+    data sources.
+    A driver represents an &SQL; server type.
+    A data source is a predefined connection to an &SQL; server, created
+    and maintained by the <acronym>ODBC</acronym> connection manager.
+  </para>
+
+  <para>
+    <methodname>get_drivers</methodname>() and
+    <methodname>get_data_sources</methodname>() populate a
+    <classname>std::map</classname> keyed by a driver or a data source name,
+    with the value being a description.
+  </para>
+</chapter>
+<!--
+Local Variables:
+mode: sgml
+sgml-parent-document: ("book.xml" "book" "chapter")
+End:
+-->

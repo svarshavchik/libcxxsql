@@ -1,0 +1,159 @@
+<!--
+
+Copyright 2013 Double Precision, Inc.
+See COPYING for distribution information.
+
+-->
+
+<section id="INSTALL">
+  <title>Installation, and requirements</title>
+
+  <informaltable id="externallinks">
+    <thead cols="1">
+      <tr>
+	<th>
+	  <simpara>Links</simpara>
+	</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+	<td>
+	  <simpara>
+	    <ulink url="https://fedorahosted.org/released/libcxx/">Download</ulink>
+	  </simpara>
+
+	  <simpara>
+	    <ulink url="https://lists.fedorahosted.org/mailman/listinfo/libcxx-users">Mailing list</ulink>
+	  </simpara>
+
+	  <simpara>
+	    <ulink url="http://git.fedorahosted.org/git/libcxx.git">fedorahosted</ulink> or
+	    <ulink url="https://github.com/svarshavchik/libcxx.git">GitHUB</ulink>
+	    <acronym>GIT</acronym>
+	  </simpara>
+	  <simpara>
+	    (<quote>libcxxsql/master</quote> branch).
+	  </simpara>
+
+	  <simpara>
+	    <ulink url="http://www.courier-mta.org/KEYS.bin">PGP key</ulink>
+	  </simpara>
+	</td>
+      </tr>
+    </tbody>
+  </informaltable>
+
+  <para>
+    <ulink url="../INSTALL.html">Install &libcxx; first</ulink> before
+    installing &app;.
+  </para>
+
+
+  <para>
+    &app; should be converted into an installable package, instead of building
+    and installing &app; directly. The source tarball
+    includes a canned build script for Fedora. Running
+    <quote><command>rpm -ta libcxxsql-<replaceable>version</replaceable>.tar.bz2</command></quote>
+    creates the following packages:
+  </para>
+
+  <itemizedlist>
+    <listitem>
+      <para>The main binary rpm package, with runtime libraries.</para>
+    </listitem>
+    <listitem>
+      <para>
+	The <quote>devel</quote> subpackage, containing header files and
+	other supporting files used for developing applications that use the
+	&app;.
+      </para>
+    </listitem>
+  </itemizedlist>
+
+  <para>
+    Use the following documentation to build &app; without the
+    bundled <acronym>RPM</acronym> script.
+  </para>
+
+  <simplesect>
+    <title>Requirements and prerequisites</title>
+
+    <itemizedlist>
+      <listitem>
+	<para>
+	  <ulink url="../INSTALL.html">Install &libcxx; first</ulink> before
+	  installing &app;. All &libcxx;'s own requirements apply here as
+	  well (<application>gcc</application> version,
+	  <application>gmake</application>, and others).
+	</para>
+      </listitem>
+
+      <listitem>
+	<para>
+	  <application>unixODBC</application>.
+	</para>
+      </listitem>
+
+      <listitem>
+	<para>
+	  <application>pkg-config</application>.
+	</para>
+      </listitem>
+    </itemizedlist>
+  </simplesect>
+
+  <simplesect>
+    <title>Configuring and building</title>
+
+    <para>
+      Run the <filename>configure</filename> script, followed by
+      <command>make</command>
+      (or <command>gmake</command>), and
+      <command>make install</command>.
+      <filename>configure</filename> takes the usual options that specify
+      non-default installation directories for various files
+      (see <command>configure --help</command>).
+      Additional options are:
+    </para>
+
+    <variablelist>
+      <varlistentry>
+	<term>--with-pkgconfigdir=<replaceable>dir</replaceable></term>
+
+	<listitem>
+	  <para>
+	    Specifies where pkgconfig configuration file gets installed.
+	    The <command>configure</command> script goes through the list of
+	    some common directories, and checks if they exist.
+	  </para>
+
+	  <para>
+	    This option may be needed to override the default even if
+	    <command>configure</command> finds it, and does not complain, if
+	    it ends up finding and installs its pkgconfig file into the wrong
+	    directory.
+	  </para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+
+    <para>
+      Run <command>(g)make install DESTDIR=/tmp/libcxxsql-install</command>.
+      This creates an installation image in the
+      <filename>/tmp/libcxxsql-install</filename> directory, to use as a basis
+      for creating an installable package.
+      A plain <command>(g)make install</command> will do it
+      <quote>for real</quote>, of course.
+      However, using an installable package is strongly recommended.
+    </para>
+  </simplesect>
+</section>
+
+<!--
+Local Variables:
+mode: sgml
+sgml-parent-document: ("book.xml" "preface" "section")
+End:
+-->

@@ -1,0 +1,293 @@
+<!--
+
+Copyright 2013 Double Precision, Inc.
+See COPYING for distribution information.
+
+-->
+
+<chapter id="sqlblobs">
+  <title>Inserting and fetching blobs</title>
+
+  <para>
+    Most databases implement a custom <quote>blob</quote> datatype for
+    defining a table field that contains a large text or a binary chunk, or
+    a blob.
+    Inserting a blob is done by defining an beginning and an ending iterator
+    for a <classname>char</classname> sequence that defines a text blob, or
+    an <classname>unsigned char</classname> sequence that defines a binary
+    blob.
+    Similarly, retrieving a blob involves defining an output iterator, which
+    gets iterated over the contents of the blob field.
+  </para>
+
+  <para>
+    It's possible that some
+    database drivers may require input iterators to be, at least,
+    forward iterators, and will have poor performance unless they are
+    random access iterators.
+  </para>
+
+  <section id="sqlblobinsert">
+    <title>Inserting blobs</title>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+#include &lt;&ns;/sql/insertblob.H&gt;
+
+int memo_id;
+
+auto stmt=conn->prepare("INSERT INTO memos(memo_id, memo_text) VALUES(?, ?)");
+
+stmt->execute(0, &ns;::sql::insertblob
+    ::create(&ns;::fdinputiter(&ns;::fd::open("memo.txt", O_RDONLY)),
+             &ns;::fdinputiter());</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <ulink url="&link-typedef-x--sql-insertblob;"><classname>&ns;::sql::insertblob</classname></ulink>
+      passes a blob parameter to
+      <link linkend="sqlstatement"><methodname>execute</methodname></link>().
+      It's a <ulink url="&link-refobj;">reference-counted object</ulink> whose
+      <methodname>create</methodname>() takes a pair
+      of iterators for a sequence that defines the contents of a blob. The
+      resulting 
+      <classname>&ns;::sql::insertblob</classname> can be used in place
+      of any parameter to <methodname>execute</methodname>().
+    </para>
+
+    <para>
+      The iterators must iterate over <classname>char</classname>s or
+      <classname>unsigned char</classname>s. This is an indicator to the
+      database driver whether the blob contains character or binary data.
+      The semantics of character and binary blobs are driver-dependent.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+auto fd=&ns;::fd::open("blob.txt", O_RDONLY);
+
+int memo_id;
+
+std::pair&lt;&ns;::sql::insertblob, &ns;::sql::bitflag&gt; memo_blob=std::make_pair(
+    &ns;::sql::insertblob::create(&ns;::fdinputiter(fd), &ns;::fdinputiter()), 0);
+
+std::pair&lt;&ns;::sql::insertblob, &ns;::sql::bitflag&gt; memo_null_blob=std::make_pair(
+    &ns;::sql::insertblob::create(), 1);
+
+conn-&gt;execute("INSERT INTO memos(memo_id, memo_txt) VALUES (?, ?)",
+    memo_id,
+    memo_blob);</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      Similar to regular <methodname>execute</methodname>() parameters,
+      a <classname>std::pair</classname> of a
+      <classname>&ns;::sql:insertblob</classname> and
+      an <classname>&ns;::sql::bitflag</classname> specifies a possibly
+      <literal>NULL</literal> value
+      for the parameter. Use <methodname>create</methodname>() with no
+      parameters to create an <classname>&ns;::sql:insertblob</classname>
+      for an empty character sequence,
+      and set the <classname>&ns;::sql::bitflag</classname> in order to specify
+      a <literal>NULL</literal> value.
+    </para>
+
+    <para>
+      <classname>&ns;::sql:insertblob</classname> also works when it's passed
+      indirectly via a <classname>std::vector</classname> to
+      <methodname>execute</methodname>(), like any other parameter.
+      Database drivers may also support multiple blob parameters in a single
+      <methodname>execute</methodname>().
+      Database drivers may also support blobs in
+      <methodname>execute_vector</methodname>(), which uses
+      <classname>&ns;::sql:insertblob</classname> the same way as any
+      other parameter vector:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+int upload_files(int first_id, const std::vector&lt;std::string&gt; &amp;filenames)
+{
+    std::vector&lt;&ns;::sql::bitflag&gt; status;
+
+    std::vector&lt;int&gt; ids;
+    std::pair&lt;std::vector&lt;&ns;::sql::insertblob&gt;
+              std::vector&lt;&ns;::sql::bitflag&gt; memos;
+
+    status.resize(filenames.size());
+    ids.reserve(filenames.size());
+    flags.first.reserve(filenames.size());
+    flags.second.reserve(filenames.size());
+
+    for (const auto &amp;filename:filenames)
+    {
+        ids.push_back(first_id++);
+
+        int isnull=filename.size() == 0;
+
+        memos.second.push_back(isnull);
+        memos.first.push_back(isnull ? &ns;::insertblob::create():
+                              &ns;::insertblob::create(&ns;::fd::inputiter(&ns;::fd::open(filename, O_RDONLY)),
+                                                    &ns;::fd::inputiter()));
+    }
+
+    conn-&gt;execute_vector("INSERT INTO memos(memo_id, memo_txt) VALUES (?, ?)",
+        status, ids, memos);
+
+    return first_id;
+}</programlisting>
+      </informalexample>
+    </blockquote>
+  </section>
+
+  <section id="sqlblobfetch">
+    <title>Retrieving blobs</title>
+
+    <para>
+      Contents of blobs are retrieved by constructing a
+      <ulink url="&link-typedef-x--sql-fetchblob;"><classname>&ns;::sql::fetchblob&lt;<replaceable>char_type</replaceable>&gt;</classname></ulink>
+      and passing it to
+      <link linkend="sqlstatementfetch"><methodname>fetch</methodname></link>()
+      or
+      <link linkend="sqlstatementfetchbulk"><methodname>fetch_vectors</methodname></link>().
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+std::string blob;
+
+statement-&gt;fetch("memo_column",
+                 &ns;::sql::fetchblob&lt;char&gt;::create([&amp;blob]
+                     (size_t rownum)
+                     {
+                         return std::back_insert_iterator&lt;std::string&gt;(blob);
+                     }));
+
+std::string blobs[4];
+
+statement-&gt;fetch_vectors(4, "memo_column",
+                 &ns;::sql::fetchblob&lt;char&gt;::create([&amp;blob]
+                     (size_t rownum)
+                     {
+                         return std::back_insert_iterator&lt;std::string&gt;(blobs[rownum]);
+                     }));</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      Fetch an arbitrarily large blob column by passing an
+      <classname>&ns;::sql::fetchblob&lt;<replaceable>char_type</replaceable>&gt;</classname>
+      instead of an lvalue to <methodname>fetch</methodname>(), or an lvalue to
+      a vector to <methodname>fetch_vectors</methodname>().
+    </para>
+
+    <para>
+      The parameter to <methodname>create</methodname>() is an output iterator
+      factory. This is a lambda or a functor that takes a single
+      <classname>size_t</classname> parameter and returns an output iterator
+      over <classname>char</classname> or
+      <classname>unsigned char</classname> values, that matches
+      <classname>fetchblob</classname>'s template parameter.
+    </para>
+
+    <para>
+      Use <classname>&ns;::sql::fetchblob&lt;char&gt;</classname> with text
+      blobs, and
+      <classname>&ns;::sql::fetchblob&lt;unsigned char&gt;</classname> with
+      binary blobs. The implementation semantics of text and binary blobs are
+      database driver-specific. Support depends on the database driver.
+      Some drivers may or may not support fetching more than one blob, or
+      fetching a vector of blobs.
+    </para>
+
+    <para>
+      The fetched blob gets written to the output iterator that's returned
+      from the lambda/functor. <methodname>fetch</methodname>() always invokes
+      the lambda functor with the parameter of 0.
+      <methodname>fetch_vectors</methodname>() invokes the lambda/functor for
+      each row where the blob is not <literal>NULL</literal>, passing the
+      0-based row number as a parameter.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+
+std::string blob;
+
+std::pair&lt;&ns;::sql::fetchblob&lt;char&gt;, &ns;::sql::bitflag&gt; blob_fetch=
+  std::make_pair(&ns;::sql::fetchblob&lt;char&gt;::create([&amp;blob]
+                     (size_t rownum)
+                     {
+                         return std::back_insert_iterator&lt;std::string&gt;(blob);
+                     }, 0);
+
+
+statement-&gt;fetch("memo_column", blob_fetch);
+
+std::pair&lt;&ns;::sql::fetchblob&lt;char&gt;, std::vector&lt;&ns;::sql::bitflag&gt;&gt; blob_vector_fetch=
+  std::make_pair(&ns;::sql::fetchblob&lt;char&gt;::create([&amp;blob]
+                     (size_t rownum)
+                     {
+                         return std::back_insert_iterator&lt;std::string&gt;(blob);
+                     }, std::vector&lt;&ns;::sql::bitflag&gt;());
+
+statement-&gt;fetch_vectors(4, "memo_column", blob_vector_fetch);</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      Pair <classname>&ns;::sql::fetchblob&lt;char&gt;</classname> with an
+      <classname>&ns;::sql::bitflag</classname>,
+      for <methodname>fetch</methodname>(),
+      and with a vector of them, for
+      <methodname>fetch_vectors</methodname>(), in order to retrieve
+      <literal>NULL</literal> indicator flags explicitly.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+&ns;::sql::fetchblob&lt;char&gt;::create([&amp;blob]
+    (size_t rownum)
+    {
+       return std::make_pair(std::back_insert_iterator&lt;std::string&gt;(blob),
+           []
+           (std::back_insert_iterator&lt;std::string&gt; iter)
+           {
+               *iter++='\n';
+           });
+    }</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      The lambda/functor can return a
+      <classname>std::pair</classname> instead of a single iterator
+      value. The first value in the pair is the output iterator factory. The
+      second value in the pair is another lambda/functor, which takes an
+      output iterator value for a parameter. This is the
+      <quote>finish</quote> lambda/functor.
+    </para>
+
+    <para>
+      The finish lambda/functor gets invoked after the entire contents of the
+      blob get written to the output iterator, and it receives the value of the
+      output iterator, after iterating over the entire blob, as its parameter.
+      This finish lambda/functor is the means of obtaining the final output
+      iterator value after iterating over the entire contents of the blob.
+    </para>
+  </section>
+</chapter>
+<!--
+Local Variables:
+mode: sgml
+sgml-parent-document: ("book.xml" "book" "chapter")
+End:
+-->

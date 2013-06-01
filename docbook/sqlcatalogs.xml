@@ -1,0 +1,259 @@
+<!--
+
+Copyright 2013 Double Precision, Inc.
+See COPYING for distribution information.
+
+-->
+
+<chapter id="sqlcatalogs">
+  <title>&SQL; catalogs</title>
+
+  <para>
+    The following catalog functions enumerate objects in the database, such as
+    the names of tables and columns.
+    The catalog functions return a statement with a resultset, that's
+    similar to a <literal>SELECT</literal> resultset. Use
+    <link linkend="sqlstatementfetch"><methodname>fetch</methodname></link>(), or the
+    <link linkend="sqlstatementfetchbulk"><methodname>fetch_vectors</methodname></link>() to
+    process the resultset.
+  </para>
+
+  <para>
+    The columns in the resultset depend on the database driver.
+    Use <link linkend="sqlstatement"><methodname>get_columns</methodname></link>()
+    to figure out what they are.
+    Not all database drivers implement every one of the following catalog
+    functions.
+  </para>
+
+  <para>
+    In addition to the parameters to the catalog functions described below,
+    each catalog function takes an optional <classname>bool</classname>
+    parameter, before any of the ones described below. It defaults to a value
+    of <literal>false</literal>, and the parameters to the catalog
+    functions get interpreted as patterns. Explicitly setting the flag to
+    <literal>true</literal> generally has the effect of interpreting any
+    given parameters as explicit values, and not wildcards or patterns.
+  </para>
+
+  <note>
+    <para>
+      The <classname>bool</classname> flag sets the
+      <literal>SQL_ATTR_METADATA_ID</literal> flag, as described in the
+      <acronym>ODBC</acronym> documentation; however its intepretation is up
+      to the database drivers', and experimentation showed that the drivers
+      tend to be exhibit behavior inconsistent with this flag, or they ignore
+      it completely.
+    </para>
+  </note>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+#include &lt;&ns;/sql/connection.H&gt;
+#include &lt;&ns;/sql/statement.H&gt;
+
+&ns;::sql::connection conn=henv->connect("DSN=dev").first;
+
+std::string catalog, schema, table, type;
+
+&ns;::sql::statement stmt=conn-&gt;tables(catalog, schema, table, types);
+
+&ns;::sql::statement stmt=conn-&gt;table_privileges(table, catalog, schema);
+
+bool unique_only, force;
+
+&ns;::sql::statement stmt=conn-&gt;statistics(table, unique_only, force, catalog, schema);
+</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    <methodname>tables</methodname>() enumerates the names of tables or other
+    table-like objects in the database. The parameters are interpreted by
+    the database driver. All four parameters are optional (the default values
+    are empty strings), and should default to covering all eligible objects
+    in the database.
+  </para>
+
+  <para>
+    <methodname>table_privileges</methodname>() enumerates the permissions on
+    a table. The first parameter, the table name, is required, the others
+    are optional.
+    <methodname>statistics</methodname>() returns statistics for the table
+    given as its first required parameter. The remaining parameters are
+    optional. Setting <varname>unique_only</varname> to
+    <literal>true</literal> returns statistics for unique indexes only;
+    <literal>false</literal> returns statistics for all indexes (default).
+    optional. Setting <varname>force</varname> to
+    <literal>true</literal> generates statistics if they are not available,
+    before returning them;
+    <literal>false</literal> returns statistics only if they are available
+    (default).
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+std::string catalog, schema, table, column;
+
+&ns;::sql::statement stmt=conn-&gt;columns(catalog, schema, table, column);
+
+&ns;::sql::statement stmt=conn-&gt;column_privileges(catalog, schema, table, column);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    <methodname>columns</methodname>() returns the list of columns for a
+    particular table.
+    <methodname>column_privileges</methodname>() returns permissions for
+    access to columns of a particular table.
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+std::string pk_catalog, pk_schema, pk_table;
+std::string fk_catalog, fk_schema, fk_table;
+
+&ns;::sql::statement stmt=conn-&gt;primary_keys(pk_table, pk_catalog, pk_schema);
+
+&ns;::sql::statement stmt=conn-&gt;foreign_keys(pk_catalog, pk_schema, pk_table, fk_catalog, fk_schema, fk_table);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    <methodname>primary_keys</methodname>() enumerates a table's primary keys.
+    The first <varname>pk_table</varname> parameter is required.
+    <methodname>foreign_keys</methodname>() enumerates a table's foreign keys.
+    Depending on the database driver it enumerates either a a list of
+    foreign keys in a table, or a list of foreign keys in other tables
+    that reference a table's primary key.
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+&ns;::sql::rowid_t rowid_type;
+&ns;::sql::scope_t scope;
+
+bool nullable;
+std::string table;
+std::string catalog;
+std::string schema;
+
+&ns;::sql::statement stmt=conn->special_columns(rowid_type, scope, table, nullable, catalog, schema);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    <methodname>special_columns</methodname>()
+    enumerates database-specific special columns for the given table.
+    The <varname>rowid_type</varname>,
+    <varname>scope</varname>, and
+    <varname>table</varname> parameters are required, the rest are optional:
+  </para>
+
+  <variablelist>
+    <varlistentry>
+      <term><replaceable>rowid_type</replaceable></term>
+      <listitem>
+	<para>
+	  <literal>&ns;::sql::rowid_t::unique</literal> returns column
+	  or columns that
+	  uniquely identify each row (typically the table's unique primary
+	  keys, or a database driver-specific table row identifier).
+	  <literal>&ns;::sql::rowid_t::version</literal> returns column
+	  or columns that serve as each row's version. If any field in the
+	  row changes, the version columns' value changes.
+	</para>
+      </listitem>
+    </varlistentry>
+    <varlistentry>
+      <term><replaceable>scope</replaceable></term>
+      <listitem>
+	<para>
+	  The scope of the special columns. Basically specifies the minimum
+	  persistent of the values in the special columns (the actual
+	  persistence level may exceed the requested one, this specifies the
+	  guaranteed minimum):
+	  <literal>&ns;::sql::scope_t::currow</literal> returns column or
+	  columns that remain valid as long as a statement resultset is
+	  positioned on the requested row;
+	  <literal>&ns;::sql::scope_t::transaction</literal> returns column or
+	  columns that remain valid for the duration of the &SQL; transaction;
+	  <literal>&ns;::sql::scope_t::session</literal> returns column or
+	  columns that remain valid for the duration of the connection.
+	</para>
+      </listitem>
+    </varlistentry>
+    <varlistentry>
+      <term><replaceable>table</replaceable></term>
+      <listitem>
+	<para>
+	  Specifies the table's name.
+	</para>
+      </listitem>
+    </varlistentry>
+    <varlistentry>
+      <term><replaceable>nullable</replaceable></term>
+      <listitem>
+	<para>
+	  <literal>false</literal> specifies special columns that cannot have
+	  <literal>NULL</literal> values;
+	  <literal>true</literal> specifies special columns that
+	  may have <literal>NULL</literal> values.
+	</para>
+      </listitem>
+    </varlistentry>
+    <varlistentry>
+      <term><replaceable>catalog</replaceable> and <replaceable>schema</replaceable></term>
+      <listitem>
+	<para>
+	  Specifies the table's database driver-specific catalog and schema.
+	</para>
+      </listitem>
+    </varlistentry>
+  </variablelist>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+&ns;::sql::statement stmt=conn->type_info();
+
+&ns;::sql::statement stmt=conn->type_info("varchar");</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    <methodname>type_info</methodname>() returns information about the
+    database server's supported datatypes.
+    <methodname>type_info</methodname>() takes an optional parameter that
+    names a specific datatype, otherwise information about all datatypes
+    gets returned.
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+std::string catalog, schema, proc, column;
+
+&ns;::sql::statement stmt=conn-&gt;procedures(catalog, schema, proc);
+
+&ns;::sql::statement stmt=conn-&gt;procedure_columns(catalog, schema, proc, column);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    <methodname>procedures</methodname>() returns the list of stored
+    procedures.
+    <methodname>procedure_columns</methodname>() returns the list of parameters
+    and resultset columns for stored procedures.
+  </para>
+</chapter>
+<!--
+Local Variables:
+mode: sgml
+sgml-parent-document: ("book.xml" "book" "chapter")
+End:
+-->

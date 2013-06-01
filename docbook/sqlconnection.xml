@@ -1,0 +1,272 @@
+<!--
+
+Copyright 2012 Double Precision, Inc.
+See COPYING for distribution information.
+
+-->
+
+<chapter id="sqlconnection">
+  <title>Connecting to an &SQL; server</title>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+#include &lt;&ns;/sql/connection.H&gt;
+
+std::pair&lt;&ns;::sql::connection, std::string&gt; connret=henv->connect("DSN=dev");
+
+auto conn=connret.first;
+
+auto fullconnspec=connret.second;
+
+</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    Invoking an <link linkend="sqlenv">environment object</link>'s
+    <methodname>connect</methodname>() establishes a connection to an &SQL;
+    server, and returns a <classname>std::pair</classname> with an
+    <ulink url="&link-typedef-x--sql-connection;"><classname>&ns;::sql::connection</classname></ulink>
+    reference to a
+    <ulink url="&link-refobj;">reference-counted object</ulink>,
+    that represents the connection to the server,
+    and a fully-qualified connection string.
+    An <ulink url="&link-exceptions;">exception gets thrown</ulink> if the
+    connection fails.
+  </para>
+
+  <para>
+    <methodname>connect</methodname>() takes a string parameter that specifies
+    the &SQL; server to connect to.
+    <quote>DSN=<replaceable>name</replaceable></quote> specifies a connection
+    to a predefined <acronym>ODBC</acronym> data source
+    <replaceable>name</replaceable>.
+    The predefined data source connection, in this example, specifies
+    all connection parameters, including any authentication credentials.
+    A predefined data source connection can also be incomplete, and require
+    additional parameters, or authorization credentials. Additional
+    parameters are also given in the connection string, as a semicolon-delimited
+    list:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+std::pair&lt;&ns;::sql::connection, std::string&gt; connret=henv->connect("DSN=dev;UID=citizenkane;PWD=rosebud");</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    The connection parameter <literal>UID</literal> and <literal>PWD</literal>
+    give the authorization parameters. The second value in the returned
+    tuple is a <classname>std::string</classname> that gives a complete
+    connection string, with complete connection parameters that do not
+    rely on connection defaults.
+  </para>
+
+  <para>
+    An alternative
+    <methodname>connect</methodname>() takes a list of parameter tuples that
+    specify the connection parameter as discrete values:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+std::pair&lt;&ns;::sql::connection, std::string&gt; connret=henv->connect("DSN", "dev", "UID", "citizenkane", "PWD", "rosebud");</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    It's also possible to supply connection parameters indirectly:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+&ns;::sql::env::base::arglist_t args;
+
+args.push_back(std::make_pair("DSN", "dev"));
+args.push_back(std::make_pair("UID", "citizenkane"));
+args.push_back(std::make_pair("PWD", "rosebud"));
+
+std::pair&lt;&ns;::sql::connection, std::string&gt; connret=henv->connect(args);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    <classname>&ns;::sql::env::base::arglist_t</classname> is just a formal
+    typedef for a <classname>std::list&lt;std::pair&lt;std::string, std::string&gt;&gt;</classname>.
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+std::pair&lt;&ns;::sql::connection, std::string&gt; connret=henv->connect("DSN", "dev", &ns;::sql::connect_flags::prompt);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    The last parameter to <methodname>connect</methodname>() is optional,
+    whether the connection parameters are specifies as a single string, or
+    as discrete values, and is one of the following
+    <ulink url="&link-enum-x--sql-connect-flags;"><classname>&ns;::sql::connect_flags</classname></ulink>
+    values:
+  </para>
+
+  <variablelist>
+    <varlistentry>
+      <term><literal>&ns;::sql::connect_flags::noprompt</literal></term>
+      <listitem>
+	<para>
+	  This is the default value. If the connection string does not
+	  specify all parameters that are needed for a connection, an
+	  exception gets thrown.
+	</para>
+      </listitem>
+    </varlistentry>
+    <varlistentry>
+      <term><literal>&ns;::sql::connect_flags::complete_required</literal></term>
+      <listitem>
+	<para>
+	  If the connection string does not specify all parameters that are
+	  needed for a connection, issue a prompt for parameters that are
+	  required, but absent from the connection string.
+	</para>
+
+	<para>
+	  The <acronym>ODBC</acronym> connection manager library given
+	  by the <literal>&ns;::sql::uiprompt</literal>
+	  <ulink url="&link-properties;">application property</ulink> gets
+	  loaded, to prompt for the additional parameters.
+	</para>
+      </listitem>
+    </varlistentry>
+    <varlistentry>
+      <term><literal>&ns;::sql::connect_flags::complete</literal></term>
+      <listitem>
+	<para>
+	  Like <literal>&ns;::sql::connect_flags::complete_required</literal>,
+	  but also prompt for any optional connection parameters, in addition
+	  to the required ones.
+	</para>
+      </listitem>
+    </varlistentry>
+    <varlistentry>
+      <term><literal>&ns;::sql::connect_flags::prompt</literal></term>
+      <listitem>
+	<para>
+	  Always prompt for connection parameters, even if the connection
+	  string specifies a complete connection. The values in the connection
+	  string are used as default values.
+	</para>
+      </listitem>
+    </varlistentry>
+  </variablelist>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+conn->disconnect();</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    The <ulink url="&link-refobj;">reference-counted</ulink> connection object
+    automatically closes the connection to the database server when the
+    last reference to the connection object goes out of scope, and it gets
+    destroyed.
+    Invoking <methodname>disconnect</methodname>() explicitly terminates the
+    connection to the database server.
+  </para>
+
+  <section id="sqlconnectiondriver">
+    <title>Connecting to a non-predefined data source</title>
+
+    <para>
+      It is possible to connect to databases without setting up a named data
+      source using the
+      <acronym>ODBC</acronym> connection manager tool:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+std::pair&lt;&ns;::sql::connection, std::string&gt; connret=henv->connect("DRIVER={PostgreSQL};DATABASE=dev;SERVER=localhost;"
+    "PORT=5432;UID=citizenkane;PWD=rosebud");</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      This example selects an <acronym>ODBC</acronym> driver named
+      <quote>PostgreSQL</quote>. Use
+      <link linkend="sqlenv"><methodname>get_drivers()</methodname></link>
+      to enumerate available drivers. The remaining parameters are passed
+      to the selected driver, as is.
+    </para>
+
+    <para>
+      The names and the right values for driver variables depend on the
+      driver. Consult your <acronym>ODBC</acronym> driver's documentation for
+      more information.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+std::pair&lt;&ns;::sql::connection, std::string&gt; connret=henv->connect("DRIVER={MySQL};DATABASE=dev;"
+    "SERVER=localhost;UID=citizenkane;PWD=rosebud");</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      And this example selects an <acronym>ODBC</acronym> driver named
+      <quote>MySQL</quote>.
+    </para>
+  </section>
+
+  <section id="sqlconnectionsettings">
+    <title>Determining &SQL; database driver capabilities</title>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+&ns;::sql::config_bitmask_t static_cursor_attributes=conn->config_get_static_cursor_attributes1();
+
+bool has_absolute_positioning=capabilities.count("SQL_CA1_ABSOLUTE");
+bool has_relative_positioning=capabilities.count("SQL_CA1_RELATIVE");
+bool has_bookmarks=capabilities.count("SQL_CA1_BOOKMARK");
+
+bool flag=conn->config_get_data_source_read_only();
+std::string database_name=conn->config_get_database_name();</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      The connection object implements many
+      <methodname>config_get_<replaceable>name</replaceable></methodname>()
+      methods that return &SQL; server driver's capabilities and properties.
+      Their naming convention corresponds directly to the value of the
+      attribute name parameter of the underlying
+      <methodname>SQLGetInfo</methodname>() call.
+      See the <acronym>ODBC</acronym> documentation for more information on
+      these capabilities and properties.
+    </para>
+
+    <para>
+      An <ulink url="&link-typedef-x--sql-config-bitmask-t;"><classname>&ns;::sql::config_bitmask_t</classname></ulink>
+      gets returned for those configuration settings which return a bitmask,
+      or a set of flags. This is a <classname>std::set</classname> that
+      contains the list of flags enabled for that configuration setting.
+      The <classname>std::set</classname> is keyed by literal strings whose
+      names are the documented symbols for bitmask values.
+    </para>
+  </section>
+</chapter>
+<!--
+Local Variables:
+mode: sgml
+sgml-parent-document: ("book.xml" "book" "chapter")
+End:
+-->

@@ -1,0 +1,127 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Double Precision Inc.
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: libcxxsql 0.1\n"
+"Report-Msgid-Bugs-To: mrsam@courier-mta.com\n"
+"POT-Creation-Date: 2013-06-01 14:12-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: sql/connection.C:416
+msgid "\"%1%\" is not a valid SQL type"
+msgstr ""
+
+#: sql/connection.C:488
+msgid "%1%() invoked in a middle of a transaction"
+msgstr ""
+
+#: sql/connection.C:528
+msgid "Transaction scope level exceeds maximum"
+msgstr ""
+
+#: sql/env.C:239
+msgid "Invalid character in connection parameter"
+msgstr ""
+
+#: sql/insertblob.C:71
+msgid "Blob size exceeds maximum limit"
+msgstr ""
+
+#: sql/newstatement.C:131
+msgid "\"%1\" is not a known option"
+msgstr ""
+
+#: sql/newstatement.C:137
+msgid "\"%1\" is not a valid setting for %2%"
+msgstr ""
+
+#: sql/statement.C:60
+msgid "Absolute row number too large"
+msgstr ""
+
+#: sql/statement.C:128 sql/statement.C:1294
+msgid "Row array size not positive"
+msgstr ""
+
+#: sql/statement.C:213
+msgid "%1% parameter in the SQL statement; "
+msgid_plural "%1% parameters in the SQL statement; "
+msgstr[0] ""
+msgstr[1] ""
+
+#: sql/statement.C:216
+msgid "%1% parameter provided; "
+msgid_plural "%1% parameters provided; "
+msgstr[0] ""
+msgstr[1] ""
+
+#: sql/statement.C:374
+msgid ""
+"Size of parameter null vector different than the size of the parameter vector"
+msgstr ""
+
+#: sql/statement.C:383
+msgid "%1% parameter value provided"
+msgid_plural "%1% parameter values provided"
+msgstr[0] ""
+msgstr[1] ""
+
+#: sql/statement.C:387
+msgid " for a statement with %1% value for each parameter"
+msgid_plural " for a statement with %1% values for each parameter"
+msgstr[0] ""
+msgstr[1] ""
+
+#: sql/statement.C:441
+msgid "More than %1% parameter was specified in execute()"
+msgid_plural "More than %1% parameters were specified in execute()"
+msgstr[0] ""
+msgstr[1] ""
+
+#: sql/statement.C:449
+msgid "Parameter vectors are empty"
+msgstr ""
+
+#: sql/statement.C:608
+msgid "Year overflow"
+msgstr ""
+
+#: sql/statement.C:648
+msgid "Time of day overflow"
+msgstr ""
+
+#: sql/statement.C:809
+msgid "Cannot use input iterators for blobs"
+msgstr ""
+
+#: sql/statement.C:1321
+msgid "Scroll offset of %1% exceeds word size"
+msgstr ""
+
+#: sql/statement.C:1341
+msgid "Column %1% not found"
+msgstr ""
+
+#: sql/statement.C:1344
+msgid "Column %1% occurs more than once in the resultset"
+msgstr ""
+
+#: sql/statement.C:1620
+msgid "update_fetched_row called after no rows were fetched"
+msgstr ""
+
+#: sql/statement.C:1623
+msgid ""
+"update_fetched_row called for row #%1% when the last fetched row is row #%2%"
+msgstr ""

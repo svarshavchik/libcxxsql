@@ -92,6 +92,7 @@ eval "httportmapd=\"$sbindir/httportmapd\""
 
 AC_SUBST(httportmapd)
 AC_CONFIG_FILES([Makefile
+		 Doxyfile
                  po/Makefile.in
 		 includes/sql/Makefile
 		 packaging/fedora/libcxxsql.spec

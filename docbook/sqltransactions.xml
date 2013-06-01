@@ -1,0 +1,218 @@
+<!--
+
+Copyright 2013 Double Precision, Inc.
+See COPYING for distribution information.
+
+-->
+
+<chapter id="sqltransactions">
+  <title>Transactions</title>
+
+  <para>
+    There are three mutually exclusive ways to implement transactions.
+    They cannot be combined together. Pick one, and use it exclusively.
+  </para>
+
+  <section id="sqltranautocommit">
+    <title>Disabling and enabling automatic commits</title>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+void move_money(const &ns;::sql::connection &amp;conn,
+                int from_account, int to_account, double amount)
+{
+    conn->autocommit(false);
+    auto statement=conn->prepare("INSERT INTO ledger(account_id, amount) VALUES(?, ?)");
+    conn->execute(from_account, -amount);
+    conn->execute(to_account, amount);
+    conn->commit();
+    conn->autocommit(true);
+}</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <methodname>autocommit</methodname>() changes the connection's autocommit
+      mode. The default <literal>true</literal> setting commits each
+      statement to the database, automatically. After turning it off,
+      an explicit <methodname>commit</methodname>() commits all executed
+      statements; and <methodname>rollback</methodname>() rolls them back.
+      Afterwards, the next statement creates another transaction, collecting
+      statements to be
+      <methodname>commit</methodname>()ed or
+      <methodname>rollback</methodname>()ed.
+      Changing the autocommit setting back to <literal>true</literal>
+      reenables automatic commit of every transaction.
+    </para>
+
+    <para>
+      <methodname>commit</methodname>() and
+      <methodname>rollback</methodname>() take an optional
+      <classname>bool</classname> parameter, which defaults to a
+      <literal>false</literal> value. Explicitly setting the parameter to
+      <literal>true</literal> has the effect of commiting or rolling back
+      the transaction and reenabling autocommit mode, in one operation.
+    </para>
+  </section>
+
+  <section id="sqltranbeginwork">
+    <title><methodname>begin_work</methodname>(),
+      <methodname>commit_work</methodname>() and
+      <methodname>rollback_work</methodname>()</title>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+book ok;
+
+conn->begin_work();
+
+// ...
+
+    ok=false;
+
+    conn->begin_work();
+
+// ...
+
+    ok=true;
+
+// ...
+
+    if (ok)
+        conn->commit_work();
+    else
+        conn->rollback__work();
+
+// ...
+
+if (ok)
+    conn->commit_work();
+else
+    conn->rollback_work();</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <link linkend="sqltranautocommit"><methodname>autocommit</methodname>(),
+      <methodname>commit</methodname>(), and
+      <methodname>rollback</methodname>()</link> should be used only when the
+      underlying database driver does not implement modern
+      <literal>START TRANSACTION</literal> and
+      <literal>SAVEPOINT SQL</literal> that allows for nested logical
+      transactions.
+    </para>
+
+    <para>
+      <methodname>begin_work</methodname>()
+      opens a logical transaction until it's closed by
+      <methodname>commit_work</methodname>() or
+      <methodname>rollback_work</methodname>().
+      While a transaction is open, invoking
+      <methodname>begin_work</methodname>()
+      again opens a nested transaction.
+    </para>
+
+    <para>
+      The next call to
+      <methodname>commit_work</methodname>() or
+      <methodname>rollback_work</methodname>()
+      closes the nested transaction.
+      The nested transaction's changes get either commited to the original
+      transaction, or undone, leaving the original transaction in its state
+      prior to the nested transaction's start.
+      The original transaction remains open until its own matching
+      <methodname>commit_work</methodname>() or
+      <methodname>rollback_work</methodname>().
+    </para>
+
+    <para>
+      Nested transactions get implemented using &SQL; savepoints. The limit on
+      the maximum number of nested transactions depends on the database
+      driver-specific on the maximum number of savepoints within a transaction.
+    </para>
+  </section>
+
+  <section id="sqltransactionscope">
+    <title><classname>&ns;::sql::transaction</classname></title>
+
+    <para>
+      <ulink url="&link-x--sql--transaction;"><classname>&ns;::sql::transaction</classname></ulink>
+      inseparably glues an &SQL; transaction with an application scope:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+void move_money(const &ns;::sql::connection &amp;conn,
+                int from_account, int to_account, double amount)
+{
+    &ns;::sql::transaction tran(conn);
+
+    auto statement=conn->prepare("INSERT INTO ledger(account_id, amount) VALUES(?, ?)");
+    conn->execute(from_account, -amount);
+    conn->execute(to_account, amount);
+
+    tran.commit_work();
+}</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      Instantiate an
+      <ulink url="&link-x--sql--transaction;"><classname>&ns;::sql::transaction</classname></ulink>
+      on a thread's stack.
+      <classname>&ns;::sql::transaction</classname>'s constructor calls
+      <methodname>begin_work</methodname>().
+      <classname>&ns;::sql::transaction</classname>'s
+      <methodname>commit_work</methodname>() and
+      <methodname>rollback_work</methodname>() must be invoked instead of the
+      connection object's. If the
+      <classname>&ns;::sql::transaction</classname> goes out of scope and
+      gets destroyed for any reason, including an exception, without having its
+      <methodname>commit_work</methodname>() or
+      <methodname>rollback_work</methodname>() explicitly called,
+      its destructor invokes
+      <methodname>rollback_work</methodname>() automatically.
+    </para>
+
+    <para>
+      Using an
+      <classname>&ns;::sql::transaction</classname> results in an automatic
+      transaction rollback when an uncaught exception gets thrown within the
+      transaction's scope.
+      The most common approach is to have
+      <classname>&ns;::sql::transaction</classname>'s
+      <methodname>commit_work</methodname>() invoked explicitly,
+      just before the object
+      goes out of scope and gets destroyed; or before leaving via some other
+      exit path. The destructor automatically invokes
+      <methodname>rollback_work</methodname>() when the execution thread
+      leaves the scope via an exception, or any other means. It's also possible
+      to invoke <methodname>rollback_work</methodname>() explicitly.
+      The only advantage to an explicit
+      <methodname>rollback_work</methodname>() is that a database error in the
+      rollback throws an explicit exception. All exceptions are caught, logged,
+      and discarded when
+      <methodname>rollback_work</methodname>() gets invoked from the
+      destructor.
+    </para>
+
+    <para>
+      However, throwing an explicit exception from 
+      <methodname>rollback_work</methodname>() is just a small consolation.
+      Since the database connection's state is no longer deterministic, any
+      database error occuring in
+      <methodname>commit_work</methodname>() or
+      <methodname>rollback_work</methodname>() will automatically close the
+      connection, making it no longer usable.
+    </para>
+  </section>
+</chapter>
+<!--
+Local Variables:
+mode: sgml
+sgml-parent-document: ("book.xml" "book" "chapter")
+End:
+-->

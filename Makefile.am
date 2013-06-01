@@ -13,9 +13,60 @@ endef
 $(shell :)DIST_SUBDIRS=$(call reverse,$(SUBDIRS))
 
 DISTCHECK_CONFIGURE_FLAGS=--with-pkgconfigdir='$$(prefix)/local/pkgconf'
-EXTRA_DIST=config.rpath m4/ChangeLog config.rpath \
+EXTRA_DIST=config.rpath m4/ChangeLog config.rpath DoxygenLayout.xml \
 	COPYING \
-	packaging/fedora/libcxxsql.spec
+	packaging/fedora/libcxxsql.spec \
+	packaging/freebsd9/devel/libcxxsql/Makefile \
+	packaging/freebsd9/devel/libcxxsql/pkg-descr \
+	packaging/freebsd9/devel/libcxxsql/pkg-plist
+
+
+DOCS_SRC = $(shell find includes -name '*.H' -print)
+
+docs: html/index.html html/book.css html/logo.png html/frame.js html/icon.gif $(patsubst %,html/%,$(notdir $(wildcard $(srcdir)/docbook/*.png)))
+
+html/%.png: html/index.html docbook/%.png
+	$(INSTALL) -m 0644 $(srcdir)/docbook/$(notdir $@) html
+
+html/book.css: html/index.html docbook/book.css
+	$(INSTALL) -m 0644 $(srcdir)/docbook/book.css html/book.css
+
+html/frame.js: html/index.html docbook/frame.js
+	$(INSTALL) -m 0644 $(srcdir)/docbook/frame.js html/frame.js
+
+html/icon.gif: html/index.html docbook/icon.gif
+	$(INSTALL) -m 0644 $(srcdir)/docbook/icon.gif html/icon.gif
+
+html/index.html: html/ref/index.html $(wildcard docbook/*.xml) docbook/xmllinks.xsl
+	mkdir -p docbook
+	xsltproc $(srcdir)/docbook/xmllinks.xsl xml/index.xml >docbook/entities
+	rm -rf html.tmp
+	mkdir -p html.tmp
+	xsltproc --nonet -o html.tmp/ --xinclude \
+		--stringparam use.id.as.filename 1 \
+		--stringparam html.stylesheet book.css \
+		--stringparam root.filename 'toc' \
+		--stringparam generate.id.attributes 1 \
+		--param local.l10n.xml 'document("'`pwd`/docbook/l10.xml'")' \
+		$(srcdir)/docbook/docbook.xsl $(srcdir)/docbook/book.xml
+	-rm -f html/* 2>/dev/null >/dev/null || :
+	mv html.tmp/* html
+	rm -rf html.tmp
+	links -dump -no-numbering -no-references html/INSTALL.html >INSTALL.tmp
+	mv -f INSTALL.tmp INSTALL
+
+html/ref/index.html: $(DOCS_SRC) Doxyfile header.html
+	rm -rf html/ref
+	mkdir -p html/ref
+	doxygen; c=$$?;	perl -p -i -e 's/INSERT_LIBX_NAMESPACE/x/g' html/ref/*.html; exit $$c
+
+header.html: Doxyfile
+	rm -rf header.html.tmp
+	mkdir -p header.html.tmp
+	cd header.html.tmp && doxygen -w html header.html footer.html doxygen.css
+	perl -p -i -e 's@<head>@<head><link rel="icon" href="/icon.gif" type="image/gif"/>@;s@\$$projectbrief@<a href="/">\$$projectbrief</a>@;' header.html.tmp/header.html
+	mv -f header.html.tmp/header.html .
+	rm -rf header.html.tmp
 
 .PHONY: rpm
 
