@@ -140,6 +140,12 @@ public:
 
 	//! Invoke rollback_work(), unless commit_work() or rollback_work() already invoked.
 	~transaction() noexcept;
+
+	//! Not implemented
+	transaction(const transaction &)=delete;
+
+	//! Not implemented
+	transaction &operator=(const transaction &)=delete;
 };
 
 
