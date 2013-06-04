@@ -3,9 +3,7 @@
 # See COPYING for distribution information.
 #
 
-SUBDIRS = dbi
-
-headerdir=$(includedir)/x/sql
+headerdir=$(includedir)/x/sql/dbi
 
 header_HEADERS=$(shell cd $(srcdir) && echo *.H)
 

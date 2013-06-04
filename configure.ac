@@ -95,6 +95,7 @@ AC_CONFIG_FILES([Makefile
 		 Doxyfile
                  po/Makefile.in
 		 includes/sql/Makefile
+		 includes/sql/dbi/Makefile
 		 packaging/fedora/libcxxsql.spec
 		 sql/Makefile
 		 ])

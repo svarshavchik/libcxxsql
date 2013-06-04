@@ -73,6 +73,24 @@ fetch::atbookmark::atbookmark(const bookmark &bookmarksaveArg,
 {
 }
 
+statementObj::execute_factory::execute_factory(statementObj &stmtArg,
+					       size_t param_numberArg)
+	: stmt(stmtArg), param_number(param_numberArg)
+{
+}
+
+void statementObj::execute_factory::parameter(std::nullptr_t null_param)
+{
+	// Handle this as a single NULL character string parameter.
+
+	const char *nullp=nullptr;
+	bitflag nullflag=1;
+
+	stmt.process_input_parameter(param_number, &nullp,
+				     &nullflag, 1, 1);
+	++param_number;
+}
+
 statementObj::statementObj()
 {
 }
@@ -666,7 +684,7 @@ void statementimplObj::process_input_parameter(size_t param_number,
 
 void statementimplObj::process_string_input_parameter(size_t param_number,
 						      const std::string *strp,
-						      const char **charp,
+						      const char * const *charp,
 						      const bitflag *nullflags,
 						      size_t nvalues,
 						      size_t nnullvalues)
@@ -772,7 +790,7 @@ void statementimplObj::process_input_parameter(size_t param_number,
 }
 
 void statementimplObj::process_input_parameter(size_t param_number,
-					       const char **s,
+					       const char *const *s,
 					       const bitflag *nullflags,
 					       size_t nvalues,
 					       size_t nnullvalues)

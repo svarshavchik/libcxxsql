@@ -10,11 +10,14 @@
 #include <x/ptrfwd.H>
 #include <x/chrcasecmp.H>
 #include <x/refiteratorfwd.H>
+#include <x/sql/statementfwd.H>
 #include <x/sql/connectionfwd.H>
 #include <x/sql/newstatementfwd.H>
 #include <x/sql/insertblobfwd.H>
 #include <x/sql/fetchblobfwd.H>
+#include <x/sql/dbi/constraintfwd.H>
 #include <vector>
+#include <map>
 #include <unistd.h>
 
 namespace LIBCXX_NAMESPACE {
@@ -32,7 +35,12 @@ namespace LIBCXX_NAMESPACE {
 
 class statementObj : virtual public obj {
 
+	//! Helper class for processing non-NULL execute parameters
+
+	template<typename T> class process_execute_non_null_param;
+
 public:
+
 	//! Constructor
 	statementObj();
 
@@ -326,6 +334,46 @@ public:
 	//! same name.
 
 	virtual const columnmap_t &get_columnmap()=0;
+
+	//! Helper class for processing a constraint passed to execute()
+
+	//! This object gets passed to
+	//! \ref dbi::constraintObj "dbi::constraint->get_parameters"()
+	//! get_parameters() repeatedly invokes parameter() to specify the
+	//! parameters for execute().
+
+	class execute_factory {
+
+		//! Statement that's collecting the execute parameters
+
+		statementObj &stmt;
+
+		//! Next parameter number
+		size_t param_number;
+
+	public:
+
+		friend class statementObj::process_execute_non_null_param<dbi::constraint>;
+
+		//! Constructor
+		execute_factory(statementObj &stmtArg, size_t param_numberArg);
+
+		//! Destructor
+		~execute_factory() noexcept {}
+
+		//! NULL value parameter.
+		void parameter(std::nullptr_t null_param);
+
+		//! Non-NULL value parameter.
+		template<typename T>
+		void parameter(const T &param_value)
+		{
+			stmt.process_input_parameter(param_number,
+						     &param_value,
+						     nullptr, 1, 1);
+			++param_number;
+		}
+	};
 
 private:
 	//! Helper class used to process the first argument to fetch() when it's a bookmark
@@ -760,10 +808,6 @@ private:
 				       std::forward<otherArgs>(args)...);
 	}
 
-	//! Helper class for processing non-NULL execute parameters
-
-	template<typename T> class process_execute_non_null_param;
-
 	//! Helper class for processing parameters given indirectly via a list
 
 	template<typename T> struct process_list_parameter;
@@ -899,7 +943,7 @@ private:
 	virtual void process_input_parameter(size_t param_number, const std::string *s, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)=0;
 
 	//! Process input parameter
-	virtual void process_input_parameter(size_t param_number, const char **s, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)=0;
+	virtual void process_input_parameter(size_t param_number, const char * const*s, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)=0;
 
 	//! Process a literal string for an input parameter.
 
@@ -1109,6 +1153,24 @@ struct statementObj::process_list_parameter<std::pair<valueType, bitflag>> {
 		}
 		return param_number;
 	}
+};
+
+//! Specialization
+
+//! Execute parameter factory used by DBI classes.
+
+template<>
+class statementObj::process_execute_non_null_param<dbi::constraint> {
+
+public:
+
+	//! Process an execute parameter factory
+
+	template<typename ...OtherArgs>
+		static void process(statementObj &s,
+				    size_t param_number,
+				    const dbi::constraint *parameters,
+				    OtherArgs && ...otherArgs);
 };
 
 //! Undefined/unimplemented. Use std::string<std::vector>

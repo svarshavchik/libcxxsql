@@ -1,4 +1,5 @@
 libcxxsql.la
 testcursor
+testdbi
 testenv
 x
