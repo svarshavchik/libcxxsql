@@ -195,6 +195,36 @@ void connectionimplObj::do_disconnect()
 //
 // Create a statement handle for various catalog functions
 
+statement connectionObj::tables()
+{
+	return tables_catalog(false);
+}
+
+statement connectionObj::columns()
+{
+	return columns_catalog(false);
+}
+
+statement connectionObj::column_privileges()
+{
+	return column_privileges_catalog(false);
+}
+
+statement connectionObj::foreign_keys()
+{
+	return foreign_keys_catalog(false);
+}
+
+statement connectionObj::procedure_columns()
+{
+	return procedure_columns_catalog(false);
+}
+
+statement connectionObj::procedures()
+{
+	return procedures_catalog(false);
+}
+
 statement connectionimplObj::tables_catalog(bool literal_ids,
 					    const std::string &catalog,
 					    const std::string &schema,

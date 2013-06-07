@@ -248,10 +248,7 @@ private:
 public:
 	//! Enumerate available tables
 
-	statement tables()
-	{
-		return tables_catalog(false);
-	}
+	statement tables();
 
 	//! Enumerate available tables
 
@@ -284,10 +281,7 @@ public:
 	}
 
 	//! Enumerate available columns
-	statement columns()
-	{
-		return columns_catalog(false);
-	}
+	statement columns();
 
 	//! Enumerate available columns
 
@@ -305,10 +299,7 @@ public:
 	}
 
 	//! Enumerate available column_privileges
-	statement column_privileges()
-	{
-		return column_privileges_catalog(false);
-	}
+	statement column_privileges();
 
 	//! Enumerate available column_privileges
 
@@ -327,10 +318,7 @@ public:
 	}
 
 	//! Enumerate available foreign_keys
-	statement foreign_keys()
-	{
-		return foreign_keys_catalog(false);
-	}
+	statement foreign_keys();
 
 	//! Enumerate available foreign_keys
 
@@ -365,10 +353,7 @@ public:
 	}
 
 	//! Enumerate available procedure_columns
-	statement procedure_columns()
-	{
-		return procedure_columns_catalog(false);
-	}
+	statement procedure_columns();
 
 	//! Enumerate available procedure_columns
 
@@ -387,10 +372,7 @@ public:
 	}
 
 	//! Enumerate available procedures
-	statement procedures()
-	{
-		return procedures_catalog(false);
-	}
+	statement procedures();
 
 	//! Enumerate available procedures
 
