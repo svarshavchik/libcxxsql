@@ -1,0 +1,27 @@
+LIBCXX_XINCLUDEDIR := $(dir $(lastword $(MAKEFILE_LIST)))
+
+define SCHEMA_GEN_DO
+
+# Workaround for BUILT_SOURCES in all's dependencies being already etched in stone
+
+ifdef AUTOMAKE
+all: $(1).H $(1).C
+endif
+
+LIBCXX_CLEANFILES += $(1).H $(1).C
+LIBCXX_SOURCES    += $(1).H $(1).C
+EXTRA_DIST        += $(1).xml
+
+$(1).H: $(1).xml $(LIBCXX_XINCLUDEDIR)/libcxxsql.mk $(LIBCXX_XINCLUDEDIR)/buildschema.xsl
+	$$(LIBCXX_XSLTPROC) --stringparam mode decl $(LIBCXX_XINCLUDEDIR)/buildschema.xsl $$(srcdir)/$(1).xml >$(1).H.tmp
+	mv -f $(1).H.tmp $(1).H
+
+$(1).C: $(1).xml $(LIBCXX_XINCLUDEDIR)/libcxxsql.mk $(LIBCXX_XINCLUDEDIR)/buildschema.xsl
+	$$(LIBCXX_XSLTPROC) --stringparam mode impl $(LIBCXX_XINCLUDEDIR)/buildschema.xsl $$(srcdir)/$(1).xml >$(1).C.tmp
+	mv -f $(1).C.tmp $(1).C
+endef
+
+define SCHEMA_GEN
+$(eval $(call SCHEMA_GEN_DO,$(1)))
+endef
+

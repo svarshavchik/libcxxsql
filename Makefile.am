@@ -4,7 +4,7 @@
 #
 
 AUTOMAKE_OPTIONS=dist-bzip2 -Wno-portability
-SUBDIRS= po includes/sql sql
+SUBDIRS= po includes sql
 
 define reverse
 $(if $(1), $(call reverse,$(wordlist 2,$(words $(1)),$(1))) $(firstword $(1)))

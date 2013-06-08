@@ -91,11 +91,15 @@ eval "sbindir=\"$sbindir\""
 eval "httportmapd=\"$sbindir/httportmapd\""
 
 AC_SUBST(httportmapd)
+AC_SUBST(LIBCXX_NAMESPACE,x)
 AC_CONFIG_FILES([Makefile
 		 Doxyfile
                  po/Makefile.in
+		 includes/Makefile
 		 includes/sql/Makefile
 		 includes/sql/dbi/Makefile
+		 includes/buildschema.xsl
+		 includes/libcxxsql.mk
 		 packaging/fedora/libcxxsql.spec
 		 sql/Makefile
 		 ])
