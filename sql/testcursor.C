@@ -529,9 +529,19 @@ void testcursor(const std::string &connection,
 	{
 		auto tables=get_tables(conn, false, "temptbl%");
 
+		try {
+			conn->execute("set foreign_key_checks=0");
+		} catch (...) {
+		}
+
 		for (const auto &table_name:tables)
 		{
-			conn->execute("drop table " + table_name);
+			conn->execute("drop table " + table_name + " cascade");
+		}
+
+		try {
+			conn->execute("set foreign_key_checks=1");
+		} catch (...) {
 		}
 	}
 

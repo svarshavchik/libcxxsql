@@ -2,4 +2,9 @@ libcxxsql.la
 testcursor
 testdbi
 testenv
+testschema
+testschematbl.C
+testschematbl.H
+example*.C
+example*.H
 x

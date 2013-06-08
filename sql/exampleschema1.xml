@@ -1,0 +1,19 @@
+<schema name="accounting" namespace="examples::example1">
+
+  <table name="accounts">
+    <column name="account_id" datatype="int64_t" primarykey='1' />
+    <column name="account_type_id" datatype="int64_t"/>
+    <column name="name" nullable="1"/>
+    <column name="balance" datatype="double" />
+
+    <join class="account_types">
+      <column>account_type_id</column>
+    </join>
+  </table>
+
+  <table name="account_types">
+    <column name="account_type_id" datatype="int64_t" primarykey='1'/>
+    <column name="name" nullable="1"/>
+  </table>
+
+</schema>

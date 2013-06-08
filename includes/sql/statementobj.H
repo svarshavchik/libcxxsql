@@ -351,12 +351,12 @@ public:
 		//! Next parameter number
 		size_t param_number;
 
+		//! Constructor
+		execute_factory(statementObj &stmtArg, size_t param_numberArg);
+
 	public:
 
 		friend class statementObj::process_execute_non_null_param<dbi::constraint>;
-
-		//! Constructor
-		execute_factory(statementObj &stmtArg, size_t param_numberArg);
 
 		//! Destructor
 		~execute_factory() noexcept {}

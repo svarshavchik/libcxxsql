@@ -1,0 +1,55 @@
+<schema name="temporary_tables">
+
+  <table name="temptbl_accounts" class="accounts">
+    <column name="account_id" datatype="int64_t" primarykey='1' />
+    <column name="account_type_id" datatype="int64_t"/>
+    <column name="account_category_id" datatype="int64_t"/>
+    <column name="name" />
+
+    <join class="account_types">
+      <column>account_type_id</column>
+      <column>account_category_id</column>
+    </join>
+
+    <join class="ledger_entries">
+      <column>account_id</column>
+    </join>
+  </table>
+
+  <table name="temptbl_transactions" class="transactions">
+    <column name="transaction_id" />
+    <column name="transaction_type_id" datatype="int64_t"/>
+    <column name="transaction_date" datatype="x::ymd"/>
+    <join class="transaction_types">
+      <column>transaction_type_id</column>
+    </join>
+
+    <join class="ledger_entries">
+      <column>transaction_id</column>
+    </join>
+  </table>
+
+  <table name="temptbl_ledger_entries" class="ledger_entries">
+    <column name="ledger_entry_id" />
+    <column name="transaction_id" datatype="int64_t"/>
+    <column name="account_id" datatype="int64_t"/>
+    <column name="ledger_date" datatype="x::ymd"/>
+    <column name="amount" datatype="double"/>
+
+    <join class="transactions">
+      <column>transaction_id</column>
+    </join>
+  </table>
+
+  <table name="temptbl_account_types" class="account_types">
+    <column name="account_type_id" datatype="int64_t" primarykey='1'/>
+    <column name="account_category_id" datatype="int64_t" primarykey='1'/>
+    <column name="name" nullable="1"/>
+  </table>
+
+  <table name="temptbl_transaction_types" class="transaction_types">
+    <column name="transaction_type_id" datatype="int64_t" primarykey='1' />
+    <column name="name" nullable="1"/>
+  </table>
+
+</schema>

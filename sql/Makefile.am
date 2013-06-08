@@ -5,6 +5,8 @@
 
 @LIBCXX_AM@
 
+include $(shell pwd)/../includes/libcxxsql.mk
+
 AM_CPPFLAGS=-I . -I $(srcdir) -I $(srcdir)/../includes -I ../includes @ODBC_CFLAGS@
 
 BUILT_SOURCES=x
@@ -19,6 +21,7 @@ lib_LTLIBRARIES=libcxxsql.la
 libcxxsql_la_SOURCES=\
 	connection.C \
 	dbi_constraint.C \
+	dbi_resultset.C \
 	env.C \
 	exception.C \
 	gettext_in.h \
@@ -34,7 +37,7 @@ libcxxsql_la_SOURCES=\
 libcxxsql_la_LIBADD=-lcxx @ODBC_LIBS@
 libcxxsql_la_LDFLAGS=-version-info @VERSION_INFO@ $(LINKTYPE)
 
-noinst_PROGRAMS=testenv testcursor testdbi
+noinst_PROGRAMS=testenv testcursor testdbi testschema
 
 testcursor_SOURCES=testcursor.C
 testcursor_LDADD=libcxxsql.la
@@ -47,6 +50,14 @@ testenv_LDFLAGS=$(LINKTYPE)
 testdbi_SOURCES=testdbi.C
 testdbi_LDADD=libcxxsql.la
 testdbi_LDFLAGS=$(LINKTYPE)
+
+$(call SCHEMA_GEN,testschematbl)
+
+$(call SCHEMA_GEN,exampleschema1)
+
+testschema_SOURCES=testschema.C
+testschema_LDADD=libcxxsql.la
+testschema_LDFLAGS=$(LINKTYPE)
 
 check-am: $(noinst_PROGRAMS)
 	./testenv
