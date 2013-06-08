@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <sstream>
 
+LOG_CLASS_INIT(LIBCXX_NAMESPACE::sql::newstatementimplObj);
+
 namespace LIBCXX_NAMESPACE {
 	namespace sql {
 #if 0
@@ -47,6 +49,7 @@ statement newstatementimplObj::prepare(const ref<statementimplObj> &s,
 		s->ret(SQLSetCursorName(s->h, to_sqlcharptr(cursor_name),
 					SQL_NTS), "SQLSetCursorName");
 
+	LOG_DEBUG(sql);
 	s->ret(SQLPrepare(s->h, to_sqlcharptr(sql), SQL_NTS), "SQLPrepare");
 	s->save_num_params();
 	return s;

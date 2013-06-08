@@ -225,6 +225,7 @@ class LIBCXX_HIDDEN connectionimplObj : public connectionObj {
 
 class LIBCXX_HIDDEN newstatementimplObj : public newstatementObj {
 
+	LOG_CLASS_SCOPE;
  public:
 
 	ref<connectionimplObj> conn;
