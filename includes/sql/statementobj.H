@@ -16,6 +16,7 @@
 #include <x/sql/insertblobfwd.H>
 #include <x/sql/fetchblobfwd.H>
 #include <x/sql/dbi/constraintfwd.H>
+#include <x/sql/dbi/resultsetfwd.H>
 #include <vector>
 #include <map>
 #include <unistd.h>
@@ -30,6 +31,31 @@ namespace LIBCXX_NAMESPACE {
 	};
 };
 #endif
+
+//! Helper class used by dbi::resultsetObj for fetching next object.
+
+//! \internal
+//! When an \ref bindrow "bindrow" lvalue is passed to execute(), execute()
+//! constructs this bind_factory object, and invokes bindrow.bind(), passing
+//! it this object.
+
+class bind_factory {
+
+	//! The statement
+	statementObj &stmt;
+
+	//! Private constructor
+
+	bind_factory(statementObj &stmtArg) : stmt(stmtArg) {}
+public:
+
+	friend class statementObj;
+
+	//! Bind the next column
+
+	template<typename argType>
+	inline void bind(size_t n, argType &&arg);
+};
 
 //! A prepared SQL statement
 
@@ -501,6 +527,8 @@ public:
 	//! Return number of rows affected by the current executed statement.
 	virtual size_t row_count()=0;
 
+	friend class bind_factory;
+
 private:
 	//! No more resultset values to bind.
 
@@ -542,6 +570,11 @@ private:
 
 		bind_all(std::forward<Args>(args)...);
 	}
+
+	//! Used by DBI resultset to bind a row
+	template<typename ...Args>
+	void bind_all(bindrow &resultset_row,
+		      Args && ...args);
 
 	//! Bind a single resultset column by name
 
@@ -1172,6 +1205,12 @@ public:
 				    const dbi::constraint *parameters,
 				    OtherArgs && ...otherArgs);
 };
+
+template<typename argType>
+inline void bind_factory::bind(size_t n, argType &&arg)
+{
+	stmt.bind_1(n, std::forward<argType>(arg));
+}
 
 //! Undefined/unimplemented. Use std::string<std::vector>
 

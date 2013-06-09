@@ -8,8 +8,10 @@
 
 #include <map>
 #include <x/obj.H>
+#include <x/mpobj.H>
 #include <x/sql/connectionfwd.H>
 #include <x/sql/connectionobj.H>
+#include <x/sql/statementobj.H>
 
 namespace LIBCXX_NAMESPACE {
 	namespace sql {
@@ -83,17 +85,134 @@ public:
 	//! Return the table's alias in the query
 	virtual std::string get_table_alias() const=0;
 
+	class rowObj;
+
 private:
 	//! Column names in the table, null terminated list
 	virtual const char * const *get_table_columns() const=0;
+
+protected:
+	//! Called by begin() in subclass to prepare and execute a SELECT
+
+	statement execute_search_sql() const;
+};
+
+//! A row returned by a resultset
+
+class resultsetObj::rowObj : virtual public obj {
+
+protected:
+	//! The underlying connection
+
+	connection conn;
+
+public:
+	//! Constructor
+
+	rowObj(const connection &connArg);
+
+	//! Destructor
+	~rowObj() noexcept;
+
+	//! Template class used by a subclass to declare a field
+
+	//! The template parameter is the datatype for the field's value.
+
+	template<typename field_type> class field;
+
+	//! Template class used by a subclass to cache a joined row
+	template<typename row_type> class cached_row_container {
+	public:
+		//! The cached row pointer.
+		row_type row;
+
+		//! Whether the row has been cached
+		bool cached;
+
+		cached_row_container() : cached(false) {}
+	};
+
+	//! A mutex-protected cached joined row
+
+	template<typename row_type>
+	using cached_row=mpobj<cached_row_container<row_type>>;
+};
+
+
+//! A field in a row that does not have a NULL indicator.
+
+template<typename field_type>
+class resultsetObj::rowObj::field {
+
+public:
+	//! The current value
+	std::pair<field_type, bitflag> scalar;
+
+	//! The original value
+	std::pair<field_type, bitflag> original;
+
+	friend class rowObj;
+
+	//! Constructor
+	field() : scalar(std::make_pair(field_type(), 1)), original(scalar)
+	{
+	}
+
+	//! Getter
+	const field_type &value() const { return scalar.first; }
+
+	//! Whether it's null, it cannot be
+	bool isnull() const { return scalar.second; }
+
+	//! Setter
+	void value(const field_type &newValue)
+	{
+		scalar.first=newValue;
+		scalar.second=0;
+	}
+
+	//! Setter
+	void value(field_type &&newValue)
+	{
+		scalar.first=std::move(newValue);
+		scalar.second=0;
+	}
+
+	//! Set to a null value
+	void value(std::nullptr_t dummy)
+	{
+		scalar.second=1;
+	}
+
+	//! Whether this field has been updated.
+
+	bool updated() const
+	{
+		return scalar.second != original.second ||
+			scalar.first != original.first;
+	}
 };
 
 #if 0
 {
-	{
-		{
 #endif
-		};
+};
+
+template<typename ...Args>
+inline void statementObj::bind_all(bindrow &resultset_row,
+				   Args && ...args)
+{
+	bind_factory factory(*this);
+
+	resultset_row.bind(factory);
+
+	bind_all(std::forward<Args>(args)...);
+}
+
+#if 0
+{
+	{
+#endif
 	};
 };
 #endif

@@ -6,6 +6,8 @@
 #include "libcxx_config.h"
 #include "x/sql/dbi/resultset.H"
 #include "x/sql/connection.H"
+#include "x/sql/statement.H"
+
 #include "gettext_in.h"
 
 #include <sstream>
@@ -62,6 +64,35 @@ std::string resultsetObj::aliasesObj::get_alias(const std::string &table_name)
 
 	o << alias << '_' << iter->second;
 	return o.str();
+}
+
+statement resultsetObj::execute_search_sql() const
+{
+	std::ostringstream o;
+
+	std::string table_alias=get_table_alias();
+
+	const char *sep="SELECT ";
+
+	for (auto col=get_table_columns(); *col; ++col)
+	{
+		o << sep << table_alias << "." << *col;
+		sep=", ";
+	}
+	o << " FROM " << get_table_name() << " AS " << table_alias;
+
+	statement stmt=conn->prepare(o.str());
+
+	stmt->execute(constraint(where));
+	return stmt;
+}
+
+resultsetObj::rowObj::rowObj(const connection &connArg) : conn(connArg)
+{
+}
+
+resultsetObj::rowObj::~rowObj() noexcept
+{
 }
 
 #if 0

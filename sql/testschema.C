@@ -86,7 +86,29 @@ void testschema(const std::string &connection,
 
 	conn->execute("alter table temptbl_transactions add foreign key(transaction_type_id) references temptbl_transaction_types(transaction_type_id)");
 
-	auto account_types=temptbl_account_types::create(conn);
+	// Insert into temptbl_account_types
+	//
+	// 1, 1, Type 1
+	// 2, 2, Type 2
+
+	auto account_types_rs=account_types::create(conn);
+
+        conn->execute("insert into temptbl_account_types values(1, 1, 'Type 1')");
+        conn->execute("insert into temptbl_account_types values(2, 2, 'Type 2')");
+
+	{
+		std::map<int, std::string> account_types_fetched;
+
+		for (const auto &account_type:*account_types_rs)
+		{
+			account_types_fetched[account_type->account_type_id.value()]=account_type->name.value();
+		}
+
+		if (account_types_fetched != std::map<int, std::string>({
+					{1, "Type 1"},
+					{2, "Type 2"}}))
+			throw EXCEPTION("SELECT * failed");
+	}
 }
 
 #include "exampleschema1.H"

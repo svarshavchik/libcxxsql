@@ -40,10 +40,27 @@ typedef const_ptr<resultsetObj, resultsetBase> const_resultsetptr;
 
 #if 0
 {
-	{
-		{
 #endif
-		}
+};
+
+class bind_factory;
+
+//! Private API used by resultsetObj to bind row's columns, for fetch()
+
+class bindrow {
+
+public:
+	friend class dbi::resultsetObj;
+
+	//! Called from fetch()
+
+	virtual void bind(bind_factory &)=0;
+};
+
+#if 0
+{
+	{
+#endif
 	}
 }
 #endif

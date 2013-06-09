@@ -67,3 +67,5 @@ check-am: $(noinst_PROGRAMS)
 	test -f private.postgres || exit 0; ./testcursor --connect "`cat private.postgres`"
 	test -f private.mysql || exit 0; ./testdbi --connect "`cat private.mysql`"
 	test -f private.postgres || exit 0; ./testdbi --connect "`cat private.postgres`"
+	test -f private.mysql || exit 0; ./testschema --connect "`cat private.mysql`"
+	test -f private.postgres || exit 0; ./testschema --connect "`cat private.postgres`"
