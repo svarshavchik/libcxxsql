@@ -916,6 +916,8 @@ std::string statementimplObj::colattribute_str(size_t i,
 	ret(SQLColAttribute(h, i, field_identifier, buffer, n, &n, nullptr),
 	    field_identifier_str);
 
+	buffer[n]=0; // Possible ODBC bug (SQL_DESC_BASE_TABLE_NAME)
+
 	return reinterpret_cast<char *>(buffer);
 }
 
