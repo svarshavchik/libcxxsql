@@ -23,7 +23,8 @@ namespace LIBCXX_NAMESPACE {
 
 resultsetObj::resultsetObj(const connection &connArg,
 			   const ref<aliasesObj> &aliasesArg)
-	: conn(connArg), aliases(aliasesArg)
+	: conn(connArg), aliases(aliasesArg),
+	  where(ref<constraintObj::andObj>::create())
 {
 }
 
@@ -80,6 +81,12 @@ statement resultsetObj::execute_search_sql() const
 		sep=", ";
 	}
 	o << " FROM " << get_table_name() << " AS " << table_alias;
+
+	if (!where->empty())
+	{
+		o << " WHERE ";
+		where->get_select_sql(o);
+	}
 
 	statement stmt=conn->prepare(o.str());
 

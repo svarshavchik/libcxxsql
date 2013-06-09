@@ -109,6 +109,28 @@ void testschema(const std::string &connection,
 					{2, "Type 2"}}))
 			throw EXCEPTION("SELECT * failed");
 	}
+
+	account_types_rs->search(LIBCXX_NAMESPACE::sql::dbi
+			      ::OR("account_type_id", "=", 1,
+				   "name", "!=", "Type 2"));
+
+	{
+		std::map<int, std::string> account_types_fetched;
+
+		for (account_types::base::iterator
+			     b=account_types_rs->begin(), e=account_types_rs->end();
+		     b != e; ++b)
+		{
+			account_types::base::row row=*b;
+
+			account_types_fetched[row->account_type_id.value()]=row->name.value();
+		}
+
+		if (account_types_fetched != std::map<int, std::string>({
+					{1, "Type 1"}}))
+			throw EXCEPTION("SELECT * failed");
+	}
+
 }
 
 #include "exampleschema1.H"

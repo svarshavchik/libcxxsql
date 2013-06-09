@@ -12,6 +12,8 @@
 #include <x/sql/connectionfwd.H>
 #include <x/sql/connectionobj.H>
 #include <x/sql/statementobj.H>
+#include <x/sql/dbi/constraintfwd.H>
+#include <x/sql/dbi/constraintobj.H>
 
 namespace LIBCXX_NAMESPACE {
 	namespace sql {
@@ -66,6 +68,10 @@ protected:
 	//! Keep track of all tables in a join
 	ref<aliasesObj> aliases;
 
+	//! Current constraint. The top level constraint node is an AND clause.
+
+	ref<constraintObj::andObj> where;
+
 public:
 	//! Constructor
 	resultsetObj(//! The connection object
@@ -86,6 +92,11 @@ public:
 	virtual std::string get_table_alias() const=0;
 
 	class rowObj;
+
+	//! Constraint the resultset
+
+	template<typename ...Args>
+	inline void search(Args && ...args);
 
 private:
 	//! Column names in the table, null terminated list

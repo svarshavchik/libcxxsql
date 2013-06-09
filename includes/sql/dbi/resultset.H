@@ -8,6 +8,7 @@
 
 #include <x/sql/dbi/resultsetobj.H>
 #include <x/sql/dbi/resultsetfwd.H>
+#include <x/sql/dbi/constraint.H>
 
 namespace LIBCXX_NAMESPACE {
 	namespace sql {
@@ -22,6 +23,12 @@ namespace LIBCXX_NAMESPACE {
 
 class resultsetBase : public ptrrefBase {
 };
+
+template<typename ...Args>
+inline void resultsetObj::search(Args && ...args)
+{
+	where->add(std::forward<Args>(args)...);
+}
 
 #if 0
 {
