@@ -21,6 +21,7 @@ namespace LIBCXX_NAMESPACE {
 
 class resultsetObj;
 class resultsetBase;
+class joinBaseObj;
 
 //! An SQL resultset
 

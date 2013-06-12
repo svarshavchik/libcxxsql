@@ -55,6 +55,9 @@ void droptables(const LIBCXX_NAMESPACE::sql::connection &conn)
 	}
 }
 
+#include "exampleschema2.H"
+#include "exampleschema2.C"
+
 void testschema(const std::string &connection,
 		int flags)
 {
@@ -129,6 +132,111 @@ void testschema(const std::string &connection,
 		if (account_types_fetched != std::map<int, std::string>({
 					{1, "Type 1"}}))
 			throw EXCEPTION("SELECT * failed");
+	}
+
+	// Insert into accounts, account 1 and 2.
+
+        conn->execute("insert into temptbl_accounts values(1, 1, 1, 'Account 1')");
+        conn->execute("insert into temptbl_accounts values(2, 2, 2, 'Account 2')");
+
+	{
+		auto accounts=accounts::create(conn);
+
+		account_types::base::joins j=accounts->join_account_types();
+
+		accounts->search(j->get_table_alias() + ".name", "=", "Type 1");
+
+		std::multiset<std::string> names;
+
+		for (const auto &row: *accounts)
+		{
+			names.insert(row->name.value());
+		}
+
+		if (names.size() != 1 ||
+		    *names.begin() != "Account 1")
+			throw EXCEPTION("Simple left join failed");
+	}
+
+	droptables(conn);
+
+	conn->execute("create table temptbl_accounts(account_id integer not null, account_type_id integer not null, code varchar(255) null, primary key(account_id))");
+
+	conn->execute("create table temptbl_account_types(account_type_id integer not null, primary key(account_type_id))");
+
+	conn->execute("create table temptbl_ledger_entries(ledger_entry_id integer not null, account_id integer not null, ledger_date date not null, amount numeric(11,2) not null, primary key(ledger_entry_id))");
+
+	conn->execute("alter table temptbl_accounts add foreign key(account_type_id) references temptbl_account_types(account_type_id)");
+
+	conn->execute("alter table temptbl_ledger_entries add foreign key(account_id) references temptbl_accounts(account_id)");
+
+	conn->execute("create table temptbl_payments(payment_id integer not null, source_ledger_id integer not null, dest_ledger_id integer not null)");
+
+	conn->execute("alter table temptbl_payments add foreign key(source_ledger_id) references temptbl_ledger_entries(ledger_entry_id)");
+	conn->execute("alter table temptbl_payments add foreign key(dest_ledger_id) references temptbl_ledger_entries(ledger_entry_id)");
+
+	conn->execute("insert into temptbl_account_types values(1)");
+	conn->execute("insert into temptbl_account_types values(2)");
+
+	conn->execute("insert into temptbl_accounts(account_id, account_type_id, code) values(?, ?, ?)", 1, 1, "Acct1");
+	conn->execute("insert into temptbl_accounts(account_id, account_type_id, code) values(?, ?, ?)", 2, 2, "Acct2");
+	conn->execute("insert into temptbl_ledger_entries(ledger_entry_id, account_id, ledger_date, amount) values(?, ?, ?, ?)", 1, 1, "2013-08-03", 10);
+	conn->execute("insert into temptbl_ledger_entries(ledger_entry_id, account_id, ledger_date, amount) values(?, ?, ?, ?)", 2, 2, "2013-08-03", -10);
+
+	{
+		auto ledger_entries=example2::ledger_entries::create(conn);
+
+		example2::accounts::base::joins
+			accounts_join=ledger_entries->join_accounts();
+
+		ledger_entries->search("code", "=", std::vector<const char *>({"Acct1", "Acct2"}));
+
+		std::set<double> values;
+
+		for (const auto &row: *ledger_entries)
+		{
+			auto amount=row->amount.value();
+
+			values.insert(amount);
+			std::cout << LIBCXX_NAMESPACE::tostring(row->ledger_date.value())
+				  << ": "
+				  << amount
+				  << std::endl;
+		}
+
+		if (values != std::set<double>({10, -10}))
+			throw EXCEPTION("Join did not get expected results (1)");
+	}
+
+	conn->execute("INSERT INTO temptbl_payments(payment_id,source_ledger_id,dest_ledger_id) values(1,1,2)");
+
+	{
+		auto payments=example2::payments::create(conn);
+
+		auto source_account=
+			payments->join_source_ledger_id()->join_accounts();
+
+		auto dest_account=
+			payments->join_dest_ledger_id()->join_accounts();
+
+		payments->search(source_account->get_table_alias() + ".code", "=", "Acct1",
+				 dest_account->get_table_alias() + ".code", "=", "Acct2");
+
+		std::set<int> keys;
+
+		for (const example2::payments::base::row &row: *payments)
+		{
+			std::cout << row->payment_id.value()
+				  << " "
+				  << row->source_ledger_id.value()
+				  << " "
+				  << row->dest_ledger_id.value();
+
+			keys.insert(row->payment_id.value());
+		}
+
+		if (keys != std::set<int>({1}))
+			throw EXCEPTION("Join did not get expected results (2)");
 	}
 
 }

@@ -7,11 +7,13 @@
 #define x_sql_dbi_resultsetobj_H
 
 #include <map>
+#include <iostream>
 #include <x/obj.H>
 #include <x/mpobj.H>
 #include <x/sql/connectionfwd.H>
 #include <x/sql/connectionobj.H>
 #include <x/sql/statementobj.H>
+#include <x/sql/dbi/resultsetfwd.H>
 #include <x/sql/dbi/constraintfwd.H>
 #include <x/sql/dbi/constraintobj.H>
 
@@ -106,6 +108,25 @@ protected:
 	//! Called by begin() in subclass to prepare and execute a SELECT
 
 	statement execute_search_sql() const;
+
+	//! Joins added to this resultset
+
+	//! For each added join we record:
+	//!
+	//! - the SQL for that join
+	//! - the join object for that join, from which we obtain secondary
+	//! join.
+
+	std::list<std::pair<std::string, ref<joinBaseObj>>> joinlist;
+
+	//! Add a join to the resultset
+
+	void addjoin(const char *jointype, const ref<joinBaseObj> &join,
+		     std::initializer_list<const char *> &&columns);
+
+	//! Add joins to this resultset
+
+	void get_join_sql(std::ostream &o) const;
 };
 
 //! A row returned by a resultset
@@ -202,6 +223,30 @@ public:
 		return scalar.second != original.second ||
 			scalar.first != original.first;
 	}
+};
+
+//! Base class for resultset subclass's join implementors
+
+class joinBaseObj : virtual public obj {
+
+public:
+
+	//! Constructor
+
+	joinBaseObj();
+
+	//! Destructor
+	~joinBaseObj() noexcept;
+
+        //! Return the real table's name
+	virtual const char *get_table_name() const=0;
+
+	//! Return the table's alias in the query
+	virtual std::string get_table_alias() const=0;
+
+	//! Building joins for the resultset
+	virtual void get_join_sql_recursive(std::ostream &o) const=0;
+
 };
 
 #if 0
