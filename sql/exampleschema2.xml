@@ -27,6 +27,15 @@
     <join class="accounts" type="inner join" only="1">
       <column>account_id</column>
     </join>
+
+    <join class="payments" type="inner_join" maybe="1" name="source_ledger_id">
+      <column foreigncolumn='source_ledger_id'>ledger_entry_id</column>
+    </join>
+
+    <join class="payments" type="inner_join" maybe="1" name="dest_ledger_id">
+      <column foreigncolumn='dest_ledger_id'>ledger_entry_id</column>
+    </join>
+
   </table>
 
   <table name="temptbl_payments" class="payments">

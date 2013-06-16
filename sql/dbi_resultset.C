@@ -23,7 +23,7 @@ namespace LIBCXX_NAMESPACE {
 
 resultsetObj::resultsetObj(const connection &connArg,
 			   const ref<aliasesObj> &aliasesArg)
-	: conn(connArg), aliases(aliasesArg),
+	: conn(connArg), maxrows(0), aliases(aliasesArg),
 	  where(ref<constraintObj::andObj>::create())
 {
 }
@@ -67,7 +67,7 @@ std::string resultsetObj::aliasesObj::get_alias(const std::string &table_name)
 	return o.str();
 }
 
-statement resultsetObj::execute_search_sql() const
+statement resultsetObj::execute_search_sql(size_t limitvalue) const
 {
 	std::ostringstream o;
 
@@ -92,8 +92,19 @@ statement resultsetObj::execute_search_sql() const
 
 	statement stmt=conn->prepare(o.str());
 
+	stmt->limit(limitvalue);
 	stmt->execute(constraint(where));
 	return stmt;
+}
+
+void resultsetObj::multiple_rows()
+{
+	throw EXCEPTION(_TXT(_txt("SELECT returned multiple rows when only one was expected")));
+}
+
+void resultsetObj::no_rows()
+{
+	throw EXCEPTION(_TXT(_txt("SELECT returned no rows when a row was expected")));
 }
 
 resultsetObj::rowObj::rowObj(const connection &connArg) : conn(connArg)

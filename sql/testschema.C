@@ -223,6 +223,7 @@ void testschema(const std::string &connection,
 				 dest_account->get_table_alias() + ".code", "=", "Acct2");
 
 		std::set<int> keys;
+		std::set<double> values;
 
 		for (const example2::payments::base::row &row: *payments)
 		{
@@ -230,15 +231,101 @@ void testschema(const std::string &connection,
 				  << " "
 				  << row->source_ledger_id.value()
 				  << " "
-				  << row->dest_ledger_id.value();
+				  << row->dest_ledger_id.value()
+				  << std::endl;
 
 			keys.insert(row->payment_id.value());
+
+			values.insert(row->join_source_ledger_id()
+				      ->amount.value());
+
 		}
 
 		if (keys != std::set<int>({1}))
 			throw EXCEPTION("Join did not get expected results (2)");
+		if (values != std::set<double>({10}))
+			throw EXCEPTION("Join did not get expected results (3)");
 	}
 
+	{
+		auto payments=example2::payments::create(conn);
+
+		payments->search("payment_id", "<", 0);
+
+		if (!payments->maybe().null())
+			throw EXCEPTION("Mysterious maybe() results");
+	}
+
+	bool caught=false;
+
+	try {
+		auto ledgers=example2::ledger_entries::create(conn);
+
+		ledgers->only();
+	} catch (const LIBCXX_NAMESPACE::exception &e)
+	{
+		caught=true;
+		std::cout << "Expected exception: " << e << std::endl;
+	}
+
+	if (!caught)
+		throw EXCEPTION("only() failed to detect multiple rows");
+
+	{
+		example2::accounts accounts=example2::accounts::create(conn);
+
+		for (const example2::accounts::base::row &row: *accounts)
+		{
+			example2::ledger_entries
+				ledger_entries=row->join_ledger_entries();
+
+			for (const example2::ledger_entries::base::row &row: *ledger_entries)
+			{
+				row;
+			}
+		}
+	}
+
+	caught=false;
+
+	try
+	{
+		auto ledger_entry_rs=
+			example2::ledger_entries::create(conn);
+		ledger_entry_rs->search("ledger_entry_id", "=", -11);
+
+		auto ledger_entry=ledger_entry_rs->only();
+	} catch (const LIBCXX_NAMESPACE::exception &e)
+	{
+		caught=true;
+		std::cout << "Expected exception: " << e << std::endl;
+	}
+
+	if (!caught)
+		throw EXCEPTION("only() failed to detect no rows?");
+
+	{
+		auto ledger_entry_rs=
+			example2::ledger_entries::create(conn);
+		ledger_entry_rs->search("ledger_entry_id", "=", 1);
+
+		auto ledger_entry=ledger_entry_rs->only();
+
+		auto account=ledger_entry->join_accounts();
+
+		if (account->account_id.value() != 1)
+			throw EXCEPTION("Did not get account 1?");
+
+		account->account_id.value(2);
+
+		if (ledger_entry->join_accounts()->account_id.value() != 2)
+			throw EXCEPTION("row join() does not cache");
+
+		if (ledger_entry->join_source_ledger_id().null())
+			throw EXCEPTION("maybe() row join was null");
+		if (!ledger_entry->join_dest_ledger_id().null())
+			throw EXCEPTION("maybe() row join was not null");
+	}
 }
 
 #include "exampleschema1.H"

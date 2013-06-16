@@ -34,7 +34,17 @@ protected:
 	//! Underlying connection
 	connection conn;
 
+	//! Set by limit()
+
+	size_t maxrows;
+
 public:
+	//! Throws an exception, used by maybe() when multiple rows are returned.
+	static void multiple_rows() __attribute__((noreturn));
+
+	//! Throws an exception, used by only() when no row is returnd.
+	static void no_rows() __attribute__((noreturn));
+
 	//! A container for keeping track of all tables in a join.
 
 	//! This is used in order to keep track of every table that's involved
@@ -93,6 +103,11 @@ public:
 	//! Return the table's alias in the query
 	virtual std::string get_table_alias() const=0;
 
+	//! Set the maximum number of rows in the resultset
+	void limit(size_t maxrowsArg)
+	{
+		maxrows=maxrowsArg;
+	}
 	class rowObj;
 
 	//! Constraint the resultset
@@ -107,7 +122,7 @@ private:
 protected:
 	//! Called by begin() in subclass to prepare and execute a SELECT
 
-	statement execute_search_sql() const;
+	statement execute_search_sql(size_t limitvalue) const;
 
 	//! Joins added to this resultset
 
