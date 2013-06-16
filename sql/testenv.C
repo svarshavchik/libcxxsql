@@ -613,6 +613,46 @@ void testconnect(const std::string &connection,
 		    hms_select != LIBCXX_NAMESPACE::hms(15, 0, 0))
 			throw EXCEPTION("date/time values do not compare");
 	}
+
+	// LIMIT TEST
+
+	conn->execute("create table tmptbl5(v integer)");
+	conn->execute("insert into tmptbl5 values(0)");
+	conn->execute("insert into tmptbl5 values(1)");
+
+	std::set<int> results;
+
+	{
+		auto statement=conn->execute("select * from tmptbl5");
+
+		int v;
+
+		while (statement->fetch(0, v))
+		{
+			results.insert(v);
+		}
+	}
+
+	if (results != std::set<int>({0, 1}))
+		throw EXCEPTION("Limit test 1 failed");
+
+	results.clear();
+
+	{
+		auto statement=conn->prepare("select v from tmptbl5 order by v");
+
+		statement->limit(1);
+		statement->execute();
+
+		int v;
+
+		while (statement->fetch(0, v))
+		{
+			results.insert(v);
+		}
+	}
+	if (results != std::set<int>({0}))
+		throw EXCEPTION("Limit test 2 failed");
 }
 
 void dummy_connection_by_params()

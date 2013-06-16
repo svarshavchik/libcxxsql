@@ -106,7 +106,8 @@ void statementObj::prep_retvalues(std::vector<bitflag> &retvaluesArg)
 
 statementimplObj::statementimplObj(const ref<connectionimplObj> &connArg)
 	: h(nullptr), conn(connArg), num_rows_fetched(0), have_columns(false),
-	  have_parameters(false), num_params_val(0), param_status_processed(0)
+	  have_parameters(false), num_params_val(0), param_status_processed(0),
+	  maxrows(0)
 {
 	if (!SQL_SUCCEEDED(SQLAllocHandle(SQL_HANDLE_STMT, conn->h, &h)))
 	{
@@ -125,6 +126,11 @@ void statementimplObj::ret(SQLRETURN ret, const char *func)
 {
 	if (!SQL_SUCCEEDED(ret))
 		sql_error(func, h, SQL_HANDLE_STMT);
+}
+
+void statementimplObj::limit(size_t maxrowsArg)
+{
+	maxrows=maxrowsArg;
 }
 
 bitflag statementimplObj::execute()
@@ -164,6 +170,7 @@ void statementimplObj::begin_execute_params(bitflag *status,
 	param_status_processed=0;
 	SET_ATTR(SQL_ATTR_PARAMSET_SIZE, ulen, execute_rows);
 	SET_ATTR(SQL_ATTR_MAX_LENGTH, ulen, 0);
+	SET_ATTR(SQL_ATTR_MAX_ROWS, ulen, maxrows);
 }
 
 // Called right after prepare() to retrieve the number of parameters.

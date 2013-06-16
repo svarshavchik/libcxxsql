@@ -73,6 +73,9 @@ public:
 	//! Destructor
 	~statementObj() noexcept;
 
+	//! Limit the number of rows to be returned
+	virtual void limit(size_t maxrows)=0;
+
 	//! Execute the statement.
 	virtual bitflag execute()=0;
 

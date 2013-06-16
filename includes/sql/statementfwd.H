@@ -568,6 +568,29 @@ public:
 //! execute() on a connection object, with an implicit prepare() means that
 //! the statement handle will not be available if execute() throws an
 //! exception.
+//!
+//! \par Limiting the number of rows fetched
+//!
+//! \code
+//! auto stmt=conn->prepare("SELECT price FROM books order by stock_id");
+//!
+//! stmt->limit(10);
+//!
+//! stmt->execute();
+//!
+//! double price;
+//!
+//! while (stmt->fetch(0, price))
+//! {
+//!      // ...
+//! }
+//! \endcode
+//!
+//! limit() must be invoked before execute(), and it sets the upper limit on
+//! the number of rows returned by the SELECT. If the SELECT would return
+//! more rows, the additional rows get ignored. This is done using the
+//! underlying database driver's most efficient way. The default setting of 0
+//! specifies no upper limit on the number of rows.
 
 typedef ref<statementObj, statementBase> statement;
 

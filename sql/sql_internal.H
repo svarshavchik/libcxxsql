@@ -660,9 +660,13 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 	// How many parameter rows were processed.
 	SQLULEN param_status_processed;
 
+	// Maximum number of rows requested
+	SQLULEN maxrows;
+
 	// How many rows were retrieved
 	size_t rows_retrieved;
 
+	void limit(size_t maxrowsArg) override;
 	bitflag execute() override;
 	void begin_execute_params(bitflag *, size_t) override;
 	void process_execute_params(size_t param_number);
