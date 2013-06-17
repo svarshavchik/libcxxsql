@@ -67,20 +67,20 @@ std::string resultsetObj::aliasesObj::get_alias(const std::string &table_name)
 	return o.str();
 }
 
-statement resultsetObj::execute_search_sql(size_t limitvalue) const
+statement resultsetObj::execute_search_sql(size_t limitvalue,
+					   const std::vector<std::string>
+					   &columns) const
 {
 	std::ostringstream o;
 
-	std::string table_alias=get_table_alias();
-
 	const char *sep="SELECT ";
 
-	for (auto col=get_table_columns(); *col; ++col)
+	for (const auto &col:columns)
 	{
-		o << sep << table_alias << "." << *col;
+		o << sep << col;
 		sep=", ";
 	}
-	o << " FROM " << get_table_name() << " AS " << table_alias;
+	o << " FROM " << get_table_name() << " AS " << get_table_alias();
 
 	get_join_sql(o);
 
@@ -123,6 +123,19 @@ joinBaseObj::joinBaseObj()
 
 joinBaseObj::~joinBaseObj() noexcept
 {
+}
+
+void joinBaseObj::create_columns_list(std::vector<std::string> &list)
+	const
+{
+	auto col=get_table_columns();
+	auto alias=get_table_alias() + ".";
+
+	while (*col)
+	{
+		list.push_back(alias + *col);
+		++col;
+	}
 }
 
 void resultsetObj::addjoin(const char *jointype, const ref<joinBaseObj> &join,

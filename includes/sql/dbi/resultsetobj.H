@@ -7,6 +7,7 @@
 #define x_sql_dbi_resultsetobj_H
 
 #include <map>
+#include <vector>
 #include <iostream>
 #include <x/obj.H>
 #include <x/mpobj.H>
@@ -115,14 +116,12 @@ public:
 	template<typename ...Args>
 	inline void search(Args && ...args);
 
-private:
-	//! Column names in the table, null terminated list
-	virtual const char * const *get_table_columns() const=0;
-
 protected:
 	//! Called by begin() in subclass to prepare and execute a SELECT
 
-	statement execute_search_sql(size_t limitvalue) const;
+	statement execute_search_sql(size_t limitvalue,
+				     const std::vector<std::string> &columns)
+		const;
 
 	//! Joins added to this resultset
 
@@ -258,6 +257,16 @@ public:
 
 	//! Return the table's alias in the query
 	virtual std::string get_table_alias() const=0;
+
+	//! Column names in this table, null terminated list
+	virtual const char * const *get_table_columns() const=0;
+
+	//! Assemble aliased column list
+
+	//! Calls get_table_columns() and get_table_alias(), creates "alias.name" for each
+	//! column, appends it to the given column list
+
+	void create_columns_list(std::vector<std::string> &list) const;
 
 	//! Building joins for the resultset
 	virtual void get_join_sql_recursive(std::ostream &o) const=0;
