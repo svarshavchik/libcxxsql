@@ -85,6 +85,24 @@ protected:
 
 	ref<constraintObj::andObj> where;
 
+	//! Bind the resultset's row, and any prefetched rows
+
+	class bindrow_all : public bindrow {
+
+	public:
+		//! Rows to bind
+		std::vector<bindrowimpl> rows;
+
+		//! Invoke bind() in all rows
+		void bind(bind_factory &factory) override;
+
+		//! Constructor
+		bindrow_all();
+
+		//! Destructor
+		~bindrow_all() noexcept;
+	};
+
 public:
 	//! Constructor
 	resultsetObj(//! The connection object

@@ -9,6 +9,7 @@
 #include <x/sql/dbi/resultsetobj.H>
 #include <x/sql/dbi/resultsetfwd.H>
 #include <x/sql/dbi/constraint.H>
+#include <x/sql/statement.H>
 
 namespace LIBCXX_NAMESPACE {
 	namespace sql {
@@ -32,10 +33,20 @@ inline void resultsetObj::search(Args && ...args)
 
 #if 0
 {
-	{
-		{
 #endif
-		};
+};
+
+template<typename ArgType>
+void bindrow::consecutive::bind(ArgType &&arg)
+{
+	factory.bind(column, std::forward<ArgType>(arg));
+	++column;
+}
+
+#if 0
+{
+	{
+#endif
 	};
 };
 #endif

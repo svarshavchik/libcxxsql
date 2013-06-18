@@ -53,10 +53,52 @@ class bindrow {
 public:
 	friend class dbi::resultsetObj;
 
+	//! Bind consecutively-numbered columns
+
+	class consecutive {
+
+		//! The factory for binding fetch columns
+		bind_factory &factory;
+
+		//! Next column to bind.
+		size_t column;
+
+	public:
+		//! Constructor
+
+		consecutive(bind_factory &factoryArg)
+			: factory(factoryArg), column(0)
+		{
+		}
+
+		//! Bind the next column
+		template<typename ArgType>
+		void bind(ArgType &&arg);
+	};
+
 	//! Called from fetch()
 
 	virtual void bind(bind_factory &)=0;
 };
+
+//! A reference-counted bindrow
+
+class bindrowimplObj : virtual public obj {
+
+public:
+	//! Constructor
+	bindrowimplObj();
+
+	//! Destructor
+	~bindrowimplObj() noexcept;
+
+	//! Bind rows
+	virtual void bind(bindrow::consecutive &)=0;
+};
+
+//! A reference to a reference-counted bindrow
+
+typedef ref<bindrowimplObj> bindrowimpl;
 
 #if 0
 {

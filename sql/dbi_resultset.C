@@ -14,12 +14,42 @@
 
 namespace LIBCXX_NAMESPACE {
 	namespace sql {
-		namespace dbi {
+
 #if 0
-		}
 	}
+}
+#endif
+
+bindrowimplObj::bindrowimplObj()
+{
+}
+
+bindrowimplObj::~bindrowimplObj() noexcept
+{
+}
+
+namespace dbi {
+#if 0
 };
 #endif
+
+resultsetObj::bindrow_all::bindrow_all()
+{
+}
+
+resultsetObj::bindrow_all::~bindrow_all() noexcept
+{
+}
+
+void resultsetObj::bindrow_all::bind(bind_factory &factory)
+{
+	bindrow::consecutive row_factory(factory);
+
+	for (const auto &row: rows)
+	{
+		row->bind(row_factory);
+	}
+}
 
 resultsetObj::resultsetObj(const connection &connArg,
 			   const ref<aliasesObj> &aliasesArg)
