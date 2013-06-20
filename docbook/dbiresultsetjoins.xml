@@ -1,0 +1,911 @@
+<!--
+
+Copyright 2013 Double Precision, Inc.
+See COPYING for distribution information.
+
+-->
+
+<chapter id="dbiresultsetjoins">
+  <title>Adding joins to resultsets</title>
+
+  <para>
+    A <tag class="element">join</tag> element in the schema file
+    defines a join to another table in the schema file. It usually corresponds
+    to a <literal>FOREIGN KEY</literal> constraint in the actual schema, but
+    doesn't have to be.
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting><![CDATA[
+<schema>
+  <table name="accounts">
+    <column name="account_id" datatype="int64_t" primarykey='1' />
+    <column name="code" />
+
+    <join class="ledger_entries">
+      <column>account_id</column>
+    </join>
+  </table>
+
+  <table name="ledger_entries">
+    <column name="ledger_entry_id" datatype="int64_t" primarykey='1' />
+    <column name="account_id" datatype="int64_t"/>
+    <column name="ledger_date" datatype="x::ymd"/>
+    <column name="amount" datatype="double"/>
+
+    <join class="accounts" type="inner join">
+      <column>account_id</column>
+    </join>
+  </table>
+</schema>
+]]></programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    This is a schema for two tables. Only the <literal>ledger_entries</literal>
+    table has a foreign key. The above schema translates, approximately, to
+    the following &SQL;:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+create table accounts(
+    account_id integer not null,
+    code varchar(255) not null,
+    primary key(account_id)
+);
+
+create table ledger_entries(
+    ledger_entry_id integer not null,
+    account_id integer not null,
+    ledger_date date not null,
+    amount numeric(11,2) not null,
+    primary key(ledger_entry_id),
+    foreign key(account_id) references accounts(account_id)
+);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    The actual column types vary, depending on the &SQL; database.
+    In this schema, a record in the <quote>accounts</quote> table may have
+    zero or more records in the <quote>ledger_entries</quote> table
+    with the same <literal>account_id</literal>.
+    <quote>accounts</quote>'s 
+    <tag class="element">join</tag> to
+    <quote>ledger_entries</quote>, consequently, specifies a default join
+    type of a left join.
+    However, a record in <quote>ledger_entries</quote> must have a
+    record with the same
+    <literal>account_id</literal>
+    in
+    <quote>accounts</quote>. This is really an inner join, and the
+    <tag class="element">join</tag>, therefore, gives an explicit
+    <quote>inner join</quote> in its
+    <tag class="attribute">type</tag> attribute.
+  </para>
+
+  <para>
+    <tag class="element">join</tag>'s
+    required
+    <tag class="attribute">class</tag>
+    attribute specifies the destination table for the join, the joined-to
+    table.
+    The attribute's value specifies the name of a class, not the name of
+    a table.
+    They're usually the same, but
+    <link linkend="dbiresultsetclassnames">sometimes they're different</link>.
+    So, if the schema file reads, instead:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting><![CDATA[
+<table name="ledger_entries" class="ledger">]]></programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    The first join must read:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting><![CDATA[
+<join class="ledger">]]></programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    <tag class="element">join</tag>s declare additional
+    methods in the corresponding resultset.
+    Calling those methods adds the corresponding join to the resultset,
+    and the joined-to table's fields can be referenced in the resultset's
+    constraints:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting><![CDATA[
+auto ledger_entries_rs=ledger_entries::create(conn);
+
+accounts::base::joins accounts_join=ledger_entries_rs->join_accounts();
+
+ledger_entries_rs->search("code", "=", "Acct1");
+
+for (const auto &row: *ledger_entries)
+{
+    std::cout << ]]>&ns;<![CDATA[::tostring(row->ledger_date.value())
+              << ": "
+              << row->amount.value()
+              << std::endl;
+}]]></programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    This example executes &SQL; that's equivalent to
+    <quote>SELECT <replaceable>fields</replaceable> FROM ledger_entries INNER JOIN accounts ON ledger_entries.account_id=accounts.account_id WHERE code='Acct1'</quote>,
+    joining the <literal>accounts</literal> table to the resultset that iterates
+    over the contents of the <literal>ledger_entries</literal> table.
+    It's important to note that the fields from <literal>accounts</literal> do
+    not get selected in addition to the fields from
+    <literal>ledger_entries</literal>.
+    This is a <classname>ledger_entries</classname> resultset, and the
+    <classname>ledger_entries::base::row</classname> always returns values of
+    columns from the <literal>ledger_entries</literal> table.
+  </para>
+
+  <para>
+    Declaring a
+    <tag class="element">join</tag> in the schema file
+    creates a
+    <methodname>join_<replaceable>class</replaceable></methodname>()
+    method to the resultset's referenced object, where
+    <replaceable>class</replaceable> is the joined-to resulset class.
+    The
+    <tag class="element">join</tag>
+    from
+    <literal>ledger_entries</literal> to <literal>accounts</literal>
+    creates <methodname>join_accounts</methodname>() in the
+    <classname>ledger_entries</classname> reference-counted resultset.
+  </para>
+
+  <para>
+    Each
+    <methodname>join_<replaceable>class</replaceable></methodname>()
+    returns a
+    <classname><replaceable>class</replaceable>::base::joins</classname>.
+    It is a reference to an object that serves several purposes:
+  </para>
+
+  <itemizedlist>
+    <listitem>
+      <para>
+	It tells you the joined table's alias in the resulting &SQL;.
+	This is usually
+	the same as the table's name, however the same table can appear more
+	than once in a complicated resultset with many joins.
+	In that situation each
+	instance of a join to the same table has a unique alias.
+      </para>
+    </listitem>
+
+    <listitem>
+      <para>
+	It also implements any
+	<methodname>join_<replaceable>class</replaceable></methodname>()s that
+	create a join from the second table to a third table (or a fourth
+	table from the third table, or...).
+      </para>
+    </listitem>
+  </itemizedlist>
+
+  <para>
+    The above example makes no particular use for the joins object, but if
+    both tables in this example had a
+    <quote>code</quote> column, then
+    <quote>ledger_entries-&gt;search("code", "=", "Acct1");</quote>,
+    becomes <quote>code = ?</quote> &SQL;, resulting in an error, due to
+    the ambiguous column name.
+  </para>
+
+  <para>
+    It's always possible to explicitly specify the table:
+    <quote>ledger_entries-&gt;search("ledger_entries.code", "=", "Acct1");</quote>.
+    This, however, relies on each table's alias, in the query, defaulting
+    to the name of the table.
+  </para>
+
+  <para>
+    This is no longer the case when the same table ends up appearing
+    more than once in the resultset's joins. In this case, each
+    occurence of the table has a unique alias. A formal, documented
+    way to reference the correct table is to use the
+    <methodname>get_table_alias</methodname>() method defined in the
+    joined-to class. For consistency, the resultset class also implements a
+    <methodname>get_table_alias</methodname>() that gives the resultset table's
+    alias:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting><![CDATA[
+auto ledger_entries_rs=ledger_entries::create(conn);
+
+accounts::base::joins accounts_join=ledger_entries_rs->join_accounts();
+
+ledger_entries_rs->search(ledger_entries->get_table_alias() + ".code", "=", accounts_join->get_table_alias() + ".code");]]>
+      </programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    This creates
+    <quote>WHERE ledger_entries.code = accounts.code</quote>, presuming
+    that both <literal>ledger_entries</literal>'s and
+    <literal>accounts</literal>'s alias is the same as the table name; or
+    the appropriate alias, as specified in the corresponding
+    <literal>FROM</literal> or <literal>JOIN</literal> table name.
+    At this time, an alias for the resultset table
+    always ends up to be the same as the table's name.
+    This is subject to change in the future.
+    Always use <methodname>get_table_alias</methodname>() for proper results.
+  </para>
+
+  <para>
+    The join object implements additional methods that create subsequent joins
+    from the join object's table.
+    So, if, for example,
+    the <literal>accounts</literal> table had an additional join to an
+    <literal>account_types</literal> table:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting><![CDATA[
+auto ledger_entries_rs=ledger_entries::create(conn);
+
+accounts::base::joins accounts_join=ledger_entries_rs->join_accounts();
+
+account_types::base::joins account_types_join=accounts_join->join_account_types();]]></programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    Calling <classname>ledger_entries</classname>'s
+    <methodname>join_accounts</methodname>() adds a join from the
+    <literal>ledger_entries</literal> to the <literal>accounts</literal> table
+    and returns a <classname>accounts::base::joins</classname> object reference.
+    Calling this object's <methodname>join_account_types</methodname>() method
+    adds a join from the <literal>accounts</literal> to the
+    <literal>account_types</literal> table.
+  </para>
+
+  <para>
+    <classname><replaceable>classname</replaceable></classname> and
+    <classname><replaceable>classname</replaceable>::base::joins</classname>
+    always implement the same
+    <methodname>join_<classname>classname</classname></methodname>() methods
+    (they reference objects where the former is a subclass of the latter).
+  </para>
+
+  <para>
+    The above example executes the equivalent of
+    <quote>SELECT <replaceable>fields</replaceable> FROM ledger_entries INNER JOIN accounts ON ledger_entries.account_id=accounts.account_id LEFT JOIN account_types ON <replaceable>join condition from accounts to account_types</replaceable></quote>
+    (presuming that the join to the <literal>account_types</literal> table
+    is a <literal>LEFT JOIN</literal>).
+    Note that this is different from the following (assuming that the schema
+    file specifies this join relationship):
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting><![CDATA[
+auto ledger_entries_rs=ledger_entries::create(conn);
+
+accounts::base::joins accounts_join=ledger_entries_rs->join_accounts();
+
+account_types::base::joins account_types_join=ledger_entries->join_account_types();]]></programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    This results in a slightly different join:
+    <quote>SELECT <replaceable>fields</replaceable> FROM ledger_entries INNER JOIN accounts ON ledger_entries.account_id=accounts.account_id LEFT JOIN account_types ON <replaceable>join condition from ledger_entries to account_types</replaceable></quote>.
+  </para>
+
+  <section id="dbiresultsetjoincolumns">
+    <title>Specifying columns used in joins, and multiple joins to the same table</title>
+
+    <para>
+      A
+      <tag class="element">join</tag>
+      element consists of one or more
+      <tag class="element">column</tag>
+      elements, that define which columns join the two tables:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting><![CDATA[
+<join class="categories">
+   <column>account_type_id</column>
+   <column>account_category_id</column>
+</join>
+]]></programlisting>
+      </informalexample>
+    </blockquote>
+
+    <itemizedlist>
+      <listitem>
+	<para>
+	  The creates a method name
+	  <methodname>join_categories</methodname> which returns a
+	  <classname>categories::base::joins</classname> handle for the join.
+	</para>
+      </listitem>
+
+      <listitem>
+	<para>
+	  The resulting &SQL;, added to the resultset's query,
+	  executes the equivalent of
+	  <quote><literal>LEFT JOIN categories ON
+	      <replaceable>table</replaceable>.account_type_id =
+	      categories.account_type_id AND
+	      <replaceable>table</replaceable>.account_category_id =
+	      categories.account_category_id</literal></quote>.
+	  The two tables get joined using columns with the same name in each
+	  table.
+	</para>
+      </listitem>
+    </itemizedlist>
+    <para>
+      Use the
+      <tag class="attribute">foreigncolumn</tag>
+      attribute to define a join on columns
+      whose names are different, in each table:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting><![CDATA[
+<join class="ledger_entries" type="inner join">
+   <column foreigncolumn='ledger_entry_id'>source_ledger_id</column>
+</join>
+]]></programlisting>
+      </informalexample>
+    </blockquote>
+      
+    <itemizedlist>
+      <listitem>
+	<para>
+	  The creates a method name
+	  <methodname>join_ledger_entries</methodname> which returns a
+	  <classname>ledger_entries::base::joins</classname> handle for the
+	  join.
+	</para>
+      </listitem>
+
+      <listitem>
+	<para>
+	  The resulting &SQL;, added to the resultset's query,
+	  executes the equivalent of
+	  <quote><literal>LEFT JOIN ledger_entries ON
+	      <replaceable>table</replaceable>.source_ledger_id =
+	      ledger_entries.ledger_entry_id</literal></quote>.
+	</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>
+      Using the same schema given
+      <link linkend="dbiresultsetjoins">in the beginning of this
+	chapter</link>, adding the following table schema:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting><![CDATA[
+<table name="payments">
+  <column name="payment_id" datatype="int64_t" primarykey='1' />
+  <column name="source_ledger_id" datatype="int64_t" />
+  <column name="dest_ledger_id" datatype="int64_t" />
+
+  <join class="ledger_entries" type="inner join" name="source_ledger_id">
+    <column foreigncolumn='ledger_entry_id'>source_ledger_id</column>
+  </join>
+
+  <join class="ledger_entries" type="inner join" name="dest_ledger_id">
+    <column foreigncolumn='ledger_entry_id'>dest_ledger_id</column>
+  </join>
+</table>]]></programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      This adds a <literal>payments</literal> table to the schema. It has
+      two fields, <literal>source_ledger_id</literal> and
+      <literal>dest_ledger_id</literal>. Each one of them is a foreign key
+      to <literal>ledger_id</literal> in the <literal>ledger_entries</literal>
+      table.
+    </para>
+
+    <para>
+      By default, the
+      <tag class="element">join</tag>
+      method's name is
+      <methodname>join_<replaceable>class</replaceable></methodname>.
+      With two different joins, to the same <literal>ledger_entries</literal>
+      table, returning a <classname>ledger_entries::base::joins</classname>,
+      this doesn't work.
+      An optional
+      <tag class="attribute">name</tag>
+      attribute must specify a non-default name for the join.
+      This example creates
+      <methodname>join_source_ledger_id</methodname>() and
+      <methodname>join_dest_ledger_id</methodname>(), each returning
+      a <classname>ledger_entries::base::joins</classname>.
+    </para>
+
+    &dbijoinexamplecode;
+
+    <para>
+      This example joins the <literal>payments</literal> table to the
+      <literal>ledger_entries</literal> on both of the foreign keys, and each
+      one is subsequently joined to the <literal>accounts</literal> table.
+      The resultset automatically sets a unique alias for each occurence of
+      a table, in a join. This example uses <methodname>get_table_alias</methodname>()
+      to retrieve the alias of each occurence of <literal>accounts</literal>,
+      and use it in the resultset's constraint.
+    </para>
+
+    <para>
+      This example results in the following &SQL; (with some whitespace added
+      for readability):
+    </para>
+
+    &dbijoinexamplesql;
+
+  </section>
+
+  <section id="dbiresultsetsnested">
+    <title>Nested resultsets</title>
+
+    <para>
+      Using the <link linkend="dbiresultsetjoins">same schema given
+	in the beginning of this chapter</link>, the following
+      example executes the equivalent of
+      <quote><literal>SELECT * from accounts</literal></quote> followed by a
+      <quote><literal>SELECT * from ledger_entries where
+	  account_id=<replaceable>value</replaceable></literal></quote>
+      for each row in
+      the <literal>accounts</literal> resultset, substituting that row's
+      <varname>account_id</varname> value for
+      <replaceable>value</replaceable>:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+accounts accounts_rs=accounts::create(conn);
+
+for (const accounts::base::row &amp;row: *accounts_rs)
+{
+    ledger_entries account_ledger=row-&gt;join_ledger_entries();
+
+    for (const example2::ledger_entries::base::row &amp;row: *account_ledger)
+    {
+       // ...</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      Each
+      <classname><replaceable>class</replaceable>::base::row</classname>,
+      each row in <classname>class</classname>'s resultset, also implements
+      <methodname>join_<replaceable>class</replaceable></methodname>()
+      methods, from the schema, like the resultset does, but in a slightly
+      different way.
+    </para>
+
+    <para>
+      The row's
+      <methodname>join_<replaceable>class</replaceable></methodname>()
+      returns a new resultset,
+      <classname><replaceable>class</replaceable></classname> instead of a
+      <classname><replaceable>class</replaceable>::base::joins</classname>
+      and initializes it with a
+      <link linkend="dbiresultsetconstraints">constraint</link>
+      based on the values of the
+      row's key fields.
+    </para>
+
+    <para>
+      This has the effect of creating a resultset that represents the rows
+      in the foreign table that the row joins to.
+      The resulting resultset is no different than
+      any other resultset, and accepts additional constraints, by
+      calling its <methodname>search</methodname>() method. For example:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+accounts accounts_rs=accounts::create(conn);
+
+for (const accounts::base::row &amp;row: *accounts_rs)
+{
+    ledger_entries account_ledger=row-&gt;join_ledger_entries();
+
+    account_ledger->search("amount", "&gt;", 0);
+    for (const example2::ledger_entries::base::row &amp;row: *account_ledger)
+    {
+       // ...</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      This example results in nested resultsets that execute
+      <quote><literal>SELECT * from ledger_entries where
+	  account_id=<replaceable>value</replaceable> AND
+	  amount &gt; 0</literal></quote>
+      for each row in
+      the <literal>accounts</literal> resultset.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting><![CDATA[
+<table name="ledger_entries">
+  <column name="ledger_entry_id" datatype="int64_t" primarykey='1' />
+  <column name="account_id" datatype="int64_t"/>
+  <column name="ledger_date" datatype="x::ymd"/>
+  <column name="amount" datatype="double"/>
+
+  <join class="accounts" type="inner join" only="1">
+    <column>account_id</column>
+  </join>
+</table>]]></programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      A <tag class="element">join</tag> element has two optional attributes,
+      <tag class="attribute">only</tag> and
+      <tag class="attribute">maybe</tag>, which are mutually exclusive.
+      These attributes take effect for nested resultset joins only,
+      for <methodname>join_<replaceable>classname</replaceable></methodname>()
+      methods implemented by
+      <classname><replaceable>classname</replaceable>::base::row</classname>,
+      and do not apply to a resultset's
+      <methodname>join_<replaceable>classname</replaceable></methodname>()s.
+    </para>
+
+    <para>
+      They have the effect of
+      having the
+       <classname><replaceable>classname</replaceable>::base::row</classname>'s
+      <methodname>join_<replaceable>joinname</replaceable></methodname>()
+      automatically using
+      <link linkend="onlymaybe"><methodname>only</methodname>() or
+      <methodname>maybe</methodname>()</link>, and returning another
+      <classname><replaceable>class</replaceable>::base::row</classname> or
+      <classname><replaceable>class</replaceable>::base::rowptr</classname>,
+      respectively.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+int64_t ledger_id;
+
+auto ledger_entries_rs=ledger_entries::create(conn);
+
+ledger_entries_rs->search("ledger_entry_id", "=", ledger_id);
+
+auto ledger_entry=ledger_entries_rs->only();
+
+auto account=ledger_entry->join_accounts();</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      In the example schema, the <literal>accounts</literal> table's
+      <literal>account_id</literal> is a foreign key in the
+      <literal>ledger_entries</literal> table, so the
+      <literal>ledger_entries</literal>'s join to
+      <literal>accounts</literal> using <literal>account_id</literal>
+      always joins one row from <literal>accounts</literal>.
+      Without the
+      <tag class="attribute">only</tag> attribute,
+      <methodname>join_accounts</methodname>() returns, by default, a resultset
+      which always ends up containing one row.
+      <tag class="attribute">only</tag> saves the trouble of always
+      invoking <methodname>only</methodname>() on the resultset, and changes
+      <methodname>join_accounts</methodname>() so that it returns
+      an <classname>accounts::base::row</classname> directly.
+    </para>
+
+    <para>
+      Similarly, the
+      <tag class="attribute">maybe</tag> attribute changes
+      <methodname>join_<replaceable>joinname</replaceable></methodname>()
+      so that it uses
+      <methodname>maybe</methodname>() and returns
+      a <classname><replaceable>class</replaceable>::base::rowptr</classname>.
+    </para>
+
+    <note>
+      <para>
+	The resulting
+	<classname><replaceable>class</replaceable>::base::row</classname>
+	or
+	<classname><replaceable>class</replaceable>::base::rowptr</classname>
+	gets cached.
+	Invoking
+	<methodname>join_<replaceable>joinname</replaceable></methodname>()
+	again returns the same row, and does not create another resultset
+	and execute it.
+      </para>
+
+      <para>
+	Since
+	<tag class="attribute">only</tag>
+	or
+	<tag class="attribute">maybe</tag> create the nested resultset
+	and immediately iterate over it, it's not possible to add additional
+	joins to the nested resultset and
+	<link linkend="dbiresultsetjoinprefetch">prefetch rows</link> from
+	them.
+	Use
+	<tag class="attribute">only</tag>
+	and
+	<tag class="attribute">maybe</tag> only when it this is never
+	required.
+      </para>
+    </note>
+
+    <para>
+      One suggested naming convention is to always define two joins, from a
+      table with a foreign key to the table with the primary key, like this:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting><![CDATA[
+<schema>
+  <table name="ledger_entries">
+
+    <!-- ... -->
+
+    <join class="accounts" joinname="account_id" type="inner join">
+      <column>account_id</column>
+    </join>
+
+    <join class="accounts" joinname="account" type="inner join" only="1">
+      <column>account_id</column>
+    </join>
+  </table>
+</schema>
+]]></programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <methodname>join_account</methodname>() returns a row and
+      <methodname>join_account_id</methodname>() returns a resultset for the
+      same logical join.
+    </para>
+  </section>
+
+  <section id="dbiresultsetjoinprefetch">
+    <title>Prefetching rows from joined tables</title>
+
+    <blockquote>
+      <informalexample>
+	<variablelist>
+	  <varlistentry>
+	    <term>Schema (partial):</term>
+	    <listitem>
+	      <programlisting><![CDATA[
+  ...
+  <table name="ledger_entries">
+    <column name="ledger_entry_id" datatype="int64_t" primarykey='1' />
+    <column name="account_id" datatype="int64_t"/>
+    <column name="ledger_date" datatype="x::ymd"/>
+    <column name="amount" datatype="double"/>
+
+    <join class="accounts" type="inner join" only="1">
+      <column>account_id</column>
+    </join>
+
+    <join class="payments" type="inner_join" maybe="1" name="source_ledger_id">
+      <column foreigncolumn='source_ledger_id'>ledger_entry_id</column>
+    </join>
+
+    <join class="payments" type="inner_join" maybe="1" name="dest_ledger_id">
+      <column foreigncolumn='dest_ledger_id'>ledger_entry_id</column>
+    </join>
+
+  </table>
+
+  <table name="payments">
+    <column name="payment_id" datatype="int64_t" primarykey='1' />
+    <column name="source_ledger_id" datatype="int64_t" />
+    <column name="dest_ledger_id" datatype="int64_t" />
+
+    <join class="ledger_entries" type="inner join" name="source_ledger_id" only="1">
+      <column foreigncolumn='ledger_entry_id'>source_ledger_id</column>
+    </join>
+
+    <join class="ledger_entries" type="inner join" name="dest_ledger_id" only="1">
+      <column foreigncolumn='ledger_entry_id'>dest_ledger_id</column>
+    </join>
+  </table>
+
+  ...
+]]></programlisting>
+	    </listitem>
+	  </varlistentry>
+
+	  <varlistentry>
+	    <term>Code:</term>
+	    <listitem>
+	      <programlisting><![CDATA[
+int64_t key;
+
+// ...
+payments payments_rs=payments::create(conn);
+
+payments_rs->search("payment_id", "=", key);
+
+]]></programlisting>
+	    </listitem>
+	  </varlistentry>
+	</variablelist>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      This partial example creates a resultset on the
+      <literal>payments</literal> table with a constraint that
+      retrieves a single row, for the given <literal>payment_id</literal>.
+      The <literal>payments</literal> table has two joins to the
+      <literal>ledger_entries</literal> table, which get added to the resultset
+      and presumably, there will be other
+      <methodname>search</methodname>() constraints (not shown) that
+      reference the joined tables.
+    </para>
+
+    <para>
+      A resultset for the <literal>payments</literal> table
+      always returns a <classname>row</classname> that has only
+      the columns from the <literal>payments</literal> table. The resulting
+      <literal>SELECT</literal> &SQL; query lists only its table's columns,
+      and a <link linkend="dbiresultsetsnested">nested resultset</link> is
+      required to retrieve the corresponding row or rows from the joined
+      table. Prefetching eliminates the need to make an additional query:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting><![CDATA[
+int64_t key;
+
+// ...
+payments payments_rs=payments::create(conn);
+
+payments_rs->search("payment_id", "=", key);
+
+ledger_entries::base::joins
+     source_ledger_id_join=payments_rs->join_source_ledger_id(),
+     dest_ledger_id_join=payments_rs->join_dest_ledger_id();
+
+ledger_entries::base::prefetchedrow
+    prefetched_src_ledger=source_ledger_id_join->prefetch(),
+    prefetched_dst_ledger=dest_ledger_id_join->prefetch();
+
+for (const payments::base::row &payment: *payments)
+{
+    ledger_entries::base::row source_ledger=prefetched_src_ledger->row,
+                              dest_ledger=prefetched_dst_ledger->row;
+// ...
+]]></programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      Iterating over a
+      <classname><replaceable>class</replaceable></classname>
+      result iterates over
+      <classname><replaceable>class</replaceable>::base::row</classname>s.
+      Each join to a
+      <classname><replaceable>joinclass</replaceable></classname>'s table,
+      a
+      <classname><replaceable>joinclass</replaceable>::base::joins</classname>
+      implements a <methodname>prefetch</methodname>() method that returns a
+      <classname><replaceable>joinclass</replaceable>::base::prefetchedrow</classname>.
+      Invoking <methodname>prefetch</methodname>() has the following effect:
+    </para>
+
+    <itemizedlist>
+      <listitem>
+	<para>
+	  The
+	  <classname><replaceable>joinclass</replaceable></classname>'s table's
+	  columns get added to the columns in the <literal>SELECT</literal>
+	  query.
+	</para>
+      </listitem>
+
+      <listitem>
+	<para>
+	  Iterating to each row from
+	  <classname><replaceable>class</replaceable></classname>'s table,
+	  sets each
+	  <classname><replaceable>joinclass</replaceable>::base::prefetchedrow</classname>'s
+	  <varname>row</varname>
+	  to
+	  <classname><replaceable>joinclass</replaceable>::base::row</classname>
+	  from the additional columns.
+	</para>
+      </listitem>
+
+      <listitem>
+	<para>
+	  <methodname>prefetch</methodname>() must be invoked before
+	  getting the beginning iterator value from
+	  <methodname>begin</methodname>(), or before the range iteration
+	  starts. If the resultset gets iterated over again,
+	  <methodname>prefetch</methodname>() must be invoked again, in order
+	  to return the
+	  <classname><replaceable>joinclass</replaceable>::base::prefetchedrow</classname>
+	  for the second iteration.
+	</para>
+      </listitem>
+    </itemizedlist>
+
+    <note>
+      <para>
+	If a row in the resultset's table gets joined to multiple rows
+	in another table, the row occurs once in the &SQL; results for each
+	joined row, naturally. The row gets iterated over once, for each
+	occurence of the row in the query's resultset. Each iteration
+	prefetches the corresponding joined row, into the
+	<classname><replaceable>joinclass</replaceable>::base::prefetchedrow</classname>.
+      </para>
+    </note>
+
+    <blockquote>
+      <informalexample>
+	<programlisting><![CDATA[
+ledger_entries::base::prefetchedrow
+    prefetched_src_ledger=source_ledger_id_join->prefetch(),
+    prefetched_dst_ledger=dest_ledger_id_join->prefetch();
+
+payments::base::row payment=payments->only();
+ledger_entries::base::row source_ledger=prefetched_src_ledger->row,
+                          dest_ledger=prefetched_dst_ledger->row;
+// ...
+]]></programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      Prefetched rows are also available after invoking
+      <link linkend="dbiresultsetlimit"><methodname>only</methodname></link>()
+      (or <methodname>maybe</methodname>(),
+      if it returns a non-<methodname>null</methodname>() row).
+    </para>
+  </section>
+</chapter>
+<!--
+Local Variables:
+mode: sgml
+sgml-parent-document: ("book.xml" "part" "chapter")
+End:
+-->

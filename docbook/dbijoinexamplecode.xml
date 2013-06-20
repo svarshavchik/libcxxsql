@@ -1,0 +1,22 @@
+<blockquote>
+    <informalexample>
+        <programlisting><![CDATA[
+auto payments_rs=payments::create(conn);
+
+auto source_account=payments_rs->join_source_ledger_id()->join_accounts();
+
+auto dest_account=payments_rs->join_dest_ledger_id()->join_accounts();
+
+payments_rs->search(source_account->get_table_alias() + ".code", "=", "Acct1",
+                    dest_account->get_table_alias() + ".code", "=", "Acct2");
+
+for (const payments_rs::base::row &row: *payments_rs)
+{
+    std::cout << row->payment_id.value()
+              << " "
+              << row->source_ledger_id.value()
+              << " "
+              << row->dest_ledger_id.value();
+}]]></programlisting>
+    </informalexample>
+</blockquote>

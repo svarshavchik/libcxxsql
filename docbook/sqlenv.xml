@@ -41,13 +41,13 @@ henv-&gt;get_data_sources(data_sources);</programlisting>
   <para>
     <methodname>get_drivers</methodname>() and
     <methodname>get_data_sources</methodname>() populate a
-    <classname>std::map</classname> keyed by a driver or a data source name,
-    with the value being a description.
+    <classname>std::map</classname> keyed by a driver or a data source name.
+    The value is the description of the data source.
   </para>
 </chapter>
 <!--
 Local Variables:
 mode: sgml
-sgml-parent-document: ("book.xml" "book" "chapter")
+sgml-parent-document: ("book.xml" "part" "chapter")
 End:
 -->

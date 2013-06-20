@@ -149,6 +149,27 @@ See COPYING for distribution information.
       However, using an installable package is strongly recommended.
     </para>
   </simplesect>
+
+  <simplesect>
+    <title>Developing applications with &app;</title>
+
+    <para>
+      See <ulink url="../core.html">&libcxxname;'s autotools
+	instructions</ulink>. &app; uses the same build framework.
+      Bare-bones <filename>Makefile.am</filename>:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+@LIBCXX_AM@
+
+bin_PROGRAMS=main
+main_SOURCES=main.C
+main_LDADD=-lcxxsql -lcxx</programlisting>
+      </informalexample>
+    </blockquote>
+  </simplesect>
 </section>
 
 <!--

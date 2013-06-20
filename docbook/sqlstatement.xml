@@ -206,6 +206,23 @@ for (const auto &amp;param:params)
     closed.
   </para>
 
+  <section id="sqlconndebug">
+    <title>Logging executed &SQL;</title>
+
+    <para>
+      All executed &SQL; is logged by the
+      <classname>&ns;::sql::execute</classname> pseudo-class at the
+      <literal>debug</literal> level.
+      Setting the <quote>&ns;::sql::execute::@log::level</quote> &libcxx;
+      <ulink url="../logger.html">application property</ulink> logs
+      literal &SQL; according to the application's logging configuration.
+      If the application uses &libcxx;'s <ulink url="../options.html">option
+	parsing classes</ulink>, passing the
+      <quote>--set-property &ns;::sql::execute::@log::level=debug</quote>
+      parameter logs all &SQL; (by default, to standard error).
+    </para>
+  </section>
+
   <section id="sqlconnexecute">
     <title>Combining <methodname>prepare</methodname>() with <methodname>execute</methodname>()</title>
 
@@ -658,6 +675,36 @@ while (tables->fetch(titledesc, prices, "instock", instock))
       <quote>price</quote> and <quote>discount</quote> fields as
       <classname>float</classname>s, and an integer
       <quote>instock</quote> field, which may be <literal>NULL</literal>.
+    </para>
+  </section>
+
+  <section id="sqlstatementfetchlimit">
+    <title>Limiting the number of rows fetched</title>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+auto stmt=conn->prepare("SELECT price FROM books order by stock_id");
+
+stmt->limit(10);
+
+stmt->execute();
+
+double price;
+
+while (stmt->fetch(0, price))
+{
+    // ...
+}</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <methodname>limit</methodname>() must be invoked before execute(), and
+      it sets the upper limit on the number of rows returned by the SELECT. If
+      the SELECT returns more rows, the additional rows get ignored. This is
+      done using the underlying database driver's most efficient way. The
+      default setting of 0 specifies no upper limit on the number of rows.
     </para>
   </section>
 
@@ -1279,7 +1326,7 @@ stmt->modify_fetched_row(0, "UPDATE memos SET memo_text=?", "New memo text");</p
       single row resultsets obtained from <methodname>fetch</methodname>().
       Specify a 0-based row number to reference the appropriate row
       in a multi-result resultset from <methodname>fetch_vectors</methodname>()
-      (which, sadly, <link linkend="sqlbugs">may not work correctly</link>).
+      (which, sadly, <link linkend="knownissues">may not work correctly</link>).
       The second parameter is an
       <literal>UPDATE</literal> or <literal>DELETE</literal> statement, with
       the remaining parameters, if any, specifying any parameter values;
@@ -1348,7 +1395,7 @@ while (stmt->fetch("memo_text", memo_text))
       <link linkend="sqlconnectionsettings"><methodname>config_get_batch_support</methodname></link>()
       to verify whether the database driver supports &SQL; batches with
       <literal>SELECT</literal> statements, or other &SQL; statements that
-      update or delete rows (except <link linkend="sqlbugs">when they're
+      update or delete rows (except <link linkend="knownissues">when they're
 	not</link>).
     </para>
 
@@ -1398,6 +1445,6 @@ while (stmt->fetch("memo_text", memo_text))
 <!--
 Local Variables:
 mode: sgml
-sgml-parent-document: ("book.xml" "book" "chapter")
+sgml-parent-document: ("book.xml" "part" "chapter")
 End:
 -->

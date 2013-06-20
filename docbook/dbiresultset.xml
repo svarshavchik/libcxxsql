@@ -1,0 +1,529 @@
+<!--
+
+Copyright 2013 Double Precision, Inc.
+See COPYING for distribution information.
+
+-->
+
+<chapter id="dbiresultset">
+  <title>Creating resultsets</title>
+
+  <para>
+    A resultset object represents the contents of a table in a &SQL; database.
+    Processing an <acronym>XML</acronym>
+    schema file with a stylesheet, as described below, creates C++ header
+    and source files that define resultset classes and their methods.
+    The stylesheet processor
+    creates header and source files that declare a resultset class for each
+    table defined in the <acronym>XML</acronym> file:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <variablelist>
+	<varlistentry>
+	  <term><filename>accounting.xml</filename>:</term>
+	  <listitem>
+	    <programlisting><![CDATA[
+<schema>
+  <table name="accounts">
+    <column name="account_id" datatype="int64_t" primarykey="1" />
+    <column name="name" />
+    <column name="balance" datatype="double" />
+  </table>
+</schema>]]></programlisting>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
+	  <term>Code:</term>
+	  <listitem>
+	    <programlisting><![CDATA[
+#include "accounting.H"
+
+// ...
+
+accounts accounts=accounts::create(conn);
+
+    for (accounts::base::iterator b=accounts->begin(), e=accounts->end();
+        b != e; ++b)
+    {
+        accounts::base::row row=*b;
+
+        std::cout << row->account_id.value() << std::endl;
+
+        if (!row->name.isnull())
+            std::cout << row->name.value() << std::endl;
+
+        std::cout << row->balance.value() << std::endl;
+    }]]></programlisting>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    This example does an equivalent of
+    <quote>SELECT * FROM accounts</quote>, and then shows the results
+    (the actual &SQL; explicitly lists the columns from the schema file,
+    in place of the <quote>*</quote>).
+    The stylesheet turns the <acronym>XML</acronym> file
+    <filename>accounting.xml</filename> into
+    <filename>accounting.C</filename> and <filename>accounting.H</filename>.
+    This gets compiled and <link linkend="intro">linked against
+      <option>-lcxxsql</option></link>.
+  </para>
+
+  <para>
+    The <acronym>XML</acronym>
+    schema file gets processed by an an <acronym>XSLT</acronym>
+    stylesheet, usually installed as
+    <filename>/usr/share/libcxx/buildschema.xsl</filename> or
+    <filename>/usr/local/share/libcxx/buildschema.xsl</filename>.
+    Use an <acronym>XSLT</acronym> processor, such as
+    <command>xsltproc</command> to turn it into C++ class
+    definitions. With the above example saved as
+    <filename>accounting.xml</filename>:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+xsltproc  --stringparam mode decl /usr/share/libcxx/buildschema.xsl accounting.xml &gt;accounting.H
+
+xsltproc  --stringparam mode impl /usr/share/libcxx/buildschema.xsl accounting.xml &gt;accounting.C</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    The <filename>buildschema.xsl</filename> stylesheet has a required
+    <quote>mode</quote> parameter, that must be set. This is an example that
+    uses the <command>xsltproc</command> <acronym>XSLT</acronym> processor.
+    Check other processors' documentation for instructions on setting
+    stylesheet parameters. The values for the <quote>mode</quote> parameter
+    are:
+  </para>
+
+  <variablelist>
+    <varlistentry>
+      <term><literal>decl</literal></term>
+
+      <listitem>
+    <para>
+      Generate a header file that declares C++
+      classes for the tables defined in the <acronym>XML</acronym>
+      schema file.
+    </para>
+
+    <note>
+      <para>
+        The generated code does not have <quote>ifndef/define</quote>
+        guards.
+      </para>
+    </note>
+      </listitem>
+    </varlistentry>
+
+    <varlistentry>
+      <term><literal>impl</literal></term>
+
+      <listitem>
+    <para>
+      Generate C++ code that implements the
+      corresponding classes, templates, and methods.
+    </para>
+
+    <note>
+      <para>
+        The generated code does not have a <quote>#include</quote>
+        that pulls in a header file. It's expected that the generated
+        C++ code does not get compiled directly, but gets included,
+        together with the header file, from a stub C++ source file.
+      </para>
+    </note>
+      </listitem>
+    </varlistentry>
+  </variablelist>
+
+  <section id="dbiresultsetmakefile">
+    <title><command>automake</command> macros</title>
+
+    <para>
+      This <command>automake</command> macro generates
+      rules to build C++ source from schema files:
+    </para>
+
+    <blockquote>
+      <informalexample>
+    <variablelist>
+      <varlistentry>
+        <term><filename>configure.ac</filename>:</term>
+        <listitem>
+          <programlisting>
+...
+LIBCXX_INIT
+...</programlisting>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><filename>Makefile.am</filename>:</term>
+        <listitem>
+          <programlisting>
+@LIBCXX_AM@
+
+bin_PROGRAMS=app
+
+#...
+
+$(call SCHEMA_GEN,accounting)
+
+#...
+
+app_SOURCES=main.C ui.C # ...
+</programlisting>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      The <literal>SCHEMA_GEN</literal> macro defines Makefile rules for
+      building both the header file and the code file.
+      This example generates <filename>Makefile</filename> rules that build
+      <filename>accounting.H</filename>
+      and
+      <filename>accounting.C</filename>
+      from
+      <filename>accounting.xml</filename>.
+      It's expected that
+      <filename>accounting.H</filename>
+      gets <literal>#include</literal>d by the rest of the source,
+      and one of the
+      other source files also
+      <literal>#include</literal>s the <filename>accounting.C</filename> file,
+      so that the class definition get included and linked with.
+      The <filename>accounting.C</filename> file should not be listed
+      in any <quote>_SOURCES</quote>. Both it, and the <literal>H</literal>
+      file, get created from the <acronym>XML</acronym> schema. The
+      <literal>SCHEMA_GEN</literal> macro takes of setting
+      <literal>BUILD_SOURCES</literal> and <literal>CLEANFILES</literal>.
+      Listing <filename>accounting.C</filename> file (the same goes
+      for <filename>accounting.H</filename>) in 
+      <quote>_SOURCES</quote> results in the file getting included in the
+      <quote>dist</quote>ed tarball. This means that the file won't get
+      recreated if the source gets subsequently built against a new
+      version of &app;, resulting in a likely
+      compilation problem.
+    </para>
+  </section>
+
+  <section id="resultsetobjects">
+    <title>Resultset objects created from a schema file</title>
+
+    <blockquote>
+      <informalexample>
+    <variablelist>
+      <varlistentry>
+        <term>Schema file:</term>
+        <listitem>
+          <programlisting><![CDATA[
+<schema>
+  <table name="accounts">
+    <column name="account_id" datatype="int64_t" primarykey="1" />
+    <column name="name" />
+    <column name="balance" datatype="double" />
+  </table>
+</schema>]]></programlisting>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>Code:</term>
+        <listitem>
+          <programlisting><![CDATA[
+accounts all_accounts=accounts::create(conn);
+
+for (accounts::base::iterator b=all_accounts->begin(), e=all_accounts->end();
+    b != e; ++b)
+{
+    accounts::base::row row=*b;
+
+    std::cout << row->account_id.value() << std::endl;
+
+    if (!row->name.isnull())
+        std::cout << row->name.value() << std::endl;
+
+    std::cout << row->balance.value() << std::endl;
+}]]></programlisting>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      The C++ code created by <filename>buildschema.xsl</filename> defines a
+      <ulink url="../ref.html">reference-counted object</ulink> whose name
+      is the same as each table's name.
+      In this example <classname>accounts</classname> is a resultset for the
+      <literal>accounts</literal> table.
+      The resultsets are subclasses of
+      <ulink url="&link-typedef-x--sql--dbi-resultset;"><classname>&ns;::sql::dbi::resultset</classname></ulink>s.
+    </para>
+
+    <para>
+      The reference-counted objects have a <methodname>begin</methodname>()
+      and an <methodname>end</methodname>() method
+      that return a
+      <classname><replaceable>class</replaceable>::base::iterator</classname>
+      that define an input sequence over the table's rows.
+      Other methods, described later, add constraints that translate to
+      &SQL; <literal>WHERE</literal> and other clauses. But without them,
+      iterating over the input sequence becomes an equivalent to a simple
+      <quote>SELECT * FROM <replaceable>table</replaceable></quote>.
+    </para>
+
+    <para>
+      The iterators iterate over
+      <classname><replaceable>class</replaceable>::base::row</classname>s,
+      each one is a single row in the table.
+      Each <tag class="element">column</tag> is a member of the
+      <classname><replaceable>class</replaceable>::base::row</classname>,
+      whose <methodname>value</methodname>() returns the value of the
+      column in that row.
+    </para>
+
+    <para>
+      The above example schema file defines a table with three columns,
+      <quote>account_id</quote>, <quote>name</quote>, and
+      <quote>balance</quote>; consequently
+      <literal>account_id.value()</literal>,
+      <literal>name.value()</literal>,
+      <literal>balance.value()</literal> return the values of the corresponding
+      columns, in each row.
+      By default, each column value is a <classname>std::string</classname>.
+      An optional <tag class="attribute">datatype</tag> attribute specifies
+      a different datatype to use for the column's value.
+      An optional <tag class="primarykey">primarykey</tag> attribute specifies
+      the table's primary key column(s). All tables must have primary keys.
+      Primary keys are used when
+      <link linkend="dbiresultsetupdate">updating</link> and
+      <link linkend="dbiresultsetinsert">inserting</link> new rows.
+    </para>
+
+    <para>
+      All fields also have an
+      <methodname><replaceable>field</replaceable>.isnull</methodname>()
+      method, that returns an indication if the value is
+      <literal>NULL</literal> or not.
+      It's possible that a field could be <literal>NULL</literal>
+      even if it's <quote>NOT NULL</quote> in the schema:
+      <link linkend="dbiresultsetjoinprefetch">prefetching a row</link> from
+      an outer-joined table produces a row with all <literal>NULL</literal>
+      fields if the outer joined table did not have a row that matched the
+      join!
+    </para>
+
+    <para>
+      The <methodname>begin</methodname>()
+      and <methodname>end</methodname>() methods are suitable for
+      range iteration:
+    </para>
+
+    <blockquote>
+      <informalexample>
+        <programlisting>
+accounts all_accounts=accounts::create(conn);
+
+for (const auto &amp;row: *all_accounts)
+{
+    // ...
+}</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <note>
+      <para>
+	Do not use a temporary with range iteration:
+      </para>
+
+      <blockquote>
+	<informalexample>
+	  <programlisting>
+for (const auto &amp;row: *accounts:create())</programlisting>
+	</informalexample>
+      </blockquote>
+
+      <para>
+	This is because range iteration uses
+	<ulink url="http://octopus/ng/create.html#rangervalue">rvalue references</ulink>,
+	and <methodname>create</methodname>() goes out of scope in the body,
+	resulting in the iterators getting invoked via a dangling rvalue
+	reference.
+      </para>
+    </note>
+  </section>
+
+  <section id="dbiresultsetclassnames">
+    <title>Resultset class names</title>
+
+    <para>
+      By default, the name of each resultset class is the same name as
+      the underlying table in the &SQL; database.
+      An optional
+      <tag class="element">table</tag> attribute,
+      <tag class="attribute">class</tag>, overrides the name
+      of the generated resultset class:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting><![CDATA[
+<table name="accounts" class="accts">
+
+...]]></programlisting>
+	</informalexample>
+      </blockquote>
+
+    <para>
+      This example creates an
+      <classname>accts</classname> class,
+      instead of <classname>accounts</classname>, that defines a resultset
+      for the <quote>accounts</quote> table:
+    </para>
+
+    <blockquote>
+      <informalexample>
+        <programlisting>
+accts all_accounts=accts::create(conn);
+
+for (const auto &amp;row: *accts)
+
+// ...</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      The result class's name is now <classname>accts</classname>, but this
+      executes an equivalent of <quote>SELECT * from accounts</quote>.
+    </para>
+  </section>
+
+  <section id="dbiresultsetlimit">
+    <title>Setting upper limit on the number of resultset rows</title>
+
+    <blockquote>
+      <informalexample>
+        <programlisting>
+accounts accounts=accounts::create(conn);
+
+accounts-&gt;search("balance", "&gt;", 0);
+accounts-&gt;limit(10);
+
+for (const auto &amp;row: *all_accounts)
+{
+    // ...
+}</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <methodname>limit</methodname>() limits the number of rows that the
+      resultsets iterate over, the upper limit on the resultset's size.
+      The default value of 0 specifies no limit on the resultset's size.
+      The above example will iterate over at most ten rows. If the
+      executed <literal>SELECT</literal> query would return more rows, the
+      additional rows get ignored.
+    </para>
+
+    <para>
+      This is done using the underlying database driver's most efficient
+      implementation (which, sadly, <link linkend="knownissues">is buggy
+	sometimes</link>).
+    </para>
+
+    <blockquote>
+      <informalexample>
+        <programlisting>
+int64_t account_id;
+
+// ...
+
+accounts accounts=accounts::create(conn);
+
+accounts-&gt;search("account_id", "=", account_id);
+
+accounts::base::rowptr maybe_row=accounts-&gt;maybe();
+
+accounts::base::row must_row=accounts-&gt;only();
+
+</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para id="onlymaybe">
+      It is common to expect a <literal>SELECT</literal> to return at most
+      one row, or maybe no rows at all. This is the
+      expected result when using
+      constraints on the table's primary key.
+      <methodname>maybe</methodname>() and
+      <methodname>only</methodname>() methods are shortcuts that implement
+      the following steps:
+    </para>
+
+    <itemizedlist>
+      <listitem>
+	<para>
+	  They call <methodname>begin</methodname>(2) and
+	  <methodname>end</methodname>() to iterate over the resultset's
+	  input sequence. An overloaded <methodname>begin</methodname>()
+	  takes an optional parameter that sets the maximum number of rows,
+	  as if by <methodname>limit</methodname>() for that input sequence
+	  only. <methodname>begin</methodname>() without a parameter defaults
+	  to using the limit set by <methodname>limit</methodname>().
+	</para>
+      </listitem>
+
+      <listitem>
+	<para>
+	  If the input sequence contains no rows,
+	  <methodname>maybe</methodname>() returns a null
+	  <classname><replaceable>class</replaceable>::base::rowptr</classname>,
+	  and <methodname>only</methodname>() throws an exception.
+	</para>
+      </listitem>
+
+      <listitem>
+	<para>
+	  If the input sequence contains one row,
+	  <methodname>maybe</methodname>() returns a
+	  non-null
+	  <classname><replaceable>class</replaceable>::base::rowptr</classname>
+	  (which is an <ulink url="../ref.html"><classname>&ns;::ptr</classname></ulink>)
+	  and <methodname>only</methodname>() returns a
+	  <classname><replaceable>class</replaceable>::base::row</classname>
+	  (which is an <ulink url="../ref.html"><classname>&ns;::ref</classname></ulink>).
+	</para>
+      </listitem>
+
+      <listitem>
+	<para>
+	  Both <methodname>only</methodname>() and
+	  <methodname>maybe</methodname>() throw an exception
+	  when the input sequence has two rows (using
+	  <methodname>begin</methodname>(2) to set the maximum number of
+	  returned rows to two, it doesn't matter how many actual rows the
+	  query would return, all that matters is that there's more than
+	  one).
+	</para>
+      </listitem>
+    </itemizedlist>
+  </section>
+</chapter>
+<!--
+Local Variables:
+mode: sgml
+sgml-parent-document: ("book.xml" "part" "chapter")
+End:
+-->

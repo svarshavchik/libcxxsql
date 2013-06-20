@@ -254,6 +254,6 @@ std::string catalog, schema, proc, column;
 <!--
 Local Variables:
 mode: sgml
-sgml-parent-document: ("book.xml" "book" "chapter")
+sgml-parent-document: ("book.xml" "part" "chapter")
 End:
 -->

@@ -1,0 +1,81 @@
+<!--
+
+Copyright 2013 Double Precision, Inc.
+See COPYING for distribution information.
+
+-->
+
+<chapter id="dbiconstraints">
+  <title>Standalone constraints</title>
+
+  <para>
+    <ulink url="&link-typedef-x--sql--dbi-constraint;"><classname>&ns;::sql::dbi::constraint</classname></ulink>
+    provides the means for constructing a <literal>WHERE</literal>
+    clause the same way that constraints are
+    <link linkend="dbiresultsetconstraints">added by
+      <methodname>search</methodname>() to a resultset</link>.
+    Use this to construct the &SQL;
+    logical building blocks. The resulting &SQL; is always
+    well-formed.
+    The end result of a
+    <classname>&ns;::sql::dbi::constraint</classname> is literal
+    &SQL; text, and passing the
+    <classname>&ns;::sql::dbi::constraint</classname> to
+    <link linkend="sqlstatement"><methodname>execute</methodname></link>()
+    provides values for any placeholders in the literal &SQL;.
+    Resulsets' <methodname>search</methodname>() uses this
+    class directly, and
+    the <classname>&ns;::sql::dbi::constraint</classname>
+    exposes the underlying code.
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+#include &lt;&ns;/sql/dbi/constraint.H&gt;
+
+int key;
+&ns;::sql::connection conn;
+
+// ...
+
+&ns;::sql::dbi::constraint where=&ns;::sql::dbi::constraint::create("a", "=", key);
+
+std::ostringstream o;
+
+o &lt;&lt; "SELECT * FROM memos WHERE " &lt;&lt; where;
+
+auto stmt=conn-&gt;prepare(o.str());
+stmt->execute(constraint);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    The literal SQL constructed in this example is
+    <quote><literal>SELECT * FROM memos WHERE a = ?</literal></quote>
+    (the actual SQL literal might have a few
+    extra set of parenthesis that are not shown here, for clarity).
+    After forming and <methodname>prepare</methodname>()-ing the complete
+    &SQL; query, passing the
+    <classname>&ns;::sql::dbi::constraint</classname> to
+    <methodname>execute</methodname>() supplies the values for the
+    <quote><literal>?</literal></quote> placeholder parameters in the
+    constructed constraint.
+  </para>
+
+  <para>
+    <classname>&ns;::sql::dbi::constraint</classname>()'s
+    <function>create</function>() takes all parameters that can be used
+    with <methodname>search()</methodname>, including
+    <ulink url="&link-function-x--sql--dbi-AND;"><function>AND</function></ulink>(),
+    <ulink url="&link-function-x--sql--dbi-OR;"><function>OR</function></ulink>(),
+    and
+    <ulink url="&link-function-x--sql--dbi-NOT;"><function>NOT</function></ulink>().
+  </para>
+</chapter>
+<!--
+Local Variables:
+mode: sgml
+sgml-parent-document: ("book.xml" "part" "chapter")
+End:
+-->

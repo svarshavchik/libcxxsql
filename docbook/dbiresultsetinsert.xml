@@ -1,0 +1,271 @@
+<!--
+
+Copyright 2013 Double Precision, Inc.
+See COPYING for distribution information.
+
+-->
+
+<chapter id="dbiresultsetinsert">
+  <title><literal>INSERTing</literal> into a resultset</title>
+
+  <blockquote>
+    <informalexample>
+      <variablelist>
+	<varlistentry>
+	  <term>Schema:</term>
+	  <listitem>
+	    <programlisting><![CDATA[
+<schema>
+  <table name="accounts">
+    <column name="account_id" datatype="int64_t" primarykey='1' />
+    <column name="code" />
+
+    <join class="ledger_entries">
+      <column>account_id</column>
+    </join>
+  </table>
+
+  <table name="ledger_entries">
+    <column name="ledger_entry_id" datatype="int64_t" primarykey='1' />
+    <column name="account_id" datatype="int64_t"/>
+    <column name="ledger_date" datatype="x::ymd"/>
+    <column name="amount" datatype="double"/>
+
+    <join class="accounts" type="inner join" only="1">
+      <column>account_id</column>
+    </join>
+  </table>
+</schema>
+]]></programlisting>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
+	  <term>Code:</term>
+	  <listitem>
+	    <programlisting><![CDATA[
+auto accounts_rs=accounts::create(conn);
+
+accounts_rs::base::row account_1=
+    accounts_rs->insert("account_id", 1,
+                         "code", "Code1");
+]]></programlisting>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    <methodname>insert</methodname>() takes a variable list of
+    column name and value
+    tuples, similar to
+    <link linkend="dbiresultsetupdate"><methodname>update</methodname></link>(),
+    and executes an &SQL; <literal>INSERT</literal> statement.
+    Any datatype that
+    <link linkend="sqlstatement"><methodname>execute</methodname></link>()
+    implements can be used for each individual value.
+    <literal>nullptr</literal> specifies the
+    value as &SQL; <literal>NULL</literal>. This example executes &SQL;
+    that's equivalent to:
+    <quote><literal>INSERT INTO accounts(account_id, code)
+    VALUES(1, "Code1")</literal></quote>.
+    <methodname>insert</methodname>(), like
+    <methodname>uppdate</methodname>() also takes
+    <classname>std::map</classname> for a parameter, which gets interpreted
+    the same way.
+  </para>
+
+  <para>
+    Column names given to
+    <methodname>insert</methodname>()
+    must include all of the underlying table's primary keys
+    (except for <link linkend="dbiresultsetinsertserial">serial keys</link>).
+    <methodname>insert</methodname>() returns the newly-inserted row, with
+    its newly-inserted values.
+    This is done by immediately
+    <literal>SELECT</literal>ing the row, by its primary key,
+    after inserting it. As such, the
+    new row's values accurately reflect any default column values,
+    as defined in the database schema.
+  </para>
+
+  <para>
+    <methodname>insert</methodname>() throws an exception if the resultset
+    has a
+    <link linkend="dbigrouphavingorder"><methodname>group_by</methodname>(),
+    <methodname>having</methodname>(), or an
+    <methodname>order_by</methodname>()</link>.
+  </para>
+
+  <para>
+    The resultset may contain
+    <quote><replaceable>name</replaceable>=<replaceable>value</replaceable></quote>
+    <methodname>search</methodname>() constraints. They get turned into
+    column name and value tuples, as if they were given directly in the
+    <methodname>insert</methodname>(). This automatically
+    <quote>does the right thing</quote> with nested resultsets.
+  </para>
+
+  <section id="dbiresultsetinsertnested">
+    <title><literal>INSERTing</literal> into a nested resultset</title>
+
+    <blockquote>
+      <informalexample>
+	<programlisting><![CDATA[
+// ...
+auto ledger_entries=account_1->join_ledger_entries();
+
+auto new_row=ledger_entries->insert("ledger_entry_id", 10,
+                                    "ledger_date", ]]>&ns;<![CDATA[::ymd(),
+                                    "amount", 99);
+]]></programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      Continuing the previous example,
+      <varname>account_1</varname> is a new row in the
+      <literal>accounts</literal> table, with <varname>account_id</varname>
+      of <literal>1</literal>.
+      This example creates a nested resultset from the row. The
+      <varname>ledger_entries</varname> resultset has a
+      <quote>account_id=1</quote> <methodname>search</methodname>() constraint.
+      As a result, the subsequent <methodname>insert</methodname>() inserts
+      new row that has the given column values, and with the
+      <varname>account_id</varname> column set to <literal>1</literal>.
+    </para>
+
+    <para>
+      The underlying concept is that a
+      <methodname>join_<replaceable>classname</replaceable></methodname>()
+      returns a resultset with a constraint for the joined-to rows.
+      Calling <methodname>insert</methodname>() on that constraint inserts
+      a new row that meets that constraint.
+    </para>
+  </section>
+
+  <section id="dbiresultsetinsertserial">
+    <title><literal>INSERTing</literal> into tables with serial/autoincrement columns</title>
+
+    <para>
+      <quote>primarykey="1"</quote> in the schema file specifies a primary
+      key column.
+      <quote>primarykey="serial"</quote> in the schema file specifies a primary
+      key that's an auto-incremented serial number column.
+      This would be an <quote>auto_increment</quote> MySQL column and
+      a <quote>serial</quote> or a <quote>bigserial</quote> PostgreSQL
+      column:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting><![CDATA[
+<schema>
+
+  <table class="accounts">
+    <column name="account_id" datatype="int64_t" primarykey='serial' />
+    <column name="code" />
+
+    <join class="ledger_entries">
+      <column>account_id</column>
+    </join>
+  </table>
+
+  <table class="transactions">
+    <column name="transaction_id" datatype="int64_t" primarykey='serial' />
+
+    <join class="ledger_entries">
+      <column>transaction_id</column>
+    </join>
+  </table>
+
+  <table class="ledger_entries">
+    <column name="ledger_entry_id" datatype="int64_t" primarykey='serial' />
+    <column name="account_id" datatype="int64_t"/>
+    <column name="transaction_id" datatype="int64_t"/>
+    <column name="ledger_date" datatype="x::ymd"/>
+    <column name="amount" datatype="double"/>
+
+    <join class="accounts" type="inner join" only="1">
+      <column>account_id</column>
+    </join>
+
+    <join class="transactions" type="inner join" only="1">
+      <column>transaction_id</column>
+    </join>
+  </table>
+</schema>]]></programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      Normally, <methodname>insert</methodname>() requires the values for
+      all primary key columns,
+      but the value of a <quote><literal>serial</literal></quote> primary key
+      columns is not required.
+      This is usually the case, and the new row returned by
+      <methodname>insert</methodname>() gives the value of the serial column
+      in the new row:
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting><![CDATA[
+auto accounts_rs=accounts::create(conn);
+auto transactions_rs=transactions::create(conn);
+
+auto first_account=accounts_rs->insert("code", "Code1");
+auto second_account=accounts_rs->insert("code", "Code2");
+
+auto transaction=transactions_rs->insert();
+
+auto ledger_entries_rs=transaction->join_ledger_entries();
+
+auto first_entry=ledger_entries_rs
+    ->insert("account_id", first_account->account_id.value(),
+             "ledger_date", ]]>&ns;<![CDATA[::ymd(),
+             "amount", 10);
+auto second_entry=ledger_entries_rs
+    ->insert("account_id", second_account->account_id.value(),
+             "ledger_date", ]]>&ns;<![CDATA[::ymd(),
+             "amount", -10);
+]]></programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      This example creats two new rows in the <literal>accounts</literal>
+      table, and one new row in the <literal>transactions</literal> table.
+      Note that <literal>transactions</literal> table's
+      <methodname>insert</methodname>() takes no parameters.
+      The only column in the <literal>transactions</literal> table is
+      a serial primary key, so nothing else is needed.
+    </para>
+
+    <para>
+      Afterwards, two new rows get created in the
+      <literal>ledger_entries</literal> table. Both rows have their
+      <literal>transaction_id</literal> column's value set to the primary
+      key in the new <literal>transactions</literal> row (since they get
+      <link linkend="dbiresultsetinsertnested">inserted via a nested
+	resultset</link> from the <literal>transactions</literal>
+      table. Each row also sets a corresponding value for
+      its <literal>account_id</literal> column, from one of the two new
+      rows in the <literal>accounts</literal> table.
+    </para>
+
+    <note>
+      <para>
+	At this time, serial primary keys are implemented only with MySQL and
+	PostgreSQL databases.
+      </para>
+    </note>
+  </section>
+</chapter>
+<!--
+Local Variables:
+mode: sgml
+sgml-parent-document: ("book.xml" "part" "chapter")
+End:
+-->

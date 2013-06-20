@@ -1,0 +1,64 @@
+<!--
+
+Copyright 2013 Double Precision, Inc.
+See COPYING for distribution information.
+
+-->
+
+<chapter id="dbigrouphavingorder">
+  <title>Adding <literal>GROUP BY</literal>, <literal>HAVING</literal>, and <literal>ORDER BY</literal> to resultsets</title>
+
+  <para>
+    Using the schema given in the <link linkend="dbiresultsetjoins">previous
+    chapter</link>:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+auto all_accounts=example2::accounts::create(conn);
+
+all_accounts-&gt;join_ledger_entries();
+all_accounts-&gt;group_by(all_accounts-&gt;get_table_alias() + ".account_id");
+all_accounts-&gt;having("COUNT(*)", ">", 2);
+all_accounts-&gt;order_by(all_accounts-&gt;get_table_alias() + ".account_id DESC");
+
+for (const auto &amp;row: *all_accounts)
+
+// ...</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    <methodname>group_by</methodname>() and <methodname>order_by</methodname>()
+    take a variadic list of string parameters (alternatively, they can be
+    called more than once, and the results are combined together). The
+    list forms a <literal>GROUP BY</literal> or a <literal>ORDER BY</literal>
+    clause, in the resulting &SQL;. The strings in each respective list get
+    concatened, with commas separating them.
+  </para>
+
+  <para>
+    <methodname>having</methodname>() works list
+    <link linkend="dbiresultsetconstraints"><methodname>search</methodname></link>()
+    and takes the same parameters. The only difference between the two
+    methods is each one's respective &SQL; forms either a
+    <literal>WHERE</literal> or a <literal>HAVING</literal> clause.
+  </para>
+
+  <para>
+    The above example executes an &SQL; query that's equivalent to
+    <quote><literal>SELECT accounts.account_id, accounts.code FROM accounts AS
+    accounts LEFT JOIN ledger_entries AS ledger_entries ON
+    accounts.account_id=ledger_entries.account_id
+    GROUP BY accounts.account_id
+    HAVING COUNT(*) &gt; 2
+    ORDER BY accounts.account_id DESC</literal></quote>.
+  </para>
+</chapter>
+<!--
+Local Variables:
+mode: sgml
+sgml-parent-document: ("book.xml" "part" "chapter")
+End:
+-->

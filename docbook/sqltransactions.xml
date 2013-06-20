@@ -213,6 +213,6 @@ void move_money(const &ns;::sql::connection &amp;conn,
 <!--
 Local Variables:
 mode: sgml
-sgml-parent-document: ("book.xml" "book" "chapter")
+sgml-parent-document: ("book.xml" "part" "chapter")
 End:
 -->

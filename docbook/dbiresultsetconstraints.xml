@@ -1,0 +1,306 @@
+<!--
+
+Copyright 2013 Double Precision, Inc.
+See COPYING for distribution information.
+
+-->
+
+<chapter id="dbiresultsetconstraints">
+  <title>Adding constraints to resultsets</title>
+
+  <para>
+    Using the schema from the previous chapter:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+accounts all_accounts=accounts::create(conn);
+
+all_accounts-&gt;search("balance", "&gt;", 0);
+
+for (const auto &amp;row: *all_accounts)
+{
+    // ...
+}</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    <methodname>search</methodname>() adds a constraint to the resultset.
+    basically a <literal>WHERE</literal>. The above example iterates over
+    an equivalent of <quote>SELECT <replaceable>fields</replaceable> FROM
+      accounts WHERE balance &gt; 0</quote>.
+  </para>
+
+  <para>
+    Each basic constraint consists of three parameters, the first two of
+    each are strings. The first parameter is
+    a string that gives the name of some column from the resultset's
+    schema, but it's
+    also possible to get away with a
+    short &SQL; expression. The second parameter is a string with
+    an appropriate comparison operator, like <quote>=</quote> or
+    <quote>!=</quote>.
+  </para>
+
+  <para>
+    The third parameter is the value that's being compared. The resulting raw
+    &SQL; gets formed by concatenating all three parameters together,
+    and replacing the value with a <quote><literal>?</literal></quote>
+    placeholder. The placeholder's value gets provided as a
+    discrete parameter in the
+    internal
+    <link linkend="sqlstatement"><methodname>execute</methodname></link>()
+    call
+    that executes the query. The value's type can be any type that
+    <methodname>execute</methodname>() normally accepts.
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+all_accounts-&gt;search("a", "=", key,
+                     "b", "!=", value);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    This uses columns that are actually a part of the sample schema,
+    from the previous chapter; this is just to illustrate this example.
+    The resulting query's
+    <quote><literal>WHERE</literal></quote> constraints specifies
+    <quote><literal>A = ? AND b != ?</literal></quote>.
+    <methodname>search</methodname>() takes a variadic list of
+    constraint specifications. Multiple constraint specifications
+    get joined together by <quote><literal>AND</literal></quote>s.
+  </para>
+
+  <para>
+    Alternatively, each constraint can be passed as a separate
+    <methodname>search</methodname>(), this produces
+    identical results. Multiple calls to <methodname>search</methodname>() also
+    combine constraints using
+    <quote><literal>AND</literal></quote>s:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+all_accounts-&gt;search("a", "=", key);
+all_accounts-&gt;search("b", "!=", value);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    This also produces the <quote><literal>A = ? AND b != ?</literal></quote>
+    constraint.
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+all_accounts-&gt;search(&ns;::sql::dbi::AND("a", "=", key, "b", "!=", value));
+
+all_accounts-&gt;search(&ns;::sql::dbi::OR("a", "=", key, "b", "!=", value));</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    <ulink url="&link-function-x--sql--dbi-AND;"><function>AND</function></ulink>()
+    takes individual constraints as parameters, and explicitly combines
+    them with <literal>AND</literal>s.
+    <ulink url="&link-function-x--sql--dbi-OR;"><function>OR</function></ulink>()
+    uses <literal>OR</literal> clauses instead of
+    <literal>AND</literal> clauses. The second call to
+    <methodname>search</methodname>() constructs
+    <quote><literal>a = ? OR b != ?</literal></quote>.
+    They can be combined accordingly:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+all_accounts-&gt;search(&ns;::sql::dbi::AND("key", "=", 4,
+                                      &ns;::sql::dbi::OR("category", "=", "memo",
+                                                      "category", "=", "note"),
+                     "discarded", "=", 0));</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    This constructs a <quote><literal>(key = ? AND (category = ? OR
+	category = ?) AND discarded = ?)</literal></quote> constraint.
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+all_accounts-&gt;search(&ns;::sql::dbi::NOT("category", "&gt;", 0,
+                                      "category", "&lt;", 10);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    <ulink url="&link-function-x--sql--dbi-NOT;"><function>NOT</function></ulink>()
+    is equivalent to
+    <ulink url="&link-function-x--sql--dbi-AND;"><function>AND</function></ulink>(),
+    inside an &SQL; <quote><literal>NOT</literal></quote>.
+    This example constructs
+    <quote><literal>NOT (category &gt; ? AND category &lt; ?)</literal></quote>
+    &SQL;.
+  </para>
+
+  <para>
+    Giving <literal>nullptr</literal> for a value creates &SQL;
+    that tests for a <literal>NULL</literal>:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+all_accounts-&gt;search("category", "&gt;", 0,
+                     "discarded", "=", nullptr);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    This example constructs
+    <quote><literal>CATEGORY > ? AND discarded IS NULL</literal></quote> &SQL;.
+    Using <quote><literal>!=</literal></quote> instead of
+    <quote><literal>=</literal></quote> produces an
+    <quote><literal>IS NOT NULL</literal></quote> instead, and all other
+    comparison strings for a <literal>nullptr</literal>
+    result in a dummy <quote><literal>1=0</literal></quote>
+    constraint, which always evaluates to a logical false.
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+all_accounts-&gt;search("total", &ns;::sql::text("="), "sum(entries)");</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    Passing a
+    <quote>&ns;::sql::text(<replaceable>comparison</replaceable>)</quote>
+    for the comparison parameter has the effect of processing the comparison
+    value, the third parameter, as unquoted &SQL; literal text. The above
+    example produces the <quote><literal>total=sum(entries)</literal></quote>
+    constraint, instead of <quote><literal>total=?</literal></quote>, with
+    the <quote>sum(entries)</quote> given as a string value for the
+    placeholder.
+  </para>
+
+  <para>
+    And just to make things a bit more complicated, with
+    <classname>&ns;::sql::text</classname> the comparison value can
+    be a non-empty <classname>std::list&lt;std::string&gt;</classname>,
+    with the first value in the list becoming the unquoted &SQL; literal
+    text, with the remaining strings in the list giving values for the
+    placeholders in the literal text:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+all_accounts-&gt;search("account_id", &ns;::sql::text("="),
+    std::list&lt;std::string&gt;({
+        "currval(pg_get_serial_sequence(?, ?))",
+	table_name, column
+    }));</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    The library uses this construct internally to process
+    <link linkend="dbiresultsetinsertserial">serial columns</link>; it's
+    unlikely that this would be useful in general.
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+std::vector&lt;int&gt; codes={1,5};
+
+all_accounts-&gt;search("category", ">", 0,
+                     "code", "=", codes);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    Comparing something using <quote><literal>=</literal></quote> against a
+    <classname>std::vector</classname> results in an
+    <quote><literal>IN</literal></quote> &SQL;. The above example constructs
+    <quote><literal>category > ? AND code IN (?, ?)</literal></quote>,
+    with the number of placeholders depending on the size of the vector.
+    The constraint makes a copy of the vector (which may or may not be a
+    performance issue), and passes its values to
+    <methodname>execute</methodname>(), for the placeholders.
+  </para>
+
+  <para>
+    The <quote><literal>!=</literal></quote> comparator creates a
+    <quote><literal>NOT IN</literal></quote> &SQL;. Any other comparator throws
+    an exception.
+  </para>
+
+  <para>
+    An empty vector constructs substitute &SQL; that returns the appropriate
+    value. Using <quote><literal>=</literal></quote> to compare anything to an
+    empty list constructs a <quote><literal>1=0</literal></quote> &SQL;,
+    that evaluates to a logical false. Comparing
+    <quote><literal>x</literal></quote> against an
+    empty list using <quote><literal>!=</literal></quote> constructs a
+    <quote><literal>x IS NOT NULL</literal></quote> &SQL;:
+  </para>
+
+  <itemizedlist>
+    <listitem>
+      <para>
+	This is because the logical assertion
+	<quote><replaceable>value</replaceable> is
+	  in an empty list</quote> is always a logical false.
+      </para>
+    </listitem>
+
+    <listitem>
+      <para>
+	<quote><replaceable>value</replaceable> is
+	  not in an empty list</quote> is always true; however, by definition,
+	any comparison that involves a <literal>NULL</literal> value is
+	always false.
+	<quote><literal>x IS NOT NULL</literal></quote> &SQL; in this
+	situation calculates the correct result.
+      </para>
+    </listitem>
+  </itemizedlist>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+auto codes=&ns;;:vector&lt;int&gt;::create();
+
+auto constraint=&ns;::sql::dbi::AND("category", ">", 0,
+                                 "code", "=", codes);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    An <ulink url="../vector.html"><classname>&ns;::vector</classname></ulink>
+    may be used in place of a <classname>std::vector</classname>.
+    This avoids the need to copy an entire <classname>std::vector</classname>
+    into the resultset's constraint.
+    However, no locking takes place here,
+    and the vector should not be modified by other threads, at least until
+    after <methodname>begin</methodname>() and
+    <methodname>end</methodname>() return the sequence iterators.
+  </para>
+</chapter>
+<!--
+Local Variables:
+mode: sgml
+sgml-parent-document: ("book.xml" "part" "chapter")
+End:
+-->

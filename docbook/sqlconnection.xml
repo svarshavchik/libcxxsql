@@ -19,20 +19,41 @@ auto conn=connret.first;
 
 auto fullconnspec=connret.second;
 
-</programlisting>
+auto conn2=conn->clone();</programlisting>
     </informalexample>
   </blockquote>
 
   <para>
     Invoking an <link linkend="sqlenv">environment object</link>'s
-    <methodname>connect</methodname>() establishes a connection to an &SQL;
-    server, and returns a <classname>std::pair</classname> with an
-    <ulink url="&link-typedef-x--sql-connection;"><classname>&ns;::sql::connection</classname></ulink>
-    reference to a
+    <methodname>connect</methodname>() method establishes a connection to an
+    &SQL; server, and returns a <classname>std::pair</classname>.
+    Its <varname>first</varname> is a
+    <ulink url="&link-typedef-x--sql-connection;"><classname>&ns;::sql::connection</classname></ulink>,
+    a reference to a
     <ulink url="&link-refobj;">reference-counted object</ulink>,
-    that represents the connection to the server,
-    and a fully-qualified connection string.
-    An <ulink url="&link-exceptions;">exception gets thrown</ulink> if the
+    that represents the connection to the server;
+    its <varname>second</varname> is
+    a fully-qualified connection string. This string is a copy of the
+    connection string parameter to <methodname>connect</methodname>() with
+    explicit values for all defaulted or prompted connection parameters
+    (see below). Passing the fully qualified connection string to
+    <methodname>connect</methodname>() is guaranteed to create another
+    connection to the same database server, using the same configuration
+    settings as the first connection (presuming that the database server is
+    available, of course).
+  </para>
+
+  <para>
+    <methodname>clone</methodname>() takes an existing connection and creates
+    another connection, to the same server and database, using the same
+    parameters. It is equivalent to calling
+    <methodname>connect</methodname>() and passing the first connection's
+    fully qualified connection string.
+  </para>
+
+  <para>
+    In all cases,
+    an <ulink url="&link-exceptions;">exception gets thrown</ulink> if the
     connection fails.
   </para>
 
@@ -109,7 +130,7 @@ std::pair&lt;&ns;::sql::connection, std::string&gt; connret=henv->connect("DSN",
 
   <para>
     The last parameter to <methodname>connect</methodname>() is optional,
-    whether the connection parameters are specifies as a single string, or
+    whether the connection parameters get specified as a single string, or
     as discrete values, and is one of the following
     <ulink url="&link-enum-x--sql-connect-flags;"><classname>&ns;::sql::connect_flags</classname></ulink>
     values:
@@ -120,9 +141,9 @@ std::pair&lt;&ns;::sql::connection, std::string&gt; connret=henv->connect("DSN",
       <term><literal>&ns;::sql::connect_flags::noprompt</literal></term>
       <listitem>
 	<para>
-	  This is the default value. If the connection string does not
-	  specify all parameters that are needed for a connection, an
-	  exception gets thrown.
+	  This is the default value.
+	  An exception gets thrown if the connection string does not
+	  specify all parameters that are needed for a connection.
 	</para>
       </listitem>
     </varlistentry>
@@ -130,8 +151,7 @@ std::pair&lt;&ns;::sql::connection, std::string&gt; connret=henv->connect("DSN",
       <term><literal>&ns;::sql::connect_flags::complete_required</literal></term>
       <listitem>
 	<para>
-	  If the connection string does not specify all parameters that are
-	  needed for a connection, issue a prompt for parameters that are
+	  Interactively prompt for connection parameters that are
 	  required, but absent from the connection string.
 	</para>
 
@@ -216,7 +236,7 @@ std::pair&lt;&ns;::sql::connection, std::string&gt; connret=henv->connect("DRIVE
       <informalexample>
 	<programlisting>
 std::pair&lt;&ns;::sql::connection, std::string&gt; connret=henv->connect("DRIVER={MySQL};DATABASE=dev;"
-    "SERVER=localhost;UID=citizenkane;PWD=rosebud");</programlisting>
+    "SERVER=localhost;UID=citizenkane;PWD=rosebud;option=67108864");</programlisting>
       </informalexample>
     </blockquote>
 
@@ -267,6 +287,6 @@ std::string database_name=conn->config_get_database_name();</programlisting>
 <!--
 Local Variables:
 mode: sgml
-sgml-parent-document: ("book.xml" "book" "chapter")
+sgml-parent-document: ("book.xml" "part" "chapter")
 End:
 -->

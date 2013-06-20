@@ -288,6 +288,6 @@ statement-&gt;fetch_vectors(4, "memo_column", blob_vector_fetch);</programlistin
 <!--
 Local Variables:
 mode: sgml
-sgml-parent-document: ("book.xml" "book" "chapter")
+sgml-parent-document: ("book.xml" "part" "chapter")
 End:
 -->

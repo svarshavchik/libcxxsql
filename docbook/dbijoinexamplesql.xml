@@ -1,0 +1,16 @@
+<blockquote>
+    <informalexample>
+	<programlisting>
+SELECT payments.payment_id, payments.source_ledger_id,
+       payments.dest_ledger_id FROM payments AS payments
+    INNER JOIN ledger_entries AS ledger_entries
+       ON payments.source_ledger_id=ledger_entries.ledger_entry_id
+       INNER JOIN accounts AS accounts
+           ON ledger_entries.account_id=accounts.account_id
+    INNER JOIN ledger_entries AS ledger_entries_2
+       ON payments.dest_ledger_id=ledger_entries_2.ledger_entry_id
+       INNER JOIN accounts AS accounts_2
+           ON ledger_entries_2.account_id=accounts_2.account_id
+WHERE (accounts.code = 'Acct1' AND accounts_2.code = 'Acct2')</programlisting>
+    </informalexample>
+</blockquote>

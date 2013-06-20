@@ -1,0 +1,229 @@
+<!--
+
+Copyright 2013 Double Precision, Inc.
+See COPYING for distribution information.
+
+-->
+
+<chapter id="dbiresultsetupdate">
+  <title><literal>UPDATE</literal> resultsets</title>
+
+  <blockquote>
+    <informalexample>
+      <variablelist>
+	<varlistentry>
+	  <term>Schema:</term>
+	  <listitem>
+	    <programlisting><![CDATA[
+<schema>
+  <table name="accounts">
+    <column name="account_id" datatype="int64_t" primarykey='1' />
+    <column name="account_type_id" datatype="int64_t" />
+    <column name="code" />
+
+    <join class="ledger_entries">
+      <column>account_id</column>
+    </join>
+  </table>
+
+  <table name="ledger_entries">
+    <column name="ledger_entry_id" datatype="int64_t" primarykey='1' />
+    <column name="account_id" datatype="int64_t"/>
+    <column name="ledger_date" datatype="x::ymd"/>
+    <column name="amount" datatype="double"/>
+
+    <join class="accounts" type="inner join" only="1">
+      <column>account_id</column>
+    </join>
+  </table>
+</schema>
+]]></programlisting>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
+	  <term>Code:</term>
+	  <listitem>
+	    <programlisting><![CDATA[
+int64_t key;
+
+// ...
+
+auto accounts_rs=accounts::create(conn);
+
+accounts->search("account_id", "=", key);
+
+size_t n=accounts->update("account_type_id", 2,
+                          "code", nullptr);
+]]></programlisting>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    <methodname>update</methodname>() takes a variable list of name and value
+    tuples and creates an &SQL; <literal>UPDATE</literal> statement out of
+    the resultset.
+    For each value, <methodname>update</methodname>() takes any datatype that
+    <link linkend="sqlstatement"><methodname>execute</methodname></link>()
+    understands.
+    <literal>nullptr</literal> specifies a
+    <literal>NULL</literal> valus. This example executes &SQL;
+    that's equivalent to:
+    <quote><literal>UPDATE accounts SET
+    account_type_id=2, code=NULL WHERE
+    account_id = <replaceable>key</replaceable></literal></quote>.
+    <methodname>update</methodname>() also takes a
+    <classname>std::map</classname> in place of a name and value tuple,
+    which gets interpreted as a list of name/value tuples:
+  </para>
+
+  <blockquote>
+    <informalexample>
+      <programlisting>
+std::map&lt;std::string, int&gt; values;
+
+values["account_type_id"]=2;
+
+size_t n=accounts-&gt;update(values, "code", nullptr);</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    This example also executes the same <literal>UPDATE</literal>,
+    <quote><literal>account_type_id=2, code=NULL</literal></quote>.
+  </para>
+
+  <para>
+    <methodname>update</methodname>() returns the number of updated rows,
+    with the semantics defined by the database drivers. Some database drivers
+    do not count the rows whose columns already had the same values that
+    <methodname>update</methodname>() set, others count all rows
+    selected by the resultset's constraint.
+  </para>
+
+  <para>
+    <methodname>update</methodname>() throws an exception if the resultset
+    has a
+    <link linkend="dbigrouphavingorder"><methodname>group_by</methodname>(),
+    <methodname>having</methodname>(), or an
+    <methodname>order_by</methodname>()</link>.
+  </para>
+
+  <section id="dbiresultsetupdatejoins">
+    <title><literal>UPDATE</literal>s using joins</title>
+
+    <para>
+      It's generally possible to <methodname>update</methodname>() a resultset
+      with joins. The problem is that the &SQL; syntax for update with joins
+      varies, depending on the database driver. Currently,
+      &app; handles it only with MySQL and
+      Postgres drivers. The first  <methodname>update</methodname>() for a
+      resultset with join runs a heuristic check on the database driver, and
+      selects the appropriate syntax for an &SQL; <literal>UPDATE</literal>
+      with joins.
+    </para>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+auto accounts_rs=accounts::create(conn);
+
+auto join=accounts_rs-&gt;join_ledger_entries();
+
+accounts_rs-&gt;search(join-&gt;get_table_alias() + ".amount", "=", 0);
+
+size_t n=accounts_rs-&gt;update("account_type_id", "1");</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      This example executes &SQL; equivalent to either:
+    </para>
+    <itemizedlist>
+      <listitem>
+	<para>
+	  <quote><literal>UPDATE accounts AS accounts
+	      LEFT JOIN ledger_entries AS
+	      ledger_entries ON accounts.account_id=ledger_entries.account_id
+	      SET account_type_id=? WHERE (ledger_entries.amount =
+	      0)</literal></quote>, or
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  <quote><literal>UPDATE accounts AS
+	      updated_table SET account_type_id=? FROM
+	      (SELECT accounts.account_id FROM accounts AS accounts LEFT JOIN
+	      ledger_entries AS ledger_entries ON
+	      accounts.account_id=ledger_entries.account_id
+	      WHERE (ledger_entries.amount = 0)) AS joins WHERE
+	      updated_table.account_id=joins.account_id</literal></quote>
+	</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>
+      In the latter case, the schema must accuratively specify the table's
+      primary key columns, for the query to work correctly.
+    </para>
+  </section>
+
+  <section id="dbirowupdate">
+    <title>Updating individual rows</title>
+
+    <blockquote>
+      <informalexample>
+	<programlisting>
+int64_t key;
+
+// ...
+
+auto accounts_rs=accounts::create(conn);
+accounts_rs-&gt;search("account_id", "=", key);
+
+auto a=accounts-&gt;only();
+
+std::cout &lt;&lt; "Previous code: " &lt;&lt; a-&gt;code.value() &lt;&lt; std::endl;
+
+a->code.value("Acct6");
+a->update();</programlisting>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      The row objects for each resultset class,
+      <classname><replaceable>classname</replaceable>::base::row</classname>
+      have a member for each column listed in the schema.
+      Each member implement <methodname>value</methodname>() and
+      <methodname>isnull</methodname>(), returning the value of that column
+      in the row.
+    </para>
+
+    <para>
+      <methodname>value</methodname>(<replaceable>v</replaceable>) sets a
+      new value of the column, and
+      <methodname>update</methodname>() executes an &SQL;
+      <literal>UPDATE</literal> statement that updates all modified columns.
+      If no columns were modified, <methodname>update</methodname>() does
+      nothing.
+      The above example executes &SQL; equivalent to
+      <quote><literal>UPDATE accounts SET code='Acct6' where
+	  account_id=<replaceable>key</replaceable></literal></quote>.
+    </para>
+
+    <para>
+      Pass a <literal>nullptr</literal> to <methodname>value</methodname>() to
+      <literal>SET</literal> the column to an &SQL; <literal>NULL</literal>,
+      for those columns that are nullable.
+    </para>
+  </section>
+</chapter>
+<!--
+Local Variables:
+mode: sgml
+sgml-parent-document: ("book.xml" "part" "chapter")
+End:
+-->

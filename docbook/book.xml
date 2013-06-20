@@ -4,7 +4,8 @@
 <!ENTITY % entity-list SYSTEM "entities">
 
 <!ENTITY app "<application><emphasis>LIBCXX</emphasis> SQL Library</application>">
-<!ENTITY libcxx "<ulink url='/'><application>LIBCXX</application></ulink>">
+<!ENTITY libcxxname "<application>LIBCXX</application>">
+<!ENTITY libcxx "<ulink url='/'>&libcxxname;</ulink>">
 <!ENTITY SQL "<acronym>SQL</acronym>">
 <!ENTITY install SYSTEM "install.xml">
 <!ENTITY sqlenv SYSTEM "sqlenv.xml">
@@ -13,6 +14,15 @@
 <!ENTITY sqltransactions SYSTEM "sqltransactions.xml">
 <!ENTITY sqlblobs SYSTEM "sqlblobs.xml">
 <!ENTITY sqlcatalogs SYSTEM "sqlcatalogs.xml">
+<!ENTITY dbiresultset SYSTEM "dbiresultset.xml">
+<!ENTITY dbiresultsetconstraints SYSTEM "dbiresultsetconstraints.xml">
+<!ENTITY dbiresultsetjoins SYSTEM "dbiresultsetjoins.xml">
+<!ENTITY dbigrouphavingorder SYSTEM "dbigrouphavingorder.xml">
+<!ENTITY dbiresultsetupdate SYSTEM "dbiresultsetupdate.xml">
+<!ENTITY dbiresultsetinsert SYSTEM "dbiresultsetinsert.xml">
+<!ENTITY dbisql SYSTEM "dbisql.xml">
+<!ENTITY dbijoinexamplecode SYSTEM "dbijoinexamplecode.xml">
+<!ENTITY dbijoinexamplesql SYSTEM "dbijoinexamplesql.xml">
 <!ENTITY ns "x">
 <!ENTITY ref "<classname>&ns;::ref</classname>">
 <!ENTITY ptr "<classname>&ns;::ptr</classname>">
@@ -48,8 +58,11 @@ See COPYING for distribution information.
 	the <ulink url="http://www.unixodbc.org">unixODBC</ulink> library
 	and provide SQL access to any database server with an
 	<acronym>ODBC</acronym> driver.
-	Use the following classes and templates after
-	<link linkend="INSTALL">installing</link> this library, then
+	Install &libcxx; first, and see its documentation for more information
+	on <ulink url="../core.html">building with &libcxx;</ulink>.
+	Then
+	<link linkend="INSTALL">install</link> this library, and
+	use the following classes and templates after
 	linking with <option>-lcxxsql</option>.
       </para>
 
@@ -77,84 +90,212 @@ See COPYING for distribution information.
 	connection object for each thread.
       </para>
 
-      <note id="sqlbugs">
-	<para>
-	  Not all database-specific <acronym>ODBC</acronym> drivers support
-	  every feature, and some drivers have known limitations, or bugs with
-	  some obscure features. This is a list of known issues, at this time:
-	</para>
+      <para>
+	The <link linkend="sqldbi">&SQL; database interface</link>
+	sub-component of &app; implements an <acronym>XML</acronym> schema
+	for describing the &SQL; database schema, and supplies a stylesheet
+	that creates classes which construct and execute &SQL; queries
+	using an object-oriented interface. Execute
+	<literal>SELECT</literal>,
+	<literal>INSERT</literal>, and
+	<literal>UPDATE</literal> &SQL;, with complex joins, without
+	writing a single character's worth of literal &SQL;, with
+	the <literal>SELECT</literal> producing a beginning and an ending
+	iterator over input sequences that iterate over the
+	<literal>SELECT</literal>ed rows.
+      </para>
+    </section>
 
-	<itemizedlist>
-	  <listitem>
-	    <para>
-	      The current MySQL driver makes severals calls to setlocale()
-	      which changes the
-	      application's global locale, which affects all threads.
-	      Even if the application initializes a global locale at startup,
-	      for the entire application lifetime, other threads may find
-	      their locale changing unexpectedly.
-	    </para>
-	  </listitem>
+    <section id="knownissues">
+      <title>Known issues</title>
+      <para>
+	Not all database-specific <acronym>ODBC</acronym> drivers support
+	every feature, and some drivers have known limitations, or bugs with
+	some obscure features. This is a list of known issues, at this time:
+      </para>
 
-	  <listitem>
-	    <para>
-	      MySQL's <acronym>ODBC</acronym> connector does not implement
-	      <link linkend="sqlblobs">inserting blobs</link> with
-	      <link linkend="sqlstatementvectorparams">execute_vector</link>().
-	      <link linkend="sqlstatementfetchbulk">fetch_vector</link>() will
-	      also not work with blobs until
-	      <ulink url="http://bugs.mysql.com/bug.php?id=61991">http://bugs.mysql.com/bug.php?id=61991</ulink>
-	      gets fixed (the referenced bug affects only blobs, non-blob columns,
-	      which &app; fetches using bound columns, do not appear to be
-	      affected).
-	    </para>
-	  </listitem>
+      <itemizedlist>
+	<listitem>
+	  <para>
+	    The current MySQL driver makes severals calls to setlocale()
+	    which changes the
+	    application's global locale, which affects all threads.
+	    Even if the application initializes a global locale at startup,
+	    for the entire application lifetime, other threads may find
+	    their locale changing unexpectedly.
+	  </para>
+	</listitem>
 
-	  <listitem>
-	    <para>
-	      Blob support with PostgreSQL requires some
-	      <ulink url="http://www.postgresql.org/docs/9.2/static/lo.html">additional
-	      setup</ulink> for what it calls <quote>large objects</quote>.
-	    </para>
-	  </listitem>
+	<listitem>
+	  <para>
+	    MySQL's <acronym>ODBC</acronym> connector does not implement
+	    <link linkend="sqlblobs">inserting blobs</link> with
+	    <link linkend="sqlstatementvectorparams">execute_vector</link>().
+	    <link linkend="sqlstatementfetchbulk">fetch_vector</link>() will
+	    also not work with blobs until
+	    <ulink url="http://bugs.mysql.com/bug.php?id=61991">http://bugs.mysql.com/bug.php?id=61991</ulink>
+	    gets fixed (the referenced bug affects only blobs, non-blob columns,
+	    which &app; fetches using bound columns, do not appear to be
+	    affected).
+	  </para>
+	</listitem>
 
-	  <listitem>
-	    <para>
-	      Positioned updates and deletes do not work with MySQL resultsets
-	      that have more than one row, retrieved by
-	      <link linkend="sqlstatementvectorparams">execute_vector</link>().
-	      It looks like MySQL's ODBC driver always executes a positioned
-	      update or delete for the first row in the resultset.
-	    </para>
-	  </listitem>
+	<listitem>
+	  <para>
+	    Using <link linkend="sqlstatementfetchlimit"><methodname>limit</methodname></link>()
+	    with MySQL's <acronym>ODBC</acronym> connector breaks all
+	    subsequent <link linkend="sqlcatalogs">catalog functions</link>
+	    until
+	    <ulink url="http://bugs.mysql.com/bug.php?id=69554">http://bugs.mysql.com/bug.php?id=69554</ulink>
+	    gets fixed.
+	    This also affects several features in the
+	    <link linkend="sqldbi">&SQL; database interface</link>; namely the
+	    <link linkend="dbiresultsetlimit"><methodname>only</methodname>()
+	    and <methodname>maybe</methodname>() methods</link>,
+	    and
+	    <link linkend="dbiresultsetinsert"><methodname>insert</methodname>()</link>;
+	    because they invoke <methodname>limit</methodname>() internally.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Blob support with PostgreSQL requires some
+	    <ulink url="http://www.postgresql.org/docs/9.2/static/lo.html">additional
+	    setup</ulink> for what it calls <quote>large objects</quote>.
+	  </para>
+	</listitem>
 
-	  <listitem>
-	    <para>
-	      MySQL connections require a connection parameter named
-	      <quote>option</quote> set to "67108864" to enable &SQL; batches.
-	      See MySQL documentation for more information. However,
-	      <link linkend="sqlconnectionsettings"><methodname>config_get_batch_support</methodname></link>()
-	      still shows support for batches even if the option is not set.
-	    </para>
-	  </listitem>
-	</itemizedlist>
-      </note>
+	<listitem>
+	  <para>
+	    Positioned updates and deletes do not work with MySQL resultsets
+	    that have more than one row, retrieved by
+	    <link linkend="sqlstatementvectorparams">execute_vector</link>().
+	    It looks like MySQL's ODBC driver always executes a positioned
+	    update or delete for the first row in the resultset.
+	  </para>
+	</listitem>
+
+	<listitem>
+	  <para>
+	    MySQL connections require a connection parameter named
+	    <quote>option</quote> set to "67108864" to enable &SQL; batches.
+	    This is required by
+	    <link linkend="sqldbi"><classname>&ns;::sql::dbi</classname>
+	    classes</link>.
+	    See MySQL documentation for more information. However,
+	    <link linkend="sqlconnectionsettings"><methodname>config_get_batch_support</methodname></link>()
+	    still shows support for batches even if the option is not set.
+	  </para>
+	</listitem>
+      </itemizedlist>
     </section>
     &install;
   </preface>
 
-  &sqlenv;
-  &sqlconnection;
-  &sqlstatement;
-  &sqltransactions;
-  &sqlblobs;
-  &sqlcatalogs;
+  <part id="sqlcore">
+    <title>Core &SQL; classes</title>
 
+    &sqlenv;
+    &sqlconnection;
+    &sqlstatement;
+    &sqltransactions;
+    &sqlblobs;
+    &sqlcatalogs;
+  </part>
+
+  <part id="sqldbi">
+    <title>&SQL; database interface</title>
+
+    <partintro>
+      <title>Introduction</title>
+
+      <para>
+	The <ulink url="&namespace-x--sql--dbi;"><classname>&ns;::sql::dbi</classname></ulink>
+	namespace implements classes and templates that map
+	&SQL; database tables as objects, similar in spirit to Perl's
+	<literal>DBIx::Class</literal> module.
+	<classname>&ns;::sql::dbi</classname> classes are not used directly.
+	A separate
+	<acronym>XML</acronym> schema file defines the tables in the
+	database, their columns, and keys. This schema file gets processed
+	by an <acronym>XML</acronym> stylesheet file. The stylesheet
+	generates a header and a class file with
+	C++ bindings, that declare
+	<classname>&ns;::sql::dbi</classname> subclasses, based on the
+	specification in the <acronym>XML</acronym> file.
+	The resulting code gets compiled and linked with &app;.
+	The final product is tables and rows in the database that are
+	represented as C++ objects. They get created by instantiating
+	and using these classes;
+	this gets translated to executing &SQL;
+	<literal>SELECT</literal>,
+	<literal>INSERT</literal>, and
+	<literal>UPDATE</literal> statements.
+      </para>
+
+      <para>
+	The generated header and class files implement C++ classes
+	that encapsulate &SQL; tables as
+	<ulink url="../ref.html">reference-counted object</ulink>s called
+	<quote>resultset</quote>s.
+	A resultset class gets defined
+	for each table in the schema file. The resultset is basically a
+	container that produces iterators over input sequences.
+	The input sequence contains row objects. Each row object represents
+	one row in the table. For example, with an appropriate stylesheet:
+      </para>
+
+      &dbijoinexamplecode;
+
+      <para>
+	This executes (an equivalent of) the following &SQL;,
+	and iterates over the <literal>SELECT</literal>ed rows:
+      </para>
+
+      &dbijoinexamplesql;
+
+      <para>
+	Other methods in the resultset create new rows (returning new row
+	objects), or update existing rows in the table. Each row object also
+	implements its own update method, that updates the row in its table
+	with the object's new values.
+      </para>
+
+      <para>
+	An <acronym>XML</acronym> file describes the tables and their joins.
+	The resulting stylesheet generates all classes and methods used in the
+	above example, that implement this query.
+      </para>
+
+      <para>
+	These high level classes and methods are designed for ease of use,
+	rather performance, and may not be the best choice for processing
+	a large set of data, use direct &SQL; and
+	<link linkend="sqlstatementvectorparams">execute_vector</link>() and
+	    <link linkend="sqlstatementfetchbulk">fetch_vector</link>().
+      </para>
+	
+      <note>
+	<para>
+	  A non-default connection parameter is
+	  <link linkend="knownissues">required to use these classes with
+	  MySQL</link>.
+	</para>
+      </note>
+    </partintro>
+    &dbiresultset;
+    &dbiresultsetconstraints;
+    &dbiresultsetjoins;
+    &dbigrouphavingorder;
+    &dbiresultsetupdate;
+    &dbiresultsetinsert;
+    &dbisql;
+  </part>
   <appendix id="COPYING">
     <title>COPYING</title>
 
     <para role="COPYING">
-      &app; SQL classes and templates is free software, distributed under the
+      &app; is free software, distributed under the
       terms of the GPL, version 3:
     </para>
     <blockquote>
