@@ -326,6 +326,78 @@ void testschema(const std::string &connection,
 		if (!ledger_entry->join_dest_ledger_id().null())
 			throw EXCEPTION("maybe() row join was not null");
 	}
+
+	{
+		auto payments=example2::payments::create(conn);
+
+		auto source_ledger_id_join=payments->join_source_ledger_id();
+		auto dest_ledger_id_join=payments->join_dest_ledger_id();
+
+		example2::ledger_entries::base::prefetchedrow
+			prefetched_src_ledger=source_ledger_id_join->prefetch(),
+			prefetched_dst_ledger=dest_ledger_id_join->prefetch();
+
+		payments->search("payment_id", "=", 1);
+
+		bool found=false;
+
+		for (const example2::payments::base::row &payment: *payments)
+		{
+			example2::ledger_entries::base::row
+				source_ledger=prefetched_src_ledger->row,
+				dest_ledger=prefetched_dst_ledger->row;
+
+			std::cout << "Payment ID: "
+				  << payment->payment_id.value()
+				  << " "
+				  << source_ledger->amount.value()
+				  << " "
+				  << dest_ledger->amount.value()
+				  << std::endl;
+
+			if (payment->payment_id.value() != 1 ||
+			    source_ledger->amount.value() != 10 ||
+			    dest_ledger->amount.value() != -10)
+				throw EXCEPTION("Did not receive expected prefetched data");
+			found=true;
+		}
+
+		if (!found)
+			throw EXCEPTION("Did not receive expected prefetched data");
+	}
+
+	{
+		auto payments=example2::payments::create(conn);
+
+		auto source_ledger_id_join=payments->join_source_ledger_id();
+		auto dest_ledger_id_join=payments->join_dest_ledger_id();
+
+		example2::ledger_entries::base::prefetchedrow
+			prefetched_src_ledger=source_ledger_id_join->prefetch(),
+			prefetched_dst_ledger=dest_ledger_id_join->prefetch();
+
+		payments->search("payment_id", "=", 1);
+
+		auto payment=payments->only();
+
+		example2::ledger_entries::base::row
+			source_ledger=prefetched_src_ledger->row,
+			dest_ledger=prefetched_dst_ledger->row;
+
+		std::cout << "Payment ID: "
+			  << payment->payment_id.value()
+			  << " "
+			  << source_ledger->amount.value()
+			  << " "
+			  << dest_ledger->amount.value()
+			  << std::endl;
+
+		if (payment->payment_id.value() != 1 ||
+		    source_ledger->amount.value() != 10 ||
+		    dest_ledger->amount.value() != -10)
+			throw EXCEPTION("Did not receive expected prefetched data from only()");
+	}
+
 }
 
 #include "exampleschema1.H"

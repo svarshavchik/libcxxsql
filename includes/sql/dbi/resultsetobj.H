@@ -159,6 +159,14 @@ protected:
 	//! Add joins to this resultset
 
 	void get_join_sql(std::ostream &o) const;
+
+	//! Invoke prefetch_column_list() for all the joins
+
+	void join_prefetch_column_list(std::vector<std::string> &list) const;
+
+	//! Invoke bind_prefetched_row() for all the joins
+
+	void join_bind_prefetched_row(std::vector<bindrowimpl> &list) const;
 };
 
 //! A row returned by a resultset
@@ -261,6 +269,18 @@ public:
 
 class joinBaseObj : virtual public obj {
 
+protected:
+
+	//! Whether to prefetch the columns from this join
+
+	bindrowimplptr prefetch_flag;
+
+	//! Prefetch a row from this join, install a handler for it.
+
+	inline void install_prefetch(const bindrowimplptr &prefetch_flagArg)
+	{
+		prefetch_flag=prefetch_flagArg;
+	}
 public:
 
 	//! Constructor
@@ -289,6 +309,26 @@ public:
 	//! Building joins for the resultset
 	virtual void get_join_sql_recursive(std::ostream &o) const=0;
 
+	//! If \c prefetch_flag, then call create_columns_list().
+
+	//! In all cases, call prefetch_column_list_recursive() afterwards.
+
+	void prefetch_column_list(std::vector<std::string> &list) const;
+
+	//! Invoke prefetch_column_list() in subjoins
+
+	virtual void prefetch_column_list_recursive(std::vector<std::string>
+						    &list) const=0;
+
+	//! If \c prefetch_flag then add it to the list.
+
+	//! In all cases, call bind_prefetched_recursive() afterwards.
+
+	void bind_prefetched(std::vector<bindrowimpl> &list);
+
+	//! Invoke bind_prefetched() in subjoins
+
+	virtual void bind_prefetched_recursive(std::vector<bindrowimpl> &) const=0;
 };
 
 #if 0

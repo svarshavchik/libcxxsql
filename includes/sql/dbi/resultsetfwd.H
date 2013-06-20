@@ -94,11 +94,18 @@ public:
 
 	//! Bind rows
 	virtual void bind(bindrow::consecutive &)=0;
+
+	//! The row was succesfully fetched
+	virtual void fetched()=0;
 };
 
 //! A reference to a reference-counted bindrow
 
 typedef ref<bindrowimplObj> bindrowimpl;
+
+//! A nullable pointer reference to a reference-counted bindrow
+
+typedef ptr<bindrowimplObj> bindrowimplptr;
 
 #if 0
 {

@@ -168,6 +168,38 @@ void joinBaseObj::create_columns_list(std::vector<std::string> &list)
 	}
 }
 
+void joinBaseObj::prefetch_column_list(std::vector<std::string> &list) const
+{
+	if (!prefetch_flag.null())
+		create_columns_list(list);
+	prefetch_column_list_recursive(list);
+}
+
+void joinBaseObj::bind_prefetched(std::vector<bindrowimpl> &list)
+{
+	if (!prefetch_flag.null())
+	{
+		list.push_back(prefetch_flag);
+		prefetch_flag=bindrowimplptr();
+	}
+
+	bind_prefetched_recursive(list);
+}
+
+void resultsetObj::join_prefetch_column_list(std::vector<std::string> &list)
+	const
+{
+	for (const auto &join:joinlist)
+		join.second->prefetch_column_list(list);
+}
+
+void resultsetObj::join_bind_prefetched_row(std::vector<bindrowimpl> &list)
+	const
+{
+	for (const auto &join:joinlist)
+		join.second->bind_prefetched(list);
+}
+
 void resultsetObj::addjoin(const char *jointype, const ref<joinBaseObj> &join,
 			   std::initializer_list<const char *> &&columns)
 {
