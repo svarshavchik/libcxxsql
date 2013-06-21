@@ -175,12 +175,14 @@ public:
 	{
 	}
 
+	//! Construct SQL
+
+	void get_select_sql(std::ostream &o) const;
+
 protected:
 	//! Called by begin() in subclass to prepare and execute a SELECT
 
-	statement execute_search_sql(size_t limitvalue,
-				     const std::vector<std::string> &columns)
-		const;
+	statement execute_search_sql(size_t limitvalue) const;
 
 	//! Joins added to this resultset
 
@@ -208,6 +210,10 @@ protected:
 	//! Invoke bind_prefetched_row() for all the joins
 
 	void join_bind_prefetched_row(std::vector<bindrowimpl> &list) const;
+
+	//! Resultset implementation subclass forwards this to its create_column_list()
+	virtual void resultset_create_column_list(std::vector<std::string>
+						  &columns) const=0;
 };
 
 //! A row returned by a resultset
@@ -340,7 +346,7 @@ public:
 	//! Column names in this table, null terminated list
 	virtual const char * const *get_table_columns() const=0;
 
-	//! Assemble aliased column list
+	//! Assemble aliased column list for this resultset only
 
 	//! Calls get_table_columns() and get_table_alias(), creates "alias.name" for each
 	//! column, appends it to the given column list

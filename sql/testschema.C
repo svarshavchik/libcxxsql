@@ -430,6 +430,9 @@ void testschema(const std::string &connection,
 
 		if (ids != std::vector<int64_t>({1, 2}))
 			throw EXCEPTION("group by/having/order by failed");
+
+		all_accounts->get_select_sql(std::cout);
+		std::cout << std::endl << std::flush;
 	}
 }
 

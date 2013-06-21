@@ -99,11 +99,25 @@ std::string resultsetObj::aliasesObj::get_alias(const std::string &table_name)
 	return o.str();
 }
 
-statement resultsetObj::execute_search_sql(size_t limitvalue,
-					   const std::vector<std::string>
-					   &columns) const
+statement resultsetObj::execute_search_sql(size_t limitvalue) const
 {
 	std::ostringstream o;
+
+	get_select_sql(o);
+
+	statement stmt=conn->prepare(o.str());
+
+	stmt->limit(limitvalue);
+	stmt->execute(constraint(where), constraint(having_constraint));
+	return stmt;
+}
+
+void resultsetObj::get_select_sql(std::ostream &o) const
+{
+	std::vector<std::string> columns;
+
+	resultset_create_column_list(columns);
+	join_prefetch_column_list(columns);
 
 	const char *sep="SELECT ";
 
@@ -143,12 +157,6 @@ statement resultsetObj::execute_search_sql(size_t limitvalue,
 		o << sep << ob;
 		sep=", ";
 	}
-
-	statement stmt=conn->prepare(o.str());
-
-	stmt->limit(limitvalue);
-	stmt->execute(constraint(where), constraint(having_constraint));
-	return stmt;
 }
 
 void resultsetObj::multiple_rows()
