@@ -398,6 +398,39 @@ void testschema(const std::string &connection,
 			throw EXCEPTION("Did not receive expected prefetched data from only()");
 	}
 
+	{
+		auto ledger_entries=example2::ledger_entries::create(conn);
+
+		ledger_entries->order_by("account_id desc", "ledger_entry_id");
+
+		std::vector<int64_t> ids;
+
+		for (const auto &row: *ledger_entries)
+		{
+			ids.push_back(row->ledger_entry_id.value());
+		}
+
+		if (ids != std::vector<int64_t>({2, 1}))
+			throw EXCEPTION("order by failed");
+	}
+
+	{
+		auto all_accounts=example2::accounts::create(conn);
+
+		all_accounts->join_ledger_entries();
+		all_accounts->group_by(all_accounts->get_table_alias() + ".account_id");
+		all_accounts->having("COUNT(*)", ">", 0);
+		all_accounts->order_by(all_accounts->get_table_alias() + ".account_id");
+		std::vector<int64_t> ids;
+
+		for (const auto &row: *all_accounts)
+		{
+			ids.push_back(row->account_id.value());
+		}
+
+		if (ids != std::vector<int64_t>({1, 2}))
+			throw EXCEPTION("group by/having/order by failed");
+	}
 }
 
 #include "exampleschema1.H"

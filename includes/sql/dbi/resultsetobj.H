@@ -8,6 +8,7 @@
 
 #include <map>
 #include <vector>
+#include <list>
 #include <iostream>
 #include <x/obj.H>
 #include <x/mpobj.H>
@@ -85,6 +86,15 @@ protected:
 
 	ref<constraintObj::andObj> where;
 
+	//! The HAVING constraint. The top level constraint node is an AND clause.
+	ref<constraintObj::andObj> having_constraint;
+
+	//! The GROUP BY
+	std::list<std::string> group_by_list;
+
+	//! The ORDER BY
+	std::list<std::string> order_by_list;
+
 	//! Bind the resultset's row, and any prefetched rows
 
 	class bindrow_all : public bindrow {
@@ -133,6 +143,37 @@ public:
 
 	template<typename ...Args>
 	inline void search(Args && ...args);
+
+	//! Add HAVING
+
+	template<typename ...Args>
+	inline void having(Args && ...args);
+
+	//! Add ORDER BY
+	template<typename ...Args>
+	inline void order_by(const std::string &col, Args && ...args)
+	{
+		order_by_list.push_back(col);
+		order_by(std::forward<Args>(args)...);
+	}
+
+	//! No more ORDER BY
+	inline void order_by()
+	{
+	}
+
+	//! Add ORDER BY
+	template<typename ...Args>
+	inline void group_by(const std::string &col, Args && ...args)
+	{
+		group_by_list.push_back(col);
+		group_by(std::forward<Args>(args)...);
+	}
+
+	//! No more GROUP BY
+	inline void group_by()
+	{
+	}
 
 protected:
 	//! Called by begin() in subclass to prepare and execute a SELECT

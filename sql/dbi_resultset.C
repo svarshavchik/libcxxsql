@@ -5,6 +5,7 @@
 
 #include "libcxx_config.h"
 #include "x/sql/dbi/resultset.H"
+#include "x/sql/dbi/constraint.H"
 #include "x/sql/connection.H"
 #include "x/sql/statement.H"
 
@@ -54,7 +55,8 @@ void resultsetObj::bindrow_all::bind(bind_factory &factory)
 resultsetObj::resultsetObj(const connection &connArg,
 			   const ref<aliasesObj> &aliasesArg)
 	: conn(connArg), maxrows(0), aliases(aliasesArg),
-	  where(ref<constraintObj::andObj>::create())
+	  where(ref<constraintObj::andObj>::create()),
+	  having_constraint(ref<constraintObj::andObj>::create())
 {
 }
 
@@ -120,10 +122,32 @@ statement resultsetObj::execute_search_sql(size_t limitvalue,
 		where->get_select_sql(o);
 	}
 
+	sep=" GROUP BY ";
+
+	for (const auto &g:group_by_list)
+	{
+		o << sep << g;
+		sep=", ";
+	}
+
+	if (!having_constraint->empty())
+	{
+		o << " HAVING ";
+		having_constraint->get_sql(o);
+	}
+
+	sep=" ORDER BY ";
+
+	for (const auto &ob:order_by_list)
+	{
+		o << sep << ob;
+		sep=", ";
+	}
+
 	statement stmt=conn->prepare(o.str());
 
 	stmt->limit(limitvalue);
-	stmt->execute(constraint(where));
+	stmt->execute(constraint(where), constraint(having_constraint));
 	return stmt;
 }
 

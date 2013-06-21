@@ -31,6 +31,12 @@ inline void resultsetObj::search(Args && ...args)
 	where->add(std::forward<Args>(args)...);
 }
 
+template<typename ...Args>
+inline void resultsetObj::having(Args && ...args)
+{
+	having_constraint->add(std::forward<Args>(args)...);
+}
+
 #if 0
 {
 #endif
