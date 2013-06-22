@@ -21,6 +21,7 @@ lib_LTLIBRARIES=libcxxsql.la
 libcxxsql_la_SOURCES=\
 	connection.C \
 	dbi_constraint.C \
+	dbi_flavor.C \
 	dbi_resultset.C \
 	env.C \
 	exception.C \

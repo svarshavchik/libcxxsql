@@ -5,6 +5,7 @@
 
 #include "libcxx_config.h"
 #include "sql_internal.H"
+#include "x/sql/dbi/flavor.H"
 #include <algorithm>
 #include <cstring>
 #include <sstream>

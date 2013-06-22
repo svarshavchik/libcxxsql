@@ -9,7 +9,9 @@
 #include <x/obj.H>
 #include <x/sql/statementfwd.H>
 #include <x/sql/newstatementfwd.H>
+#include <x/sql/dbi/flavorfwd.H>
 #include <x/chrcasecmp.H>
+#include <x/mpobj.H>
 #include <map>
 #include <set>
 
@@ -60,6 +62,10 @@ public:
 	virtual void disconnect()=0;
 
 private:
+
+	//! Installed DBI flavor
+
+	mpobj<dbi::flavorptr> dbiflavor;
 
 	//! Helper class determines presence of optional initial \c bool arg to tables()
 
@@ -505,6 +511,9 @@ public:
 	//! Return native SQL string
 
 	virtual std::string native_sql(const std::string &sql)=0;
+
+	//! Return currently-installed DBI flavor implementation
+	dbi::flavor flavor();
 
 private:
 
