@@ -24,11 +24,39 @@ constraintObj::~constraintObj() noexcept
 {
 }
 
+void constraintObj::only_equ()
+{
+	throw EXCEPTION(_TXT(_txt("Only \"=\" constraints can be specified for INSERT or UPDATE statements")));
+}
+
+void constraintObj::get_sql(std::vector<std::string> &fields,
+			    std::vector<std::string> &placeholders,
+			    std::vector<const_constraint> &constraints) const
+{
+	only_equ();
+}
+
 void constraintObj::get_sql_impl(std::ostream &o,
 				 const std::string &name,
 				 const std::string &cmptype)
 {
 	o << name << " " << cmptype << " ?";
+}
+
+void constraintObj::get_sql_impl(std::vector<std::string> &fields,
+				 std::vector<std::string> &placeholders,
+				 std::vector<const_constraint> &constraints,
+				 const_constraint &&this_constraint,
+				 const std::string &name,
+				 const std::string &cmptype,
+				 const char *placeholder)
+{
+	if (cmptype != "=")
+		only_equ();
+
+	fields.push_back(name);
+	placeholders.push_back(placeholder);
+	constraints.push_back(std::move(this_constraint));
 }
 
 void constraintObj::containerObj
@@ -44,8 +72,20 @@ constraintObj::cmpObj<std::nullptr_t>::cmpObj(const std::string &nameArg,
 					      const std::string &cmptypeArg,
 					      std::nullptr_t valueArg)
 	: txt(cmptypeArg == "=" ? ("(" + nameArg + " IS NULL)") :
-	      cmptypeArg == "!=" ? ("(" + nameArg + " IS NOT NULL)") : "1=0")
+	      cmptypeArg == "!=" ? ("(" + nameArg + " IS NOT NULL)") : "1=0"),
+	  name(cmptypeArg == "=" ? nameArg:"")
 {
+}
+
+void constraintObj::cmpObj<std::nullptr_t>
+::get_sql(std::vector<std::string> &fields,
+	  std::vector<std::string> &placeholders,
+	  std::vector<const_constraint> &constraints) const
+{
+	if (name.empty())
+		only_equ();
+	get_sql_impl(fields, placeholders, constraints,
+		     const_constraint(this), name, "=", "NULL");
 }
 
 constraintObj::cmpObj<std::nullptr_t>::~cmpObj() noexcept
@@ -117,6 +157,15 @@ void constraintObj::andObj::get_sql(std::ostream &o) const
 		v->get_sql(o);
 	}
 	o << ")";
+}
+
+void constraintObj::andObj::get_sql(std::vector<std::string> &fields,
+				    std::vector<std::string> &placeholders,
+				    std::vector<const_constraint> &constraints)
+	const
+{
+	for (const auto &v:*this)
+		v->get_sql(fields, placeholders, constraints);
 }
 
 constraintObj::orObj::~orObj() noexcept

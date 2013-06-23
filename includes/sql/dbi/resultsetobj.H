@@ -132,6 +132,9 @@ public:
 	//! Return the table's alias in the query
 	virtual std::string get_table_alias() const=0;
 
+	//! Primary key column names in this table, null terminated list
+	virtual const char * const *get_primary_key_columns() const=0;
+
 	//! Set the maximum number of rows in the resultset
 	void limit(size_t maxrowsArg)
 	{
@@ -179,11 +182,52 @@ public:
 
 	void get_select_sql(std::ostream &o) const;
 
+	//! Construct SQL
+
+	//! \internal
+	void get_select_sql(std::ostream &o,
+			    std::vector<std::string> &columns)
+		const LIBCXX_HIDDEN;
+
+	//! Execute an UPDATE statement
+	template<typename ...Args>
+	inline size_t update(Args && ...args) const;
+
+	//! Remove prefix from column list
+
+	//! \internal
+	static void remove_prefix(std::vector<std::string> &fields,
+				  const std::string &alias) LIBCXX_INTERNAL;
+
+	//! Construct the SET part of an UPDATE
+
+	static void add_update_set(std::ostream &o,
+				   const std::vector<std::string> &fields,
+				   const std::vector<std::string> &placeholders
+				   ) LIBCXX_HIDDEN;
+
+	//! Format joins into an SQL
+	static void get_join_sql(std::ostream &o,
+				 const joinlist_t &joinlist) LIBCXX_HIDDEN;
+
+private:
+
+	//! Collecting UPDATE arguments
+
+	//! No more arguments.
+	size_t do_update(const ref<constraintObj::andObj> &set) const;
+public:
+	//! Add WHERE clause
+
+	//! \internal
+	void add_where(std::ostream &) const LIBCXX_INTERNAL;
+
 protected:
 	//! Called by begin() in subclass to prepare and execute a SELECT
 
 	statement execute_search_sql(size_t limitvalue) const;
 
+public:
 	//! Joins added to this resultset
 
 	//! For each added join we record:
@@ -192,7 +236,7 @@ protected:
 	//! - the join object for that join, from which we obtain secondary
 	//! join.
 
-	std::list<std::pair<std::string, ref<joinBaseObj>>> joinlist;
+	joinlist_t joinlist;
 
 	//! Add a join to the resultset
 
@@ -255,6 +299,9 @@ public:
 
 	template<typename row_type>
 	using cached_row=mpobj<cached_row_container<row_type>>;
+
+	//! Update this row
+	virtual bool update()=0;
 };
 
 

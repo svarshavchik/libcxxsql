@@ -40,6 +40,22 @@ public:
 	//! Retrieve SQL for the constraint
 	virtual void get_sql(std::ostream &) const=0;
 
+	//! Retrieve SQL for the constraint
+
+	//! This version is called for constraints that build INSERT and UPDATE
+	//! statements. It returns the field name, and the placeholder, which
+	//! is (nearly) always "?" separately.
+	//!
+	//! The default implementation throws an implementation. An underlying
+	//! constraint of "field=value" overrides it, and appends the
+	//! constraint's name and placeholder to the vector.
+	//!
+	//! The AND clause overrides it, and invokes get_sql() recursively.
+
+	virtual void get_sql(std::vector<std::string> &fields,
+			     std::vector<std::string> &placeholders,
+			     std::vector<const_constraint> &constraints) const;
+
 	//! Enumerate parameters to \ref statementObj::execute "statement->execute()"
 
 	virtual void get_parameters(statementObj::execute_factory &factory)
@@ -62,6 +78,26 @@ protected:
 	static void get_sql_impl(std::ostream &o,
 				 const std::string &name,
 				 const std::string &cmptype);
+
+	//! Generate SQL for a comparison operation.
+
+	//! Used by cmpObj.
+
+	static void get_sql_impl(std::vector<std::string> &fields,
+				 std::vector<std::string> &placeholders,
+				 std::vector<const_constraint> &constraints,
+				 const_constraint &&this_constraint,
+				 const std::string &name,
+				 const std::string &cmptype,
+				 const char *placeholder);
+
+	//! Throws an exception.
+
+	static void only_equ() LIBCXX_HIDDEN __attribute((noreturn));
+
+	//! Generate SQL for a comparison operation.
+
+	//! Used by cmpObj.
 
 	//! Verify that the constraint is "=" or "!=".
 
@@ -121,6 +157,16 @@ public:
 	void get_sql(std::ostream &o) const override
 	{
 		get_sql_impl(o, name, cmptype);
+	}
+
+	//! Retrieve SQL for the constraint
+	void get_sql(std::vector<std::string> &fields,
+		     std::vector<std::string> &placeholders,
+		     std::vector<const_constraint> &constraints) const override
+	{
+		get_sql_impl(fields, placeholders,
+			     constraints,
+			     const_constraint(this), name, cmptype, "?");
 	}
 
 	//! Enumerate parameters to \ref statementObj::execute "statement->execute()"
@@ -200,6 +246,11 @@ class constraintObj::cmpObj<std::nullptr_t> : public constraintObj {
 	//! Constraint text
 
 	std::string txt;
+
+	//! Non-empty if comparison is equal, set to name of the field
+
+	std::string name;
+
 public:
 	//! Constructor
 	cmpObj(const std::string &nameArg,
@@ -218,6 +269,11 @@ public:
 	//! For all other comparison operators, his forms "1=0" SQL, which
 	//! is always false.
 	void get_sql(std::ostream &o) const override;
+
+	//! Retrieve SQL for the constraint
+	void get_sql(std::vector<std::string> &fields,
+		     std::vector<std::string> &placeholders,
+		     std::vector<const_constraint> &constraints) const override;
 
 	//! No parameters here, does nothing.
 
@@ -332,6 +388,11 @@ public:
 	//! AND constraint evalues to a no-op WHERE clause.
 
 	void get_sql(std::ostream &o) const override;
+
+	//! Retrieve SQL for the constraint
+	void get_sql(std::vector<std::string> &fields,
+		     std::vector<std::string> &placeholders,
+		     std::vector<const_constraint> &constraints) const override;
 };
 
 //! An OR constraint

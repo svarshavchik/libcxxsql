@@ -6,6 +6,7 @@
 #include "libcxx_config.h"
 #include "x/sql/dbi/resultset.H"
 #include "x/sql/dbi/constraint.H"
+#include "x/sql/dbi/flavor.H"
 #include "x/sql/connection.H"
 #include "x/sql/statement.H"
 
@@ -117,6 +118,12 @@ void resultsetObj::get_select_sql(std::ostream &o) const
 	std::vector<std::string> columns;
 
 	resultset_create_column_list(columns);
+	get_select_sql(o, columns);
+}
+
+void resultsetObj::get_select_sql(std::ostream &o,
+				  std::vector<std::string> &columns) const
+{
 	join_prefetch_column_list(columns);
 
 	const char *sep="SELECT ";
@@ -130,11 +137,7 @@ void resultsetObj::get_select_sql(std::ostream &o) const
 
 	get_join_sql(o);
 
-	if (!where->empty())
-	{
-		o << " WHERE ";
-		where->get_select_sql(o);
-	}
+	add_where(o);
 
 	sep=" GROUP BY ";
 
@@ -157,6 +160,15 @@ void resultsetObj::get_select_sql(std::ostream &o) const
 		o << sep << ob;
 		sep=", ";
 	}
+}
+
+void resultsetObj::add_where(std::ostream &o) const
+{
+	if (where->empty())
+		return;
+
+	o << " WHERE ";
+	where->get_sql(o);
 }
 
 void resultsetObj::multiple_rows()
@@ -259,10 +271,88 @@ void resultsetObj::addjoin(const char *jointype, const ref<joinBaseObj> &join,
 
 void resultsetObj::get_join_sql(std::ostream &o) const
 {
+	get_join_sql(o, joinlist);
+}
+
+void resultsetObj::get_join_sql(std::ostream &o,
+				const joinlist_t &joinlist)
+{
 	for (const auto &join:joinlist)
 	{
 		o << " " << join.first;
 		join.second->get_join_sql_recursive(o);
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+size_t resultsetObj::do_update(const ref<constraintObj::andObj> &set) const
+{
+	std::vector<std::string> fields;
+	std::vector<std::string> placeholders;
+	std::vector<const_constraint> dummy;
+
+	// Retrieve what to set, and to which.
+
+	set->get_sql(fields, placeholders, dummy);
+
+	if (fields.empty())
+		throw EXCEPTION(_TXT(_txt("Empty column list passed to update()")));
+
+	if (!having_constraint->empty() ||
+	    !group_by_list.empty() ||
+	    !order_by_list.empty())
+		throw EXCEPTION(_TXT(_txt("An UPDATE resultset cannot have HAVING, GROUP BY, or ORDER BY")));
+
+	std::ostringstream o;
+
+	if (joinlist.empty())
+	{
+		remove_prefix(fields, get_table_alias());
+
+		o << "UPDATE " << get_table_name();
+
+		add_update_set(o, fields, placeholders);
+		add_where(o);
+	}
+	else
+	{
+		conn->flavor()->update_with_joins(o, *this,
+						  fields, placeholders);
+	}
+
+	statement stmt=conn->prepare(o.str());
+
+	stmt->execute(constraint(set), constraint(where));
+
+	return stmt->row_count();
+}
+
+void resultsetObj::remove_prefix(std::vector<std::string> &fields,
+				 const std::string &alias)
+{
+	std::string prefix=alias + ".";
+
+	for (auto &field:fields)
+	{
+		if (field.substr(0, prefix.size()) == prefix)
+			field=field.substr(prefix.size());
+	}
+}
+
+void resultsetObj::add_update_set(std::ostream &o,
+				  const std::vector<std::string> &fields,
+				  const std::vector<std::string> &placeholders)
+{
+	const char *pfix=" SET ";
+
+	auto placeholder=placeholders.begin();
+
+	for (const auto &field:fields)
+	{
+		o << pfix << field << "=" << *placeholder;
+		++placeholder;
+		pfix=",";
 	}
 }
 

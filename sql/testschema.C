@@ -177,6 +177,7 @@ void testschema(const std::string &connection,
 
 	conn->execute("insert into temptbl_account_types values(1)");
 	conn->execute("insert into temptbl_account_types values(2)");
+	conn->execute("insert into temptbl_account_types values(3)");
 
 	conn->execute("insert into temptbl_accounts(account_id, account_type_id, code) values(?, ?, ?)", 1, 1, "Acct1");
 	conn->execute("insert into temptbl_accounts(account_id, account_type_id, code) values(?, ?, ?)", 2, 2, "Acct2");
@@ -433,6 +434,66 @@ void testschema(const std::string &connection,
 
 		all_accounts->get_select_sql(std::cout);
 		std::cout << std::endl << std::flush;
+	}
+
+	{
+		auto all_accounts=example2::accounts::create(conn);
+
+		all_accounts->search("account_id", "=", 1);
+
+		if (all_accounts->update("account_type_id", 2,
+					 all_accounts->get_table_alias() + ".code",
+					 nullptr)
+		    != 1)
+			throw EXCEPTION("Unexpected number of rows returned from update (1)");
+
+		auto row=all_accounts->only();
+
+		if (row->account_type_id.value() != 2 ||
+		    !row->code.isnull())
+			throw EXCEPTION("update failed (1)");
+	}
+
+	{
+		auto all_accounts=example2::accounts::create(conn);
+
+		auto join=all_accounts->join_ledger_entries();
+
+		all_accounts->search(join->get_table_alias() + ".account_id", "=", 1);
+
+		if (all_accounts->update("account_type_id", "1",
+					 all_accounts->get_table_alias() + ".code",
+					 "Acct1")
+		    != 1)
+			throw EXCEPTION("Unexpected number of rows returned from update (2)");
+
+		auto row=all_accounts->only();
+
+		if (row->account_type_id.value() != 1 ||
+		    row->code.value() != "Acct1")
+			throw EXCEPTION("update failed (2)");
+	}
+
+	{
+		auto all_accounts=example2::accounts::create(conn);
+		all_accounts->search("account_id", "=", 1);
+
+		auto a=all_accounts->only();
+		auto b=all_accounts->only();
+
+		if (a->update())
+			throw EXCEPTION("No updates returned true");
+
+		a->account_type_id.value(3);
+		if (!a->update())
+			throw EXCEPTION("An update returned false");
+
+		b->code.value("Acct6");
+		b->update();
+
+		if (b->code.value() != "Acct6" ||
+		    b->account_type_id.value() != 3)
+			throw EXCEPTION("Update did not refresh the row");
 	}
 }
 

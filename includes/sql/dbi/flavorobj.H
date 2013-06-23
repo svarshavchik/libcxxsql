@@ -8,6 +8,12 @@
 
 #include <x/obj.H>
 #include <x/sql/dbi/flavorfwd.H>
+#include <x/sql/dbi/constraintfwd.H>
+#include <x/sql/dbi/resultsetfwd.H>
+
+#include <iostream>
+#include <list>
+#include <vector>
 
 namespace LIBCXX_NAMESPACE {
 	namespace sql {
@@ -29,6 +35,20 @@ public:
 	//! Destructor
 	~flavorObj() noexcept;
 
+	//! Build an UPDATE with joins
+
+	virtual void update_with_joins(//! Format SQL here
+				       std::ostream &o,
+
+				       //! The UPDATE resultset
+				       const resultsetObj &rs,
+
+				       //! Fields to update
+				       std::vector<std::string> &fields,
+
+				       //! Placeholder for values
+				       std::vector<std::string> &placeholders)
+		const=0;
 };
 
 #if 0

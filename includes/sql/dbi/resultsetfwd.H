@@ -23,6 +23,10 @@ class resultsetObj;
 class resultsetBase;
 class joinBaseObj;
 
+//! The container for a list of joinlist
+
+typedef std::list<std::pair<std::string, ref<joinBaseObj>>> joinlist_t;
+
 //! An SQL resultset
 
 typedef ref<resultsetObj, resultsetBase> resultset;
