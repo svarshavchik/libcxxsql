@@ -7,6 +7,7 @@
 #include "x/sql/env.H"
 #include "x/sql/connection.H"
 #include "x/sql/statement.H"
+#include "x/sql/dbi/flavor.H"
 #include <x/options.H>
 #include <iostream>
 #include <iomanip>
@@ -57,6 +58,8 @@ void droptables(const LIBCXX_NAMESPACE::sql::connection &conn)
 
 #include "exampleschema2.H"
 #include "exampleschema2.C"
+#include "exampleschema3.H"
+#include "exampleschema3.C"
 
 void testschema(const std::string &connection,
 		int flags)
@@ -144,7 +147,9 @@ void testschema(const std::string &connection,
 
 		account_types::base::joins j=accounts->join_account_types();
 
-		accounts->search(j->get_table_alias() + ".name", "=", "Type 1");
+		accounts->search(j->get_table_alias() + ".name",
+				 LIBCXX_NAMESPACE::sql::text("="),
+				 "'Type 1'");
 
 		std::multiset<std::string> names;
 
@@ -495,6 +500,85 @@ void testschema(const std::string &connection,
 		    b->account_type_id.value() != 3)
 			throw EXCEPTION("Update did not refresh the row");
 	}
+
+	{
+		auto all_accounts=example2::accounts::create(conn);
+		all_accounts->search("account_id", "=", 1);
+		auto a=all_accounts->only();
+
+		auto ledger_entries=a->join_ledger_entries();
+
+		auto new_row=ledger_entries->insert("ledger_entry_id", 10,
+						    "ledger_date", LIBCXX_NAMESPACE::ymd(),
+						    "amount", 99);
+
+		if (new_row->account_id.value() != 1 ||
+		    new_row->ledger_entry_id.value() != 10 ||
+		    new_row->amount.value() != 99)
+			throw EXCEPTION("Failed to read back inserted row");
+	}
+
+	{
+		auto mysql_bug_69554=example2::accounts::create(conn);
+		mysql_bug_69554->search("account_id", "=", nullptr);
+		mysql_bug_69554->begin();
+	}
+
+	droptables(conn);
+	conn->execute(std::string("create table temptbl_accounts(account_id ")
+		      + conn->flavor()->datatype_serial()
+		      + ", code varchar(255) null, primary key(account_id))");
+	conn->execute(std::string("create table temptbl_transactions"
+				  "(transaction_id ")
+		      + conn->flavor()->datatype_serial()
+		      + ", primary key(transaction_id))");
+	conn->execute(std::string("create table temptbl_ledger_entries"
+				  "(ledger_entry_id ")
+		      + conn->flavor()->datatype_serial()
+		      + ", account_id bigint not null"
+		      ", transaction_id bigint not null"
+		      ", ledger_date date not null"
+		      ", amount numeric(11, 2) not null"
+		      ", primary key(ledger_entry_id))");
+	conn->execute("alter table temptbl_ledger_entries add foreign key(account_id) references temptbl_accounts(account_id)");
+	conn->execute("alter table temptbl_ledger_entries add foreign key(transaction_id) references temptbl_transactions(transaction_id)");
+
+	auto all_accounts=example3::accounts::create(conn);
+	auto all_transactions=example3::transactions::create(conn);
+
+	auto first_account=all_accounts->insert("code", "Code1");
+	auto second_account=all_accounts->insert("code", "Code2");
+	auto transaction=all_transactions->insert();
+
+	auto all_ledger_entries=transaction->join_ledger_entries();
+
+	auto first_entry=all_ledger_entries
+		->insert("account_id",
+			 first_account->account_id.value(),
+			 "ledger_date", LIBCXX_NAMESPACE::ymd(),
+			 "amount", 10);
+	auto second_entry=all_ledger_entries
+		->insert("account_id",
+			 second_account->account_id.value(),
+			 "ledger_date", LIBCXX_NAMESPACE::ymd(),
+			 "amount", 10);
+	second_entry->amount.value(-10);
+	second_entry->update();
+
+	if (first_entry->join_accounts()->code.value() != "Code1")
+		throw EXCEPTION("First entry did not wind up in the first account");
+
+	if (second_entry->join_accounts()->code.value() != "Code2")
+		throw EXCEPTION("Second entry did not wind up in the second account");
+
+	if (first_account->join_ledger_entries()->only()->ledger_entry_id.value()
+	    != first_entry->ledger_entry_id.value())
+		throw EXCEPTION("Cannot find the first entry in the first account");
+
+	if (second_account->join_ledger_entries()->only()->ledger_entry_id.value()
+	    != second_entry->ledger_entry_id.value())
+		throw EXCEPTION("Cannot find the second entry in the second account");
+
 }
 
 #include "exampleschema1.H"

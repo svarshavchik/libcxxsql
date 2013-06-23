@@ -58,6 +58,8 @@ $(call SCHEMA_GEN,exampleschema1)
 
 $(call SCHEMA_GEN,exampleschema2)
 
+$(call SCHEMA_GEN,exampleschema3)
+
 testschema_SOURCES=testschema.C
 testschema_LDADD=libcxxsql.la
 testschema_LDFLAGS=$(LINKTYPE)

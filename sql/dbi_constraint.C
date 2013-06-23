@@ -102,6 +102,80 @@ void constraintObj::cmpObj<std::nullptr_t>
 {
 }
 
+constraintObj::rawcmpObj::rawcmpObj(const std::string &nameArg,
+				    const std::string &cmptypeArg,
+				    const std::string &rawsqlArg)
+	: name(nameArg),
+	  cmptype(cmptypeArg),
+	  rawsql(rawsqlArg)
+{
+}
+
+constraintObj::rawcmpObj::rawcmpObj(const std::string &nameArg,
+				    const std::string &cmptypeArg,
+				    const std::list<std::string> &rawsqlArg)
+	: name(nameArg),
+	  cmptype(cmptypeArg)
+{
+	auto b=rawsqlArg.begin(), e=rawsqlArg.end();
+
+	if (b != e)
+		rawsql=*b++;
+
+	placeholders.insert(placeholders.end(), b, e);
+}
+
+constraintObj::rawcmpObj::rawcmpObj(const std::string &nameArg,
+				    const std::string &cmptypeArg,
+				    std::string &&rawsqlArg)
+	: name(nameArg),
+	  cmptype(cmptypeArg),
+	  rawsql(std::move(rawsqlArg))
+{
+}
+
+constraintObj::rawcmpObj::rawcmpObj(const std::string &nameArg,
+				    const std::string &cmptypeArg,
+				    std::list<std::string> &&rawsqlArg)
+	: name(nameArg),
+	  cmptype(cmptypeArg),
+	  placeholders(std::move(rawsqlArg))
+{
+	if (!placeholders.empty())
+	{
+		rawsql=placeholders.front();
+		placeholders.pop_front();
+	}
+}
+
+constraintObj::rawcmpObj::~rawcmpObj() noexcept
+{
+}
+
+void constraintObj::rawcmpObj::get_sql(std::ostream &o) const
+{
+	o << name << " " << cmptype << " " << rawsql;
+}
+
+void constraintObj::rawcmpObj
+::get_sql(std::vector<std::string> &fields,
+	  std::vector<std::string> &placeholders,
+	  std::vector<const_constraint> &constraints) const
+{
+	get_sql_impl(fields, placeholders,
+		     constraints,
+		     const_constraint(this), name, cmptype, rawsql.c_str());
+}
+
+void constraintObj::rawcmpObj::get_parameters(statementObj::execute_factory
+						 &factory) const
+{
+	for (const auto &v:placeholders)
+	{
+		factory.parameter(v);
+	}
+}
+
 std::string constraintObj::get_vec_cmptype(const std::string &cmptypeArg)
 {
 	if (cmptypeArg != "=" && cmptypeArg != "!=")

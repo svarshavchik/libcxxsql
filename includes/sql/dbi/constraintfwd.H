@@ -7,10 +7,35 @@
 #define x_sql_dbi_constraintfwd_H
 
 #include <x/ptrfwd.H>
+#include <x/vectorfwd.H>
+#include <string>
 
 namespace LIBCXX_NAMESPACE {
 
 	namespace sql {
+
+		//! Use raw, unquoted SQL, instead of a placeholder.
+
+		//! However, the raw, unquoted SQL can have its own placeholders
+		//! instead.
+
+		//! See \ref dbi_constraint "constraint".
+
+		class text {
+		public:
+			//! The string
+
+			std::string s;
+
+			//! Forward constructor parameters
+
+			template<typename ...Args> inline
+			explicit text(Args && ...args)
+				: s(std::forward<Args>(args)...)
+			{
+			}
+		};
+
 		namespace dbi {
 #if 0
 		};
@@ -139,6 +164,32 @@ class constraintBase;
 //! execute(). However, no locking takes place here, and the vector should
 //! not be modified between the time the literal SQL gets prepared, and
 //! the subsequent call to execute().
+//!
+//! \code
+//! INSERT_LIBX_NAMESPACE::sql::dbi::constraint::create("a", INSERT_LIBX_NAMESPACE::sql::text("="), "MAX(b)");
+//! \endcode
+//!
+//! Wrapping the comparison string into a \c INSERT_LIBX_NAMESPACE::sql:text
+//! has the effect of inserting the raw SQL into the constraint. This
+//! example generates the "a = MAX(b)" SQL. Without
+//! \c INSERT_LIBX_NAMESPACE::sql:text the result would've been
+//! "a = ?", with "MAX(b) provided as the placeholder's value.
+//!
+//! Passing a std::list<std::string> value enables manual placeholders in the
+//! comparison SQL:
+//!
+//! \code
+//! INSERT_LIBX_NAMESPACE::sql::dbi::constraint::create("a", INSERT_LIBX_NAMESPACE::sql::text("="),
+//!     std::list<std::string>({
+//!         "currval(pg_get_serial_sequence(?, ?))",
+//!         table_name, column
+//!     }));
+//! \endcode
+//!
+//! This generates the SQL "a = currval(pg_get_serial_sequence(?, ?))", with
+//! the values for the two placeholders coming from the table_name and column
+//! parameters. This is a specialized syntax that's used internally by dbi,
+//! and is of little use in general.
 
 typedef ref<constraintObj, constraintBase> constraint;
 

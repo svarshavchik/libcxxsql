@@ -104,12 +104,27 @@ statement resultsetObj::execute_search_sql(size_t limitvalue) const
 {
 	std::ostringstream o;
 
+	auto insert_constraint=constraint::create();
+
+	if (!insert_select_constraint.null())
+	{
+		// Need to do an INSERT before the SELECT
+
+		o << insert_sql.rdbuf();
+		insert_constraint=insert_select_constraint;
+	}
+
 	get_select_sql(o);
 
 	statement stmt=conn->prepare(o.str());
 
 	stmt->limit(limitvalue);
-	stmt->execute(constraint(where), constraint(having_constraint));
+	stmt->execute(insert_constraint, constraint(where),
+		      constraint(having_constraint));
+
+	if (!insert_select_constraint.null())
+		stmt->more(); // Skip the INSERT part
+
 	return stmt;
 }
 
@@ -354,6 +369,132 @@ void resultsetObj::add_update_set(std::ostream &o,
 		++placeholder;
 		pfix=",";
 	}
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+void resultsetObj::do_insert(std::ostream &o,
+			     const ref<constraintObj::andObj> &insert_constraints,
+			     const ref<constraintObj::andObj> &where_constraints,
+			     const ref<constraintObj::andObj> &values)
+{
+	std::vector<std::string> fields;
+	std::vector<std::string> placeholders;
+	std::vector<const_constraint> individual_constraints;
+
+	if (!having_constraint->empty() ||
+	    !group_by_list.empty() ||
+	    !order_by_list.empty())
+		throw EXCEPTION(_TXT(_txt("An INSERT resultset cannot have HAVING, GROUP BY, or ORDER BY")));
+
+	// First, turn search constraints into values
+
+	where->get_sql(fields, placeholders, individual_constraints);
+	values->get_sql(fields, placeholders, individual_constraints);
+
+	remove_prefix(fields, get_table_alias());
+
+	const char * const *primary_keys=get_primary_key_columns();
+	const char * const *serial_keys=get_serial_key_columns();
+
+	// Check for duplicates, verify primary keys.
+
+	{
+		std::set<std::string> dupe;
+
+		for (const auto &field:fields)
+			if (!dupe.insert(field).second)
+				throw EXCEPTION(gettextmsg
+						(_TXT(_txt("%1% is specified "
+							   "more than once "
+							   "in INSERT")),
+						 field));
+
+		// It's OK if SERIAL primary key(s) is/are missing, we'll take
+		// care of them later.
+		for (auto p=serial_keys; *p; ++p)
+			dupe.insert(*p);
+
+		for (auto p=primary_keys; *p; ++p)
+			if (dupe.find(*p) == dupe.end())
+				throw EXCEPTION(gettextmsg
+						(_TXT(_txt("Primary key %1% "
+							   "not specified "
+							   "in INSERT")),
+						 *p));
+	}
+
+	o << "INSERT INTO " << get_table_name();
+
+	if (fields.empty()) // Must be primary key autoincrement
+	{
+		o << " VALUES(" << conn->flavor()->default_value_serial()
+		  << "); ";
+	}
+	else
+	{
+		const char *pfix="(";
+
+		for (const auto &field:fields)
+		{
+			o << pfix << field;
+			pfix=",";
+		}
+		o << ") VALUES(";
+		pfix="";
+
+		for (const auto &placeholder:placeholders)
+		{
+			o << pfix << placeholder;
+			pfix=",";
+		}
+		o << "); ";
+	}
+
+	// Placeholders for VALUES() portion.
+
+	insert_constraints->insert(insert_constraints->end(),
+				   individual_constraints.begin(),
+				   individual_constraints.end());
+
+	// Now, figure out the SELECT WHERE constraint
+
+	// Figure out what serial keys we need to grab
+	std::set<std::string> get_serial_keys;
+
+	for (auto p=serial_keys; *p; ++p)
+		get_serial_keys.insert(*p);
+
+	for (const auto &field:fields)
+		get_serial_keys.erase(field);
+
+	// What's left is what we'll need
+
+	if (!get_serial_keys.empty())
+	{
+		where_constraints->
+			push_back(conn->flavor()->
+				  get_inserted_serial(get_table_name(),
+						      get_serial_keys)
+				  );
+	}
+
+	std::set<std::string> primary_key_lookup;
+
+	// Add the primary keys to the SELECT lookup, unless already
+	// handled by serial key code, above.
+	for (auto p=primary_keys; *p; ++p)
+		if (get_serial_keys.find(*p) == get_serial_keys.end())
+			primary_key_lookup.insert(*p);
+
+
+	for (size_t i=0; i<fields.size(); ++i)
+		if (primary_key_lookup.find(fields[i])
+		    != primary_key_lookup.end())
+		{
+		
+			where_constraints->push_back(individual_constraints[i]);
+		}
 }
 
 #if 0

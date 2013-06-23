@@ -40,6 +40,7 @@ void statementObj::process_execute_non_null_param<dbi::constraint>
 				 std::forward<OtherArgs>(otherArgs)...);
 }
 
+
 namespace dbi {
 #if 0
 }
@@ -227,6 +228,20 @@ void constraintObj::containerObj::add(const std::string &nameArg,
 
 	add(std::forward<Args>(args)...);
 }
+
+template<typename argType, typename ...Args>
+void constraintObj::containerObj::add(const std::string &nameArg,
+				      const text &cmptypeArg,
+				      argType && value,
+				      Args && ...args)
+{
+	this->push_back(ref<constraintObj::rawcmpObj>
+			::create(nameArg, cmptypeArg.s,
+				 std::forward<argType>(value)));
+	add(std::forward<Args>(args)...);
+}
+
+
 
 template<typename ...Args>
 void constraintObj::containerObj::add(const const_constraint &import_constraint,

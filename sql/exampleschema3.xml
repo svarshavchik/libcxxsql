@@ -1,0 +1,35 @@
+<schema namespace="example3">
+
+  <table name="temptbl_accounts" class="accounts">
+    <column name="account_id" datatype="int64_t" primarykey='serial' />
+    <column name="code" />
+
+    <join class="ledger_entries">
+      <column>account_id</column>
+    </join>
+  </table>
+
+  <table name="temptbl_transactions" class="transactions">
+    <column name="transaction_id" datatype="int64_t" primarykey='serial' />
+
+    <join class="ledger_entries">
+      <column>transaction_id</column>
+    </join>
+  </table>
+
+  <table name="temptbl_ledger_entries" class="ledger_entries">
+    <column name="ledger_entry_id" datatype="int64_t" primarykey='serial' />
+    <column name="account_id" datatype="int64_t"/>
+    <column name="transaction_id" datatype="int64_t"/>
+    <column name="ledger_date" datatype="x::ymd"/>
+    <column name="amount" datatype="double"/>
+
+    <join class="accounts" type="inner join" only="1">
+      <column>account_id</column>
+    </join>
+
+    <join class="transactions" type="inner join" only="1">
+      <column>transaction_id</column>
+    </join>
+  </table>
+</schema>

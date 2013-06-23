@@ -62,6 +62,7 @@ public:
 		const =0;
 
 	template<typename T> class cmpObj;
+	class rawcmpObj;
 	template<typename T> class cmpvecObj;
 
 	class containerObj;
@@ -281,6 +282,60 @@ public:
 		const override;
 };
 
+//! Constructed by \c INSERT_LIBX_NAMESPACE::sql::text comparison constraint
+
+class constraintObj::rawcmpObj : public constraintObj {
+
+	//! Field name
+	std::string name;
+
+	//! Comparison
+	std::string cmptype;
+
+	//! Value
+	std::string rawsql;
+
+	//! Any internal placeholders
+	std::list<std::string> placeholders;
+
+public:
+	//! Constructor
+	rawcmpObj(const std::string &nameArg,
+		  const std::string &cmptypeArg,
+		  const std::string &rawsqlArg);
+
+	//! Constructor
+	rawcmpObj(const std::string &nameArg,
+		  const std::string &cmptypeArg,
+		  const std::list<std::string> &rawsqlArg);
+
+	//! Move constructor
+	rawcmpObj(const std::string &nameArg,
+		  const std::string &cmptypeArg,
+		  std::string &&rawsqlArg);
+
+	//! Constructor
+	rawcmpObj(const std::string &nameArg,
+		  const std::string &cmptypeArg,
+		  std::list<std::string> &&rawsqlArg);
+
+	//! Destructor
+	~rawcmpObj() noexcept;
+
+	//! Retrieve SQL for the constraint
+	void get_sql(std::ostream &o) const override;
+
+	//! Retrieve SQL for the constraint
+	void get_sql(std::vector<std::string> &fields,
+		     std::vector<std::string> &placeholders,
+		     std::vector<const_constraint> &constraints) const override;
+
+	//! Enumerate parameters to \ref statementObj::execute "statement->execute()"
+
+	void get_parameters(statementObj::execute_factory &factory)
+		const override;
+};
+
 //! A container for AND and OR constraints
 
 //! Superclass of \ref andObj "AND" and \ref orObj "OR" constraint objects.
@@ -343,6 +398,14 @@ public:
 		 const std::vector<const_constraint> &constraints,
 
 		 //! Other variadic parameters.
+		 Args && ...args);
+
+	//! Comparison operator specified as raw SQL
+
+	template<typename argType, typename ...Args>
+	void add(const std::string &nameArg,
+		 const text &cmptypeArg,
+		 argType && value,
 		 Args && ...args);
 
 	//! Enumerate parameters in the SQL formed by this clause

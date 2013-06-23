@@ -14,6 +14,7 @@
 #include <iostream>
 #include <list>
 #include <vector>
+#include <set>
 
 namespace LIBCXX_NAMESPACE {
 	namespace sql {
@@ -49,6 +50,21 @@ public:
 				       //! Placeholder for values
 				       std::vector<std::string> &placeholders)
 		const=0;
+
+	//! The datatype for auto_increment/serial field
+	virtual const char *datatype_serial()=0;
+
+	//! The default value for auto_increment/serial field
+
+	virtual const char *default_value_serial()=0;
+
+	//! Create constraint to return the value of just-inserted serial value(s)
+
+	virtual constraint get_inserted_serial(//! INSERT table name
+					       const char *table_name,
+
+					       //! Serial key column(s)
+					       const std::set<std::string> &columns)=0;
 };
 
 #if 0

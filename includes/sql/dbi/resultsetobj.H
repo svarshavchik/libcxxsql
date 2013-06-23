@@ -135,6 +135,9 @@ public:
 	//! Primary key column names in this table, null terminated list
 	virtual const char * const *get_primary_key_columns() const=0;
 
+	//! Serial primary key column name(s) in this table, null terminated list
+	virtual const char * const *get_serial_key_columns() const=0;
+
 	//! Set the maximum number of rows in the resultset
 	void limit(size_t maxrowsArg)
 	{
@@ -258,6 +261,24 @@ public:
 	//! Resultset implementation subclass forwards this to its create_column_list()
 	virtual void resultset_create_column_list(std::vector<std::string>
 						  &columns) const=0;
+
+protected:
+
+	//! Subclass collects values, calls do_insert() to figure out what to do
+
+	//! \internal
+	//! Used by INSERT processing.
+
+	void do_insert(std::ostream &o,
+		       const ref<constraintObj::andObj> &insert_constraints,
+		       const ref<constraintObj::andObj> &where_constraints,
+		       const ref<constraintObj::andObj> &values);
+
+	//! INSERT statement being created here.
+	std::stringstream insert_sql;
+
+	//! INSERT/SELECT constraint created here.
+	constraintptr insert_select_constraint;
 };
 
 //! A row returned by a resultset

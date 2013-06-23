@@ -43,6 +43,12 @@ class LIBCXX_HIDDEN mysqlFlavorObj : public flavorObj {
 			       std::vector<std::string> &fields,
 			       std::vector<std::string> &placeholders)
 		const override;
+
+	const char *datatype_serial() override;
+	const char *default_value_serial() override;
+	constraint get_inserted_serial(const char *table_name,
+				       const std::set<std::string> &columns)
+		override;
 };
 
 mysqlFlavorObj::mysqlFlavorObj()
@@ -65,6 +71,27 @@ void mysqlFlavorObj::update_with_joins(std::ostream &o,
 	rs.add_where(o);
 }
 
+const char *mysqlFlavorObj::datatype_serial()
+{
+	return "BIGINT AUTO_INCREMENT";
+}
+
+const char *mysqlFlavorObj::default_value_serial()
+{
+	return "NULL";
+}
+
+constraint mysqlFlavorObj
+::get_inserted_serial(const char *table_name,
+		      const std::set<std::string> &columns)
+{
+	if (columns.size() > 1)
+		throw EXCEPTION(_TXT(_txt("Only one serial column can exist in a table")));
+
+	return constraint::create(*columns.begin(), text("="),
+				  "LAST_INSERT_ID()");
+}
+
 /////////////////////////////////////////////////////////////////////////////
 
 class LIBCXX_HIDDEN postgresFlavorObj : public flavorObj {
@@ -80,6 +107,12 @@ class LIBCXX_HIDDEN postgresFlavorObj : public flavorObj {
 			       std::vector<std::string> &fields,
 			       std::vector<std::string> &placeholders)
 		const override;
+
+	const char *datatype_serial() override;
+	const char *default_value_serial() override;
+	constraint get_inserted_serial(const char *table_name,
+				       const std::set<std::string> &columns)
+		override;
 };
 
 postgresFlavorObj::postgresFlavorObj()
@@ -127,6 +160,35 @@ void postgresFlavorObj::update_with_joins(std::ostream &o,
 	if (!*pfix)
 		throw EXCEPTION(_TXT(_txt("Primary key column required for an UPDATE with joins")));
 }
+
+
+const char *postgresFlavorObj::datatype_serial()
+{
+	return "BIGSERIAL";
+}
+
+const char *postgresFlavorObj::default_value_serial()
+{
+	return "DEFAULT";
+}
+
+constraint postgresFlavorObj::get_inserted_serial(const char *table_name,
+						  const std::set<std::string> &columns)
+{
+	auto c=ref<constraintObj::andObj>::create();
+
+	for (const auto &column:columns)
+	{
+		c->add(column, text("="),
+		       std::list<std::string>({
+				       "currval(pg_get_serial_sequence(?, ?))",
+					       table_name,
+					       column
+					       }));
+	}
+	return c;
+}
+
 #if 0
 {
 #endif
