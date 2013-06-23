@@ -211,10 +211,10 @@ void statementimplObj::process_execute_params(size_t param_number)
 	if (param_number != num_params_val)
 		throw EXCEPTION((std::string)
 				gettextmsg(_TXTN(_txtn("%1% parameter in the SQL statement; ",
-						       "%1% parameters in the SQL statement; "), num_params_val), num_params_val) +
+						       "%1% parameters in the SQL statement."), num_params_val), num_params_val) +
 				(std::string)
 				gettextmsg(_TXTN(_txtn("%1% parameter provided; ",
-						       "%1% parameters provided; "),
+						       "%1% parameters provided."),
 						 param_number),
 					   param_number));
 
@@ -1004,13 +1004,12 @@ const std::vector<statementimplObj::column> &statementimplObj::get_columns()
 						    S(SQL_DESC_TABLE_NAME)));
 			auto &last=columns.back();
 
-			auto iter=columnmap.insert(std::pair<std::string,
-						   decltype(last) &>
-						   (last.name, last));
+			columnmap.insert(std::pair<std::string,
+					 decltype(last) &>
+					 (last.name, last));
 
 			LOG_DEBUG("Loaded metadata: column "
 				  << iter->first);
-
 		}
 		have_columns=true;
 	}
