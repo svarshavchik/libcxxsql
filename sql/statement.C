@@ -9,6 +9,7 @@
 #include <cstring>
 #include <sstream>
 #include <algorithm>
+#include <iomanip>
 #include "gettext_in.h"
 #include "x/exception.H"
 #include "x/ymd.H"
@@ -18,8 +19,6 @@
 #include "x/messages.H"
 #include "x/sql/insertblob.H"
 #include "x/sql/fetchblob.H"
-
-LOG_CLASS_INIT(LIBCXX_NAMESPACE::sql::statementimplObj);
 
 namespace LIBCXX_NAMESPACE {
 	namespace sql {
@@ -148,6 +147,8 @@ bitflag statementimplObj::execute()
 void statementimplObj::begin_execute_params(bitflag *status,
 					    size_t execute_rows)
 {
+	logbuffer.clear();
+
 	if (execute_rows <= 0)
 		throw EXCEPTION(_TXT(_txt("Row array size not positive")));
 
@@ -233,6 +234,8 @@ const std::vector<statementimplObj::parameter> &statementimplObj::get_parameters
 
 void statementimplObj::process_execute_params(size_t param_number)
 {
+	LOG_FUNC_SCOPE(execute::logger);
+
 	if (param_number != num_params_val)
 		throw EXCEPTION((std::string)
 				gettextmsg(_TXTN(_txtn("%1% parameter in the SQL statement; ",
@@ -242,6 +245,11 @@ void statementimplObj::process_execute_params(size_t param_number)
 						       "%1% parameters provided."),
 						 param_number),
 					   param_number));
+
+	LOG_DEBUG("SQLExecute("
+		  // Each execute parameter is prefixed by ", "
+		  << (logbuffer.empty() ? "":logbuffer.substr(2))
+		  << ")");
 
 	decltype(SQLExecute(h)) retval;
 
@@ -488,6 +496,67 @@ void statementimplObj::bind_input_parameter(size_t param_num,
 //
 // Bind various types of parameters.
 
+#define LOG_GET_NTH(v,n,o,l)						\
+	if (n)								\
+		(o) << "NULL";						\
+	else								\
+		(o) << LIBCXX_NAMESPACE::tostring((v),(l));
+
+// Log bound parameter values. We use LOG_DEBUG() to conditionally execute
+// this spaghetti only when needed. Each parameter gets collected into
+// logbuffer, and LOG_DEBUG gets an empty string (which logs nothing).
+
+#define LOG_BOUND_PARAMETER_EMIT(vptr,nptr,n,get_v,get_n)		\
+	do {								\
+		LOG_FUNC_SCOPE(execute::logger);			\
+									\
+		LOG_DEBUG( (						\
+			{						\
+				std::ostringstream o;			\
+				auto l=LIBCXX_NAMESPACE::locale::base	\
+					::environment();		\
+									\
+				o << ", ";				\
+									\
+				if ((n) == 1)				\
+				{					\
+					LOG_GET_NTH(get_v((vptr), (nptr), 0), \
+						    get_n((vptr), (nptr), 0), \
+						    o, l);		\
+				}					\
+				else					\
+				{					\
+					o << "[";			\
+					const char *sep="";		\
+					for (size_t i=0; i<(n); ++i)	\
+					{				\
+						o << sep;		\
+						LOG_GET_NTH(get_v((vptr),\
+								  (nptr), i), \
+							    get_n((vptr), \
+								  (nptr), i), \
+							    o, l);	\
+						sep=", ";		\
+					}				\
+					o << "]";			\
+				}					\
+									\
+				logbuffer += o.str(); "";		\
+			}));						\
+	} while(0)
+
+#define LOG_NTH_VALUE(vptr,nptr,i)	((vptr)[i])
+
+#define LOG_NTH_ISNULL(vptr,nptr,i)	((nptr) ? (nptr)[i]:0)
+
+#define LOG_BOUND_PARAMETER(vptr,nptr,n)		\
+	LOG_BOUND_PARAMETER_EMIT((vptr),(nptr),(n),LOG_NTH_VALUE,LOG_NTH_ISNULL)
+
+#define LOG_NTH_VALUE_ASINT(vptr,nptr,i)	((int)((vptr)[i]))
+
+#define LOG_BOUND_PARAMETER_ASINT(vptr,nptr,n)				\
+	LOG_BOUND_PARAMETER_EMIT((vptr),(nptr),(n),LOG_NTH_VALUE_ASINT,LOG_NTH_ISNULL)
+
 void statementimplObj::process_input_parameter(size_t param_number, const bitflag *n, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)
 {
 	bind_input_parameter(param_number,
@@ -496,6 +565,8 @@ void statementimplObj::process_input_parameter(size_t param_number, const bitfla
 			     const_cast<void *>(reinterpret_cast<const void *>(n)),
 			     0, create_lengths(nullflags, nvalues,
 					       nnullvalues));
+
+	LOG_BOUND_PARAMETER_ASINT(n, nullflags, nvalues);
 }
 
 void statementimplObj::process_input_parameter(size_t param_number, const short *n, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)
@@ -506,6 +577,7 @@ void statementimplObj::process_input_parameter(size_t param_number, const short 
 			     const_cast<void *>(reinterpret_cast<const void *>(n)),
 			     0, create_lengths(nullflags, nvalues,
 					       nnullvalues));
+	LOG_BOUND_PARAMETER(n, nullflags, nvalues);
 }
 
 void statementimplObj::process_input_parameter(size_t param_number, const unsigned short *n, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)
@@ -518,6 +590,7 @@ void statementimplObj::process_input_parameter(size_t param_number, const unsign
 			     const_cast<void *>(reinterpret_cast<const void *>(n)),
 			     0, create_lengths(nullflags, nvalues,
 					       nnullvalues));
+	LOG_BOUND_PARAMETER(n, nullflags, nvalues);
 }
 
 void statementimplObj::process_input_parameter(size_t param_number, const int *n, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)
@@ -528,6 +601,7 @@ void statementimplObj::process_input_parameter(size_t param_number, const int *n
 			     const_cast<void *>(reinterpret_cast<const void *>(n)),
 			     0, create_lengths(nullflags, nvalues,
 					       nnullvalues));
+	LOG_BOUND_PARAMETER(n, nullflags, nvalues);
 }
 
 void statementimplObj::process_input_parameter(size_t param_number, const unsigned *n, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)
@@ -540,6 +614,7 @@ void statementimplObj::process_input_parameter(size_t param_number, const unsign
 			     const_cast<void *>(reinterpret_cast<const void *>(n)),
 			     0, create_lengths(nullflags, nvalues,
 					       nnullvalues));
+	LOG_BOUND_PARAMETER(n, nullflags, nvalues);
 }
 
 void statementimplObj::process_input_parameter(size_t param_number, const long *n, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)
@@ -550,6 +625,7 @@ void statementimplObj::process_input_parameter(size_t param_number, const long *
 			     const_cast<void *>(reinterpret_cast<const void *>(n)),
 			     0, create_lengths(nullflags, nvalues,
 					       nnullvalues));
+	LOG_BOUND_PARAMETER(n, nullflags, nvalues);
 }
 
 void statementimplObj::process_input_parameter(size_t param_number, const unsigned long *n, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)
@@ -562,6 +638,7 @@ void statementimplObj::process_input_parameter(size_t param_number, const unsign
 			     const_cast<void *>(reinterpret_cast<const void *>(n)),
 			     0, create_lengths(nullflags, nvalues,
 					       nnullvalues));
+	LOG_BOUND_PARAMETER(n, nullflags, nvalues);
 }
 
 void statementimplObj::process_input_parameter(size_t param_number, const long long *n, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)
@@ -572,6 +649,7 @@ void statementimplObj::process_input_parameter(size_t param_number, const long l
 			     const_cast<void *>(reinterpret_cast<const void *>(n)),
 			     0, create_lengths(nullflags, nvalues,
 					       nnullvalues));
+	LOG_BOUND_PARAMETER(n, nullflags, nvalues);
 }
 
 void statementimplObj::process_input_parameter(size_t param_number, const unsigned long long *n, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)
@@ -582,6 +660,7 @@ void statementimplObj::process_input_parameter(size_t param_number, const unsign
 			     const_cast<void *>(reinterpret_cast<const void *>(n)),
 			     0, create_lengths(nullflags, nvalues,
 					       nnullvalues));
+	LOG_BOUND_PARAMETER(n, nullflags, nvalues);
 }
 
 void statementimplObj::process_input_parameter(size_t param_number, const float *n, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)
@@ -592,6 +671,7 @@ void statementimplObj::process_input_parameter(size_t param_number, const float 
 			     const_cast<void *>(reinterpret_cast<const void *>(n)),
 			     0, create_lengths(nullflags, nvalues,
 					       nnullvalues));
+	LOG_BOUND_PARAMETER(n, nullflags, nvalues);
 }
 
 void statementimplObj::process_input_parameter(size_t param_number, const double *n, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)
@@ -602,6 +682,7 @@ void statementimplObj::process_input_parameter(size_t param_number, const double
 			     const_cast<void *>(reinterpret_cast<const void *>(n)),
 			     0, create_lengths(nullflags, nvalues,
 					       nnullvalues));
+	LOG_BOUND_PARAMETER(n, nullflags, nvalues);
 }
 
 // Translate ymd to DATE_STRUCT
@@ -641,6 +722,7 @@ void statementimplObj::process_input_parameter(size_t param_number,
 			     const_cast<void *>(reinterpret_cast<const void *>
 						(&buffer->buffer[0])),
 			     0, &buffers.strlen_or_ind[0]);
+	LOG_BOUND_PARAMETER(s, nullflags, nvalues);
 }
 
 // Translate hms to TIME_STRUCT
@@ -682,8 +764,40 @@ void statementimplObj::process_input_parameter(size_t param_number,
 			     const_cast<void *>(reinterpret_cast<const void *>
 						(&buffer->buffer[0])),
 			     0, &buffers.strlen_or_ind[0]);
+	LOG_BOUND_PARAMETER(s, nullflags, nvalues);
 }
 
+// C-escape a string, for logging purposes
+
+static std::string log_quote(const std::string &v)
+{
+	std::ostringstream o;
+
+	o << '"';
+
+	for (const char c:v)
+	{
+		if (c == '\n')
+			o << "\\n";
+		else if (c == '\r')
+			o << "\\r";
+		else if (c == '\t')
+			o << "\\t";
+		else if (c == 0)
+			o << "\\0";
+		else if (c < ' ' || c >= 127)
+		{
+			o << "\\x" << std::hex << std::setw(2)
+			  << (int)(unsigned char)c << std::dec << std::setw(0);
+		}
+		else if (c == '\\' || c == '"')
+			o << "\\" << c;
+		else
+			o << c;
+	}
+	o << '"';
+	return o.str();
+}
 
 // Process string input parameters.
 // They get specified either as const char *s or as std::strings. Either strp
@@ -701,7 +815,7 @@ void statementimplObj::process_string_input_parameter(size_t param_number,
 	const char *p;
 
 	// Non-NULL single parameter values do not specify nullflags
-#define IS_CHAR_NULL(i) ((nullflags && *nullflags) || (charp && !charp[i]))
+#define IS_CHAR_NULL(i) ((nullflags && nullflags[i]) || (charp && !charp[i]))
 
 	// We can avoid doing a lot of work for a single value string parameter.
 
@@ -784,6 +898,14 @@ void statementimplObj::process_string_input_parameter(size_t param_number,
 			     SQL_C_CHAR,
 			     const_cast<void *>(reinterpret_cast<const void *>(p)),
 			     l, &buffers.strlen_or_ind[0]);
+
+#define GET_STRV_PARAM(v,n,i)			\
+	log_quote(charp ? charp[i]:strp[i])
+#define GET_STRN_PARAM(v,n,i) IS_CHAR_NULL(i)
+
+	LOG_BOUND_PARAMETER_EMIT(dummy_value, dummy_null, nvalues,
+				 GET_STRV_PARAM,
+				 GET_STRN_PARAM);
 }
 
 void statementimplObj::process_input_parameter(size_t param_number,
@@ -862,6 +984,12 @@ void statementimplObj::process_input_parameter(size_t param_number,
 			     sizeof(*blobs), 0,
 			     (*blobs)->datatype(),
 			     (SQLPOINTER)&buffer, 0, lengths);
+
+#define GET_BLOBV_PARAM(v,n,i) "blob"
+
+	LOG_BOUND_PARAMETER_EMIT(dummy_value, nullflags, nvalues,
+				 GET_BLOBV_PARAM,
+				 LOG_NTH_ISNULL);
 
 }
 
@@ -1032,9 +1160,6 @@ const std::vector<statementimplObj::column> &statementimplObj::get_columns()
 			columnmap.insert(std::pair<std::string,
 					 decltype(last) &>
 					 (last.name, last));
-
-			LOG_DEBUG("Loaded metadata: column "
-				  << iter->first);
 		}
 		have_columns=true;
 	}

@@ -96,9 +96,13 @@ class LIBCXX_HIDDEN envimplObj : public envObj {
 class LIBCXX_HIDDEN statementimplObj;
 class LIBCXX_HIDDEN newstatementimplObj;
 
-class LIBCXX_HIDDEN connectionimplObj : public connectionObj {
+class LIBCXX_HIDDEN execute {
 
+ public:
 	LOG_CLASS_SCOPE;
+};
+
+class LIBCXX_HIDDEN connectionimplObj : public connectionObj {
 
  public:
 	SQLHDBC h;
@@ -225,7 +229,6 @@ class LIBCXX_HIDDEN connectionimplObj : public connectionObj {
 
 class LIBCXX_HIDDEN newstatementimplObj : public newstatementObj {
 
-	LOG_CLASS_SCOPE;
  public:
 
 	ref<connectionimplObj> conn;
@@ -253,7 +256,8 @@ class LIBCXX_HIDDEN newstatementimplObj : public newstatementObj {
 
 class LIBCXX_HIDDEN statementimplObj : public statementObj {
 
-	LOG_CLASS_SCOPE;
+	// Debug output collector buffer.
+	std::string logbuffer;
 
  public:
 	SQLHSTMT h;

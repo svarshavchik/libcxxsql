@@ -12,7 +12,7 @@
 #include "gettext_in.h"
 #include "x/exception.H"
 
-LOG_CLASS_INIT(LIBCXX_NAMESPACE::sql::connectionimplObj);
+LOG_CLASS_INIT(LIBCXX_NAMESPACE::sql::execute);
 
 namespace LIBCXX_NAMESPACE {
 	namespace sql {
@@ -47,6 +47,8 @@ connectionimplObj::connectionimplObj(ref<envimplObj> &&envArg)
 
 connectionimplObj::~connectionimplObj() noexcept
 {
+	LOG_FUNC_SCOPE(execute::logger);
+
 	try {
 		disconnect();
 	} catch (const LIBCXX_NAMESPACE::exception &e) {
@@ -64,6 +66,8 @@ connectionimplObj::~connectionimplObj() noexcept
 
 void connectionimplObj::ret(SQLRETURN ret, const char *func)
 {
+	LOG_FUNC_SCOPE(execute::logger);
+
 	if (!SQL_SUCCEEDED(ret))
 		sql_error(func, h, SQL_HANDLE_DBC);
 
@@ -597,6 +601,8 @@ void connectionimplObj::commit_rollback_work(const ref<newstatementimplObj>
 					     &newstmt,
 					     const std::string &cmd)
 {
+	LOG_FUNC_SCOPE(execute::logger);
+
 	try {
 		stmt->prepare(newstmt, cmd)->execute();
 	} catch (...) {
@@ -634,12 +640,9 @@ void transaction::rollback_work()
 	conn->rollback_work();
 }
 
-LOG_FUNC_SCOPE_DECL(LIBCXX_NAMESPACE::sql::transaction::~transaction,
-		    transactionDestructor);
-
 transaction::~transaction() noexcept
 {
-	LOG_FUNC_SCOPE(transactionDestructor);
+	LOG_FUNC_SCOPE(execute::logger);
 
 	if (!committed)
 	{

@@ -11,8 +11,6 @@
 #include <algorithm>
 #include <sstream>
 
-LOG_CLASS_INIT(LIBCXX_NAMESPACE::sql::newstatementimplObj);
-
 namespace LIBCXX_NAMESPACE {
 	namespace sql {
 #if 0
@@ -45,6 +43,8 @@ statement newstatementimplObj::prepare(const std::string &sql)
 statement newstatementimplObj::prepare(const ref<statementimplObj> &s,
 				       const std::string &sql)
 {
+	LOG_FUNC_SCOPE(execute::logger);
+
 	if (!cursor_name.empty())
 		s->ret(SQLSetCursorName(s->h, to_sqlcharptr(cursor_name),
 					SQL_NTS), "SQLSetCursorName");

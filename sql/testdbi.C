@@ -40,6 +40,10 @@ void testdbi(const std::string &connection,
 	auto conn=env->connect(connection,
 			       (LIBCXX_NAMESPACE::sql::connect_flags)flags)
 		.first;
+	try {
+		conn->execute("set foreign_key_checks=0");
+	} catch (...) {
+	}
 	{
 		auto tables=get_tables(conn, false, "temptbl%");
 
@@ -47,6 +51,10 @@ void testdbi(const std::string &connection,
 		{
 			conn->execute("drop table " + table_name);
 		}
+	}
+	try {
+		conn->execute("set foreign_key_checks=1");
+	} catch (...) {
 	}
 
 	conn->execute("CREATE TABLE temptbl1(a int not null, b int null, c int, d int)");
