@@ -1,6 +1,15 @@
 include/x/sql/connection.H
 include/x/sql/connectionfwd.H
 include/x/sql/connectionobj.H
+include/x/sql/dbi/constraint.H
+include/x/sql/dbi/constraintfwd.H
+include/x/sql/dbi/constraintobj.H
+include/x/sql/dbi/flavor.H
+include/x/sql/dbi/flavorfwd.H
+include/x/sql/dbi/flavorobj.H
+include/x/sql/dbi/resultset.H
+include/x/sql/dbi/resultsetfwd.H
+include/x/sql/dbi/resultsetobj.H
 include/x/sql/env.H
 include/x/sql/envfwd.H
 include/x/sql/envobj.H
@@ -24,3 +33,5 @@ lib/libcxxsql.la
 lib/libcxxsql.so
 lib/libcxxsql.so.0
 libdata/pkgconfig/libcxxsql.pc
+share/libcxx/buildschema.xsl
+share/libcxx/libcxxsql.mk

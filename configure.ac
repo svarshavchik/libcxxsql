@@ -3,7 +3,7 @@
 # See COPYING for distribution information.
 
 AC_PREREQ(2.61)
-AC_INIT(libcxxsql, 0.1, [mrsam@courier-mta.com])
+AC_INIT(libcxxsql, 0.2, [mrsam@courier-mta.com])
 
 AC_CONFIG_SRCDIR([includes/sql/env.H])
 AC_CONFIG_HEADER([libcxx_config.h])
@@ -80,7 +80,7 @@ AC_SUBST(ODBC_CFLAGS)
 LIBS="$save_LIBS"
 CPPFLAGS="$save_CPPFLAGS"
 
-VERSION_INFO=0:0:0
+VERSION_INFO=1:0:0
 AC_SUBST(VERSION_INFO)
 
 test "x$prefix" = xNONE && prefix=$ac_default_prefix

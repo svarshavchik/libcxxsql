@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: libcxxsql 0.1\n"
+"Project-Id-Version: libcxxsql 0.2\n"
 "Report-Msgid-Bugs-To: mrsam@courier-mta.com\n"
-"POT-Creation-Date: 2013-06-01 14:12-0400\n"
+"POT-Creation-Date: 2013-06-30 18:58-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,19 +18,63 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: sql/connection.C:416
+#: sql/connection.C:456
 msgid "\"%1%\" is not a valid SQL type"
 msgstr ""
 
-#: sql/connection.C:488
+#: sql/connection.C:528
 msgid "%1%() invoked in a middle of a transaction"
 msgstr ""
 
-#: sql/connection.C:528
+#: sql/connection.C:568
 msgid "Transaction scope level exceeds maximum"
 msgstr ""
 
-#: sql/env.C:239
+#: sql/dbi_constraint.C:29
+msgid "Only \"=\" constraints can be specified for INSERT or UPDATE statements"
+msgstr ""
+
+#: sql/dbi_constraint.C:182
+msgid "Vector value list can only be compared using '=' or '!='"
+msgstr ""
+
+#: sql/dbi_flavor.C:89
+msgid "Only one serial column can exist in a table"
+msgstr ""
+
+#: sql/dbi_flavor.C:161
+msgid "Primary key column required for an UPDATE with joins"
+msgstr ""
+
+#: sql/dbi_resultset.C:191
+msgid "SELECT returned multiple rows when only one was expected"
+msgstr ""
+
+#: sql/dbi_resultset.C:196
+msgid "SELECT returned no rows when a row was expected"
+msgstr ""
+
+#: sql/dbi_resultset.C:315
+msgid "Empty column list passed to update()"
+msgstr ""
+
+#: sql/dbi_resultset.C:320
+msgid "An UPDATE resultset cannot have HAVING, GROUP BY, or ORDER BY"
+msgstr ""
+
+#: sql/dbi_resultset.C:388
+msgid "An INSERT resultset cannot have HAVING, GROUP BY, or ORDER BY"
+msgstr ""
+
+#: sql/dbi_resultset.C:408
+msgid "%1% is specified more than once in INSERT"
+msgstr ""
+
+#: sql/dbi_resultset.C:421
+msgid "Primary key %1% not specified in INSERT"
+msgstr ""
+
+#: sql/env.C:242
 msgid "Invalid character in connection parameter"
 msgstr ""
 
@@ -38,90 +82,90 @@ msgstr ""
 msgid "Blob size exceeds maximum limit"
 msgstr ""
 
-#: sql/newstatement.C:131
+#: sql/newstatement.C:134
 msgid "\"%1\" is not a known option"
 msgstr ""
 
-#: sql/newstatement.C:137
+#: sql/newstatement.C:140
 msgid "\"%1\" is not a valid setting for %2%"
 msgstr ""
 
-#: sql/statement.C:60
+#: sql/statement.C:59
 msgid "Absolute row number too large"
 msgstr ""
 
-#: sql/statement.C:128 sql/statement.C:1294
+#: sql/statement.C:153 sql/statement.C:1445
 msgid "Row array size not positive"
 msgstr ""
 
-#: sql/statement.C:213
+#: sql/statement.C:241
 msgid "%1% parameter in the SQL statement; "
-msgid_plural "%1% parameters in the SQL statement; "
+msgid_plural "%1% parameters in the SQL statement."
 msgstr[0] ""
 msgstr[1] ""
 
-#: sql/statement.C:216
+#: sql/statement.C:244
 msgid "%1% parameter provided; "
-msgid_plural "%1% parameters provided; "
+msgid_plural "%1% parameters provided."
 msgstr[0] ""
 msgstr[1] ""
 
-#: sql/statement.C:374
+#: sql/statement.C:407
 msgid ""
 "Size of parameter null vector different than the size of the parameter vector"
 msgstr ""
 
-#: sql/statement.C:383
+#: sql/statement.C:416
 msgid "%1% parameter value provided"
 msgid_plural "%1% parameter values provided"
 msgstr[0] ""
 msgstr[1] ""
 
-#: sql/statement.C:387
+#: sql/statement.C:420
 msgid " for a statement with %1% value for each parameter"
 msgid_plural " for a statement with %1% values for each parameter"
 msgstr[0] ""
 msgstr[1] ""
 
-#: sql/statement.C:441
+#: sql/statement.C:474
 msgid "More than %1% parameter was specified in execute()"
 msgid_plural "More than %1% parameters were specified in execute()"
 msgstr[0] ""
 msgstr[1] ""
 
-#: sql/statement.C:449
+#: sql/statement.C:482
 msgid "Parameter vectors are empty"
 msgstr ""
 
-#: sql/statement.C:608
+#: sql/statement.C:714
 msgid "Year overflow"
 msgstr ""
 
-#: sql/statement.C:648
+#: sql/statement.C:755
 msgid "Time of day overflow"
 msgstr ""
 
-#: sql/statement.C:809
+#: sql/statement.C:956
 msgid "Cannot use input iterators for blobs"
 msgstr ""
 
-#: sql/statement.C:1321
+#: sql/statement.C:1472
 msgid "Scroll offset of %1% exceeds word size"
 msgstr ""
 
-#: sql/statement.C:1341
+#: sql/statement.C:1492
 msgid "Column %1% not found"
 msgstr ""
 
-#: sql/statement.C:1344
+#: sql/statement.C:1495
 msgid "Column %1% occurs more than once in the resultset"
 msgstr ""
 
-#: sql/statement.C:1620
+#: sql/statement.C:1771
 msgid "update_fetched_row called after no rows were fetched"
 msgstr ""
 
-#: sql/statement.C:1623
+#: sql/statement.C:1774
 msgid ""
 "update_fetched_row called for row #%1% when the last fetched row is row #%2%"
 msgstr ""
