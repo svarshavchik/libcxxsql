@@ -109,12 +109,14 @@ class LIBCXX_HIDDEN connectionimplObj : public connectionObj {
 	bool connected;
 	unsigned transaction_scope_level;
 	ref<envimplObj> env;
+	std::string connstring;
 
 	friend class newstatementimplObj;
 
 	connectionimplObj(ref<envimplObj> &&envArg);
 	~connectionimplObj() noexcept;
 
+	connection clone() const override;
 	void ret(SQLRETURN ret, const char *func);
 
 	diagnostics diags;

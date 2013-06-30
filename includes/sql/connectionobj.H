@@ -7,6 +7,7 @@
 #define x_sql_connectionobj_H
 
 #include <x/obj.H>
+#include <x/sql/connectionfwd.H>
 #include <x/sql/statementfwd.H>
 #include <x/sql/newstatementfwd.H>
 #include <x/sql/dbi/flavorfwd.H>
@@ -61,6 +62,8 @@ public:
 	//! Use this to explicitly disconnect.
 	virtual void disconnect()=0;
 
+	//! Clone this connection
+	virtual connection clone() const=0;
 private:
 
 	//! Installed DBI flavor

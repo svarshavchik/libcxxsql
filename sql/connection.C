@@ -59,6 +59,11 @@ connectionimplObj::~connectionimplObj() noexcept
 		SQLFreeHandle(SQL_HANDLE_DBC, h);
 }
 
+connection connectionimplObj::clone() const
+{
+	return env->envObj::connect(connstring).first;
+}
+
 // Check the error from an SQL connection handle call
 
 // Throw an exception if there was an error. Log a diagnostic at the warning

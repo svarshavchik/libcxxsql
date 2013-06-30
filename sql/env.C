@@ -203,8 +203,11 @@ envimplObj::connect(const std::string &connection_parameters,
 		  "SQLDriverConnect");
 
 	conn->connected=true;
-	return std::make_pair(conn, std::string(reinterpret_cast<const char *>
-						(out_connection_parameters)));
+	conn->connstring=
+		std::string(reinterpret_cast<const char *>
+			    (out_connection_parameters));
+
+	return std::make_pair(conn, conn->connstring);
 }
 
 std::pair<connection, std::string>

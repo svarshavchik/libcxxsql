@@ -203,12 +203,14 @@ void testconnect(const std::string &connection,
 	}
 
 	{
+		auto conn2=conn->clone();
+
 		auto tables=get_tables(conn, false, "tmptbl%");
 
 		for (const auto &table_name:tables)
 		{
 			std::cout << "Table: " << table_name << std::endl;
-			conn->prepare("drop table " + table_name)->execute();
+			conn2->prepare("drop table " + table_name)->execute();
 		}
 	}
 
