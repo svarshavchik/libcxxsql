@@ -177,8 +177,13 @@ See COPYING for distribution information.
 
 	<listitem>
 	  <para>
-	    MySQL connections require a connection parameter named
-	    <quote>option</quote> set to "67108864" to enable &SQL; batches.
+	    MySQL connections require a connection parameter with non-default
+	    parameter values.
+	    For MySQL driver prior to 5.2, the parameter
+	    <quote>option</quote> must be set to "67108864" to enable &SQL;
+	    batches. The 5.2 driver needs two options,
+	    <quote>MULTI_STATEMENTS=1</quote> and
+	    <quote>NO_SSPS=1</quote>.
 	    This is required by
 	    <link linkend="sqldbi"><classname>&ns;::sql::dbi</classname>
 	    classes</link>.

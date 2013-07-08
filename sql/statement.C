@@ -1064,6 +1064,8 @@ std::string statementimplObj::colattribute_str(size_t i,
 	}
 
 	++n;
+	n *= 4;  // TODO: MySQL bug wchar/char conversion.
+
 	SQLCHAR buffer[n];
 
 	ret(SQLColAttribute(h, i, field_identifier, buffer, n, &n, nullptr),
@@ -1791,6 +1793,8 @@ std::string statementimplObj::get_cursor_name()
 
 	ret(SQLGetCursorName(h, nullptr, 0, &length), "SQLGetCursorName");
 
+	++length;	// TODO: MySQL bug wchar/char conversion.
+	length *= 4;
 	SQLCHAR buf[length+1];
 
 	ret(SQLGetCursorName(h, buf, length+1, &length), "SQLGetCursorName");
