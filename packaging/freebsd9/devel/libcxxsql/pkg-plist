@@ -31,7 +31,7 @@ include/x/sql/statementobj.H
 lib/libcxxsql.a
 lib/libcxxsql.la
 lib/libcxxsql.so
-lib/libcxxsql.so.0
+lib/libcxxsql.so.1
 libdata/pkgconfig/libcxxsql.pc
 share/libcxx/buildschema.xsl
 share/libcxx/libcxxsql.mk

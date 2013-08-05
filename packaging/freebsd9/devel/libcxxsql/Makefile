@@ -4,7 +4,7 @@
 # $FreeBSD$
 
 PORTNAME=		libcxxsql
-PORTVERSION=		0.2
+PORTVERSION=		0.3
 CATEGORIES=		devel
 
 MAINTAINER=		mrsam@courier-mta.com
@@ -15,7 +15,6 @@ LIB_DEPENDS=		cxx:${PORTSDIR}/devel/libcxx \
 
 
 USE_BZIP2=1
-USE_GCC=4.7+
 USE_GMAKE=yes
 GNU_CONFIGURE=1
 USE_PKGCONFIG=both
