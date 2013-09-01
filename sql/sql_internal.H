@@ -711,11 +711,14 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 					    const char *const *charp,
 					    const bitflag *nullflags,
 					    size_t nvalues,
-					    size_t nnullvalues);
+					    size_t nnullvalues,
+					    bool shortcut_for_one);
 
 	void process_input_parameter(size_t param_number, const std::string *s, const bitflag *nullflags, size_t nvalues, size_t nnullvalues) override;
 	void process_input_parameter(size_t param_number, const char * const *s, const bitflag *nullflags, size_t nvalues, size_t nnullvalues) override;
 	void process_input_parameter(size_t param_number, const insertblob *blobs, const bitflag *nullflags, size_t nvalues, size_t nnullvalues) override;
+	void process_input_parameter(size_t param_number, const decimal_input_parameter &input, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)
+		override;
 
 	void verify_vector_execute(const std::vector<bitflag> &retvalues)
 		override;

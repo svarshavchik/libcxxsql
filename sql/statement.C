@@ -802,13 +802,19 @@ static std::string log_quote(const std::string &v)
 // Process string input parameters.
 // They get specified either as const char *s or as std::strings. Either strp
 // or charp is null.
+//
+// shortcut_for_one is true if we really have a string input parameter. This
+// is set to false for decimal parameters that get converted to temporary
+// strings. Even if there's just one of them, we must copy them into an
+// internal buffer.
 
 void statementimplObj::process_string_input_parameter(size_t param_number,
 						      const std::string *strp,
 						      const char * const *charp,
 						      const bitflag *nullflags,
 						      size_t nvalues,
-						      size_t nnullvalues)
+						      size_t nnullvalues,
+						      bool shortcut_for_one)
 {
 	size_t l;
 	auto &buffers=add_lengths(nvalues, nnullvalues);
@@ -819,7 +825,7 @@ void statementimplObj::process_string_input_parameter(size_t param_number,
 
 	// We can avoid doing a lot of work for a single value string parameter.
 
-	if (nvalues == 1)
+	if (nvalues == 1 && shortcut_for_one)
 	{
 		if (IS_CHAR_NULL(0))
 		{
@@ -915,7 +921,7 @@ void statementimplObj::process_input_parameter(size_t param_number,
 					       size_t nnullvalues)
 {
 	process_string_input_parameter(param_number, s, nullptr,
-				       nullflags, nvalues, nnullvalues);
+				       nullflags, nvalues, nnullvalues, true);
 }
 
 void statementimplObj::process_input_parameter(size_t param_number,
@@ -925,7 +931,25 @@ void statementimplObj::process_input_parameter(size_t param_number,
 					       size_t nnullvalues)
 {
 	process_string_input_parameter(param_number, nullptr, s, nullflags,
-				       nvalues, nnullvalues);
+				       nvalues, nnullvalues, true);
+}
+
+void statementimplObj::process_input_parameter(size_t param_number,
+					       const decimal_input_parameter
+					       &input,
+					       const bitflag *nullflags,
+					       size_t nvalues,
+					       size_t nnullvalues)
+{
+	std::vector<std::string> buffer;
+
+	// Weak symbol, but constructing decimal_input_parameter requires
+	// linkage with libcxxsqldecimal, where this is bound.
+
+	decimal_input_parameter_to_strings(input, nvalues, buffer);
+
+	process_string_input_parameter(param_number, &buffer[0], nullptr,
+				       nullflags, nvalues, nnullvalues, false);
 }
 
 // Plaseholder for insert blobs.

@@ -1,6 +1,8 @@
 libcxxsql.la
+libcxxsqldecimal.la
 testcursor
 testdbi
+testdecimal
 testenv
 testschema
 testschematbl.C

@@ -15,6 +15,7 @@
 #include <x/sql/newstatementfwd.H>
 #include <x/sql/insertblobfwd.H>
 #include <x/sql/fetchblobfwd.H>
+#include <x/sql/decimalfwd.H>
 #include <x/sql/dbi/constraintfwd.H>
 #include <x/sql/dbi/resultsetfwd.H>
 #include <vector>
@@ -980,6 +981,9 @@ private:
 
 	//! Process input parameter
 	virtual void process_input_parameter(size_t param_number, const char * const*s, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)=0;
+
+	//! Process input parameter
+	virtual void process_input_parameter(size_t param_number, const decimal_input_parameter &input, const bitflag *nullflags, size_t nvalues, size_t nnullvalues)=0;
 
 	//! Process a literal string for an input parameter.
 
