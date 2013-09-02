@@ -18,7 +18,11 @@ EXTRA_DIST=config.rpath m4/ChangeLog config.rpath DoxygenLayout.xml \
 	packaging/fedora/libcxxsql.spec \
 	packaging/freebsd9/devel/libcxxsql/Makefile \
 	packaging/freebsd9/devel/libcxxsql/pkg-descr \
-	packaging/freebsd9/devel/libcxxsql/pkg-plist
+	packaging/freebsd9/devel/libcxxsql/pkg-plist \
+	packaging/freebsd9/devel/libcxxsql/files/patch-sql-decimal_bound_parameter.C \
+	packaging/freebsd9/devel/libcxxsql/files/patch-sql-decimal_input_parameter.C
+
+
 
 
 DOCS_SRC = $(shell find includes -name '*.H' -print)

@@ -15,6 +15,7 @@ Source0: %{name}-%{version}.tar.bz2
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: libcxx-devel >= 0.5
+BuildRequires: gmp-devel >= 5.1
 BuildRequires: unixODBC-devel
 
 %description
@@ -25,10 +26,20 @@ Some software may also need to need the unixODBC-gui-qt package, which
 contains code for a GUI prompt to select an SQL data source, that some
 applications use.
 
+%package gmp
+Group: Development/Libraries
+Summary: LibCXX SQL support for the GNU MP library
+Requires: %{name} = 0:%{version}-%{release}
+
+%description gmp
+This package installs an additional library that's needed to support
+inserting and selecting libgmp's mpf_class values from an SQL database.
+
 %package devel
 Group: Development/Libraries
 Summary: LibCXX SQL development libraries
 Requires: %{name} = 0:%{version}-%{release}
+Requires: %{name}-gmp = 0:%{version}-%{release}
 
 %description devel
 This package installs files needed to develop applications that use 
@@ -51,9 +62,16 @@ rm -rf $RPM_BUILD_ROOT
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
 
+%post gmp -p /sbin/ldconfig
+%postun gmp -p /sbin/ldconfig
+
 %files
 %defattr(-,root,root,-)
-%{_libdir}/*.so.*
+%{_libdir}/libcxxsql.so.*
+
+%files gmp
+%defattr(-,root,root,-)
+%{_libdir}/libcxxsqldecimal.so.*
 
 %files devel
 %defattr(-,root,root,-)
@@ -65,6 +83,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/*/*
 
 %changelog
+* Mon Sep  2 2013 Sam Varshavchik <mrsam@octopus.email-scan.com>
+- Put libcxxsqldecimal into a separate subpackage
+
 * Sat Jun  1 2013 Sam Varshavchik <mrsam@octopus.email-scan.com>
 - Initial version
 

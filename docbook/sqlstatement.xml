@@ -59,6 +59,8 @@ stmt->execute(s, nullptr);</programlisting>
     <classname>std::string</classname>s or as literal character strings.
     A <literal>nullptr</literal> indicates a <literal>NULL</literal> value
     for the corresponding placeholder.
+    There's also optional support for <link linkend="gmp">passing
+    <classname>mpf_class</classname> parameters</link>, from the &gmp;.
   </para>
 
   <blockquote>
@@ -548,6 +550,11 @@ while (stmt->fetch("name", name, "price", price))
       for character text columns.
       "Bit" data type, if supported by the database, get fetched into a
       <ulink url="&link-typedef-x--sql-bitflag;"><classname>&ns;::sql::bitflag</classname></ulink>.
+      Column values can also be
+      <link linkend="gmp"><classname>mpf_class</classname></link> values from
+      the &gmp;.
+    </para>
+    <para>
       The columns can be identified by column number instead of a name.
       This is slightly faster:
     </para>
@@ -1439,6 +1446,74 @@ while (stmt->fetch("memo_text", memo_text))
       implicit <methodname>prepare</methodname>() means that the statement
       handle will not be available if <methodname>execute</methodname>()
       throws an exception.
+    </para>
+  </section>
+
+  <section id="gmp">
+    <title>Using <classname>mpf_class</classname> values from &gmp;</title>
+
+    <blockquote>
+      <informalexample>
+	<variablelist>
+	  <varlistentry>
+	    <term><filename>source.C</filename></term>
+	    <listitem>
+	      <programlisting>
+#include &lt;&ns;/sql/decimal.H&gt;
+
+mpf_class value;
+
+conn-&gt;execute("INSERT INTO table VALUES(?)", value);</programlisting>
+	    </listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term><filename>Makefile.am</filename></term>
+	    <listitem>
+	      <programlisting>
+app_LDFLAGS=-lsqldecimal</programlisting>
+	    </listitem>
+	  </varlistentry>
+	</variablelist>
+      </informalexample>
+    </blockquote>
+
+    <para>
+      <literal>decimal</literal> &SQL; columns can always be
+      <literal>INSERT</literal>ed or <literal>SELECT</literal>ed as
+      text string values, <classname>float</classname>s,
+      <classname>double</classname>s, or maybe even
+      <classname>int</classname>s or <classname>long long</classname>s.
+      &libcxx; and
+      <ulink url="http://www.unixodbc.org">unixODBC</ulink>
+      handle the data type conversion automatically.
+      The &gmp; implements arbitrary precision math that does not suffer from
+      floating point round-off errors, and is a natural fit for the
+      &SQL; <literal>decimal</literal> datatype.
+    </para>
+
+    <para>
+      To use &gmp;'s <classname>mpf_class</classname> values:
+    </para>
+
+    <itemizedlist>
+      <listitem>
+	<para>
+	  Include the &lt;<filename>&ns;/sql/decimal.H</filename>&gt; file.
+	</para>
+      </listitem>
+
+      <listitem>
+	<para>Link with <literal>-lsqldecimal</literal>.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>
+      This enables <classname>mpf_class</classname> to be used directly
+      with <link linkend="sqlstatement"><methodname>execute</methodname>() or
+	<methodname>execute_vector</methodname>()</link>;
+      or receive fetched column values with
+      <link linkend="sqlstatementfetch"><methodname>fetch</methodname>()</link>
+      or <link linkend="sqlstatementfetchbulk"><methodname>fetch_vectors</methodname>()</link>.
     </para>
   </section>
 </chapter>

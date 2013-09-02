@@ -23,6 +23,7 @@
 <!ENTITY dbisql SYSTEM "dbisql.xml">
 <!ENTITY dbijoinexamplecode SYSTEM "dbijoinexamplecode.xml">
 <!ENTITY dbijoinexamplesql SYSTEM "dbijoinexamplesql.xml">
+<!ENTITY gmp "<ulink url='http://gmplib.org/'>GMP library</ulink>">
 <!ENTITY ns "x">
 <!ENTITY ref "<classname>&ns;::ref</classname>">
 <!ENTITY ptr "<classname>&ns;::ptr</classname>">
@@ -64,6 +65,9 @@ See COPYING for distribution information.
 	<link linkend="INSTALL">install</link> this library, and
 	use the following classes and templates after
 	linking with <option>-lcxxsql</option>.
+	There's also <link linkend="gmp">direct support for inserting and
+	fetch fixed precision <classname>mpf_class</classname> values</link>
+	from the &gmp;.
       </para>
 
       <para>

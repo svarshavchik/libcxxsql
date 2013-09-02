@@ -10,6 +10,8 @@ include/x/sql/dbi/flavorobj.H
 include/x/sql/dbi/resultset.H
 include/x/sql/dbi/resultsetfwd.H
 include/x/sql/dbi/resultsetobj.H
+include/x/sql/decimal.H
+include/x/sql/decimalfwd.H
 include/x/sql/env.H
 include/x/sql/envfwd.H
 include/x/sql/envobj.H
@@ -31,7 +33,11 @@ include/x/sql/statementobj.H
 lib/libcxxsql.a
 lib/libcxxsql.la
 lib/libcxxsql.so
-lib/libcxxsql.so.1
+lib/libcxxsql.so.2
+lib/libcxxsqldecimal.a
+lib/libcxxsqldecimal.la
+lib/libcxxsqldecimal.so
+lib/libcxxsqldecimal.so.2
 libdata/pkgconfig/libcxxsql.pc
 share/libcxx/buildschema.xsl
 share/libcxx/libcxxsql.mk
