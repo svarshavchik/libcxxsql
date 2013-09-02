@@ -44,6 +44,32 @@ public:
 	}
 };
 
+//! Stub class to bind mpf_class parameters to fetched columns,
+
+//! This class is visible only upon explicit include of decimal.H. Its
+//! constructor takes a pointer to mpf_class. Passing
+//! an mpf_class parameter to \ref statement "statement"'s fetch() or
+//! fetch_vector() eventually calls a private virtual function with an
+//! instance of this class as an argument,
+//!
+//! In this manner, we don't pollute the default namespace with libgmp's
+//! symbols unless this header gets explicitly included.
+
+class decimal_bound_parameter {
+
+public:
+	//! Bound parameters
+	mpf_class *params;
+
+	//! Constructor
+	decimal_bound_parameter(mpf_class *paramsArg);
+
+	//! Destructor
+	~decimal_bound_parameter() noexcept
+	{
+	}
+};
+
 #if 0
 {
 	{

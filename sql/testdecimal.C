@@ -68,22 +68,42 @@ void testdecimal(const std::string &connection,
 
 
 	std::vector<LIBCXX_NAMESPACE::sql::bitflag> status;
-	status.resize(12);
+	status.resize(13);
 
-	std::vector<int> n={1,2,3,4,5,6,7,8,9,10,11,12};
+	std::vector<int> n={1,2,3,4,5,6,7,8,9,10,11,12,13};
 
 	std::pair<std::vector<mpf_class>,
 		  std::vector<LIBCXX_NAMESPACE::sql::bitflag> > vector={
 		{0_mpf,
 		 0_mpf, 100_mpf, 1000000000_mpf, .1_mpf, .01_mpf, .000002_mpf,
-		 -100_mpf, -1000000000_mpf, -.1_mpf, -.01_mpf, -.000002_mpf},
+		 -100_mpf, -1000000000_mpf, -.1_mpf, -.01_mpf, -.000002_mpf,
+		 -123456789012.345678_mpf},
 		{1,
 		 0, 0, 0, 0, 0, 0,
-		 0, 0, 0, 0, 0,
+		 0, 0, 0, 0, 0, 0,
 		}};
 
 	conn->execute_vector("INSERT INTO temptbl_decimal values (?,?)",
 			     status, n, vector);
+
+	std::pair<std::vector<mpf_class>,
+		  std::vector<LIBCXX_NAMESPACE::sql::bitflag>> rows;
+
+	if (conn->execute("SELECT balance FROM temptbl_decimal ORDER BY n")
+	    ->fetch_vectors(20, 0, rows) != 14)
+		throw EXCEPTION("Did not receive 14 rows");
+
+	vector.first.insert(vector.first.begin(), 1.2_mpf);
+	vector.second.insert(vector.second.begin(), 0);
+	rows.first[1]=0_mpf;
+
+	rows.first.resize(14);
+	rows.second.resize(14);
+
+	if (vector.second != rows.second)
+		throw EXCEPTION("Null indicators did not match");
+	if (vector.first != rows.first)
+		throw EXCEPTION("Values did not match");
 }
 
 int main(int argc, char **argv)

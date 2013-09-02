@@ -19,6 +19,8 @@ namespace LIBCXX_NAMESPACE {
 
 class decimal_input_parameter;
 
+class decimal_bound_parameter;
+
 //! Convert gmp mpf parameters to a string.
 
 //! \internal

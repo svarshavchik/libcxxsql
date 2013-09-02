@@ -38,7 +38,9 @@ libcxxsql_la_SOURCES=\
 libcxxsql_la_LIBADD=-lcxx @ODBC_LIBS@
 libcxxsql_la_LDFLAGS=-version-info @VERSION_INFO@ $(LINKTYPE)
 
-libcxxsqldecimal_la_SOURCES=decimal_input_parameter.C
+libcxxsqldecimal_la_SOURCES=\
+	decimal_bound_parameter.C \
+	decimal_input_parameter.C
 
 libcxxsqldecimal_la_LIBADD=libcxxsql.la -lgmp
 libcxxsqldecimal_la_LDFLAGS=-version-info @VERSION_INFO@ $(LINKTYPE)

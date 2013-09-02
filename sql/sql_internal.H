@@ -314,6 +314,8 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 
 	void bind_next(size_t column_number, std::string *s, bitflag *nullflag) override;
 
+	void bind_next(size_t column_number, const decimal_bound_parameter &params, bitflag *nullflag) override;
+
 	void bind_next(size_t column_number,
 		       const fetchblob<char> *factory,
 		       bitflag *nullflag) override;
@@ -362,7 +364,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 
 		// Anything extra that gets bound here.
 
-		class baseObj : virtual public obj {
+		class LIBCXX_PUBLIC baseObj : virtual public obj {
 
 		public:
 			baseObj();
@@ -415,7 +417,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 
 		// baseObj with a string_buffer
 
-		class stringsbaseObj : public baseObj {
+		class LIBCXX_PUBLIC stringsbaseObj : public baseObj {
 
 		public:
 			// Temporary buffer for string columns, before they are
@@ -732,6 +734,16 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 	size_t row_count() override;
 	void next_resultset();
 };
+
+// Defined in libcxxsqldecimal, where decimal_bound_parameter's constructor
+// is implemented, so we'll be able to link with it.
+
+ref<statementimplObj::bound_indicator::baseObj>
+bind_decimal_column(const decimal_bound_parameter &params,
+		    size_t recsize,
+		    size_t row_array_size,
+		    SQLPOINTER &targetRet,
+		    SQLLEN &buffer_lengthRet) __attribute__((weak));
 
 #if 0
 {

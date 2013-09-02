@@ -800,6 +800,9 @@ private:
 	//! Bind a resultset string column
 	virtual void bind_next(size_t column_number, std::string *s, bitflag *nullflag)=0;
 
+	//! Bind a resultset decimal column
+	virtual void bind_next(size_t column_number, const decimal_bound_parameter &params, bitflag *nullflag)=0;
+
 	//! Bind a character blob
 	virtual void bind_next(size_t column_number,
 			       const fetchblob<char> *factory,

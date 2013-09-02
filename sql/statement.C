@@ -1704,12 +1704,33 @@ void statementimplObj::bind_next(size_t column_number, hms *s,
 }
 
 void statementimplObj::bind_next(size_t i,
+				 const decimal_bound_parameter &params,
+				 bitflag *nullflag)
+{
+	SQLPOINTER pointer_ret;
+	SQLLEN len_ret;
+
+	++i; // For the benefit of V()
+
+	auto bind=bind_decimal_column(params,
+				      V(SQL_DESC_DISPLAY_SIZE)+1,
+				      row_array_size,
+				      pointer_ret,
+				      len_ret);
+	indicator ind(this, nullflag, row_array_size, bind);
+
+	ret(SQLBindCol(h, i, SQL_C_CHAR,
+		       pointer_ret, len_ret, ind), "SQLBindCol");
+	ind.installed();
+}
+
+void statementimplObj::bind_next(size_t i,
 				 std::string *s, bitflag *nullflag)
 {
 	++i; // For the benefit of V()
 
 	auto bind=ref<bound_indicator::stringsObj>
-		::create(s, V(SQL_DESC_LENGTH)+1, row_array_size);
+		::create(s, V(SQL_DESC_DISPLAY_SIZE)+1, row_array_size);
 
 	indicator ind(this, nullflag, row_array_size, bind);
 
