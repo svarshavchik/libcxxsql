@@ -59,7 +59,7 @@ void decimal_input_parameter_to_strings(const decimal_input_parameter &params,
 		}
 		else
 		{
-			if (exp < digits)
+			if ((size_t)exp < digits)
 			{
 				n=n.substr(0, exp) + "." + n.substr(exp);
 			}
