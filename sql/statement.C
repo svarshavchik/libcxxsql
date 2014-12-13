@@ -1391,7 +1391,7 @@ void statementimplObj::bound_indicator::blobBaseObj
 			auto ret=SQLGetData(statement.h, column_number,
 					    datatype,
 					    (SQLPOINTER)buffer,
-					    sizeof(buffer),
+					    bufsize,
 					    &retlen);
 
 			if (retlen == SQL_NULL_DATA)
@@ -1405,7 +1405,7 @@ void statementimplObj::bound_indicator::blobBaseObj
 
 			statement.ret(ret, "SQLGetData");
 
-			size_t c=sizeof(buffer);
+			size_t c=bufsize;
 
 			if (retlen != SQL_NO_TOTAL)
 			{

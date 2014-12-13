@@ -31,11 +31,9 @@ include/x/sql/statement.H
 include/x/sql/statementfwd.H
 include/x/sql/statementobj.H
 lib/libcxxsql.a
-lib/libcxxsql.la
 lib/libcxxsql.so
 lib/libcxxsql.so.2
 lib/libcxxsqldecimal.a
-lib/libcxxsqldecimal.la
 lib/libcxxsqldecimal.so
 lib/libcxxsqldecimal.so.2
 libdata/pkgconfig/libcxxsql.pc

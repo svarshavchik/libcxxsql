@@ -21,4 +21,9 @@ USE_GMAKE=yes
 GNU_CONFIGURE=1
 USE_PKGCONFIG=both
 
+post-install:
+	rm $(STAGEDIR)$(PREFIX)/lib/libcxxsql.la
+	rm $(STAGEDIR)$(PREFIX)/lib/libcxxsqldecimal.la
+
+
 .include <bsd.port.mk>

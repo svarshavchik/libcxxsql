@@ -16,6 +16,7 @@ config.status
 config.sub
 configure
 depcomp
+/compile
 /doctags
 /header.html
 /html
