@@ -7,6 +7,7 @@
 #define x_sql_decimal_H
 
 #include <x/obj.H>
+#include <stddef.h>
 #include <gmpxx.h>
 
 namespace LIBCXX_NAMESPACE {
