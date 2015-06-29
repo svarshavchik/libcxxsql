@@ -26,7 +26,7 @@ namespace LIBCXX_NAMESPACE {
 // parameters. The default value references the
 // unixODBC-gui-qt module.
 
-static property::value<std::string> ui_property(LIBCXX_NAMESPACE_WSTR
+static property::value<std::string> ui_property(LIBCXX_NAMESPACE_STR
 						"::sql::uiprompt",
 						"odbcinstQ4");
 
@@ -189,7 +189,7 @@ envimplObj::connect(const std::string &connection_parameters,
 
 	if (login_timeout_set)
 		conn->CONN_ATTR(SQL_ATTR_LOGIN_TIMEOUT, uint, login_timeout);
-		
+
 	conn->ret(SQLDriverConnect(conn->h, reinterpret_cast<SQLHWND>(&wnd),
 				   to_sqlcharptr(connection_parameters),
 				   SQL_NTS,
