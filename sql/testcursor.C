@@ -367,7 +367,7 @@ void testblobs(const LIBCXX_NAMESPACE::sql::connection &conn,
 
 	fetchblobs.resize(4);
 	stmt->fetch_vectors
-		(4, 1, 
+		(4, 1,
 		 LIBCXX_NAMESPACE::sql::fetchblob<char_type>
 		 ::create([&fetchblobs,
 			   &fetch_close_called]
@@ -745,7 +745,7 @@ void testcursor(const std::string &connection,
 			      LIBCXX_NAMESPACE::sql::insertblob::create(blob2.begin(),
 									blob2.end()));
 		std::cout << "Tested binary blob data type" << std::endl;
-	} 
+	}
 }
 
 int main(int argc, char **argv)
@@ -776,21 +776,21 @@ int main(int argc, char **argv)
 					      ::valueObj<time_t>>
 		::create(time(NULL));
 
-	options->add(connect_value, 'c', L"connect",
+	options->add(connect_value, 'c', "connect",
 		     LIBCXX_NAMESPACE::option::list::base::hasvalue,
-		     L"Make a test connection",
-		     L"data_source")
-		.add(flags_value, 'f', L"flags",
+		     "Make a test connection",
+		     "data_source")
+		.add(flags_value, 'f', "flags",
 		     LIBCXX_NAMESPACE::option::list::base::hasvalue,
-		     L"Connection flag",
-		     L"flag")
-		.add(seed_value, 's', L"seed",
+		     "Connection flag",
+		     "flag")
+		.add(seed_value, 's', "seed",
 		     LIBCXX_NAMESPACE::option::list::base::hasvalue,
-		     L"Random seed",
-		     L"n")
-		.add(skip_fetch_vector_blobs, 0, L"skip-fetch-vector-blobs",
+		     "Random seed",
+		     "n")
+		.add(skip_fetch_vector_blobs, 0, "skip-fetch-vector-blobs",
 		     0,
-		     L"Skip fetch vector blobs test, until someone fixes http://bugs.mysql.com/bug.php?id=61991");
+		     "Skip fetch vector blobs test, until someone fixes http://bugs.mysql.com/bug.php?id=61991");
 
 	options->addDefaultOptions();
 
@@ -824,4 +824,3 @@ int main(int argc, char **argv)
 	}
 	return 0;
 }
-

@@ -679,18 +679,18 @@ int main(int argc, char **argv)
 
 	LIBCXX_NAMESPACE::option::string_value execute_value(LIBCXX_NAMESPACE::option::string_value::create());
 
-	options->add(connect_value, 'c', L"connect",
+	options->add(connect_value, 'c', "connect",
 		     LIBCXX_NAMESPACE::option::list::base::hasvalue,
-		     L"Make a test connection",
-		     L"data_source")
-		.add(execute_value, 'e', L"execute",
+		     "Make a test connection",
+		     "data_source")
+		.add(execute_value, 'e', "execute",
 		     LIBCXX_NAMESPACE::option::list::base::hasvalue,
-		     L"Execute SQL statement",
-		     L"SQL")
-		.add(flags_value, 'f', L"flags",
+		     "Execute SQL statement",
+		     "SQ")
+		.add(flags_value, 'f', "flags",
 		     LIBCXX_NAMESPACE::option::list::base::hasvalue,
-		     L"Connection flag",
-		     L"flag");
+		     "Connection flag",
+		     "flag");
 
 	options->addDefaultOptions();
 
@@ -719,4 +719,3 @@ int main(int argc, char **argv)
 	}
 	return 0;
 }
-

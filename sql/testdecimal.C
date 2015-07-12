@@ -115,14 +115,14 @@ int main(int argc, char **argv)
 
 	LIBCXX_NAMESPACE::option::string_value connect_value(LIBCXX_NAMESPACE::option::string_value::create());
 
-	options->add(connect_value, 'c', L"connect",
+	options->add(connect_value, 'c', "connect",
 		     LIBCXX_NAMESPACE::option::list::base::hasvalue,
-		     L"Make a test connection",
-		     L"data_source")
-		.add(flags_value, 'f', L"flags",
+		     "Make a test connection",
+		     "data_source")
+		.add(flags_value, 'f', "flags",
 		     LIBCXX_NAMESPACE::option::list::base::hasvalue,
-		     L"Connection flag",
-		     L"flag");
+		     "Connection flag",
+		     "flag");
 
 	options->addDefaultOptions();
 
@@ -146,4 +146,3 @@ int main(int argc, char **argv)
 	}
 	return 0;
 }
-
