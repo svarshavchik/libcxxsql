@@ -25,7 +25,7 @@ connectionObj::connectionObj()
 {
 }
 
-connectionObj::~connectionObj() noexcept
+connectionObj::~connectionObj()
 {
 }
 
@@ -45,7 +45,7 @@ connectionimplObj::connectionimplObj(ref<envimplObj> &&envArg)
 	}
 }
 
-connectionimplObj::~connectionimplObj() noexcept
+connectionimplObj::~connectionimplObj()
 {
 	LOG_FUNC_SCOPE(execute::logger);
 
@@ -645,7 +645,7 @@ void transaction::rollback_work()
 	conn->rollback_work();
 }
 
-transaction::~transaction() noexcept
+transaction::~transaction()
 {
 	LOG_FUNC_SCOPE(execute::logger);
 

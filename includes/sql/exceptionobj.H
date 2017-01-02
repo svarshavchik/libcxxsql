@@ -35,7 +35,7 @@ public:
 	exceptionObj();
 
 	//! Destructor
-	~exceptionObj() noexcept;
+	~exceptionObj();
 
 	//! Individual diagnostic
 
@@ -59,7 +59,7 @@ public:
 			   const char *textArg);
 
 		//! Destructor
-		~diagnostic() noexcept;
+		~diagnostic();
 
 		//! Compare against an official error code
 		bool operator==(const char *errcodeArg) const;

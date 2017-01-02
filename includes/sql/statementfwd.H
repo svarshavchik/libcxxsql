@@ -43,7 +43,7 @@ public:
 	bookmark();
 
 	//! Destructor
-	~bookmark() noexcept;
+	~bookmark();
 
 	//! Used by fetch() to load the bookmark
 	bookmark &operator=(vectorptr<unsigned char> &&);

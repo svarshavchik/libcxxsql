@@ -27,7 +27,7 @@ public:
 	newstatementObj();
 
 	//! Destructor
-	~newstatementObj() noexcept;
+	~newstatementObj();
 
 	//! Set an option for the next prepared statement
 	virtual void option(const std::string &name,

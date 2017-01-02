@@ -94,7 +94,7 @@ public:
 	bindrowimplObj();
 
 	//! Destructor
-	~bindrowimplObj() noexcept;
+	~bindrowimplObj();
 
 	//! Bind rows
 	virtual void bind(bindrow::consecutive &)=0;

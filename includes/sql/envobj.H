@@ -53,7 +53,7 @@ public:
 	envObj();
 
 	//! Destructor
-	~envObj() noexcept;
+	~envObj();
 
 	//! Return available data sources
 	virtual void get_data_sources(std::map<std::string, std::string>

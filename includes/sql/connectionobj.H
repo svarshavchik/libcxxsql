@@ -55,7 +55,7 @@ public:
 	connectionObj();
 
 	//! Destructor
-	~connectionObj() noexcept;
+	~connectionObj();
 
 	//! Disconnect
 

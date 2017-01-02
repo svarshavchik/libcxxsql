@@ -34,7 +34,7 @@ public:
 	flavorObj();
 
 	//! Destructor
-	~flavorObj() noexcept;
+	~flavorObj();
 
 	//! Build an UPDATE with joins
 

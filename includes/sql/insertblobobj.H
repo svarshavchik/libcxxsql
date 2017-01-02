@@ -35,7 +35,7 @@ public:
 	insertblobObj();
 
 	//! Destructor
-	~insertblobObj() noexcept;
+	~insertblobObj();
 
 	//! Returns the internal type, char or binary
 	virtual int datatype()=0;
@@ -70,7 +70,7 @@ public:
 	insertblobdatatypeObj();
 
 	//! Destructor
-	~insertblobdatatypeObj() noexcept;
+	~insertblobdatatypeObj();
 
 	//! Implement datatype()
 	int datatype() override;
@@ -151,7 +151,7 @@ public:
 	}
 
 	//! Destructor
-	~insertblobimplObj() noexcept
+	~insertblobimplObj()
 	{
 	}
 

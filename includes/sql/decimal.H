@@ -40,7 +40,7 @@ public:
 	decimal_input_parameter(const mpf_class *paramsArg);
 
 	//! Destructor
-	~decimal_input_parameter() noexcept
+	~decimal_input_parameter()
 	{
 	}
 };
@@ -66,7 +66,7 @@ public:
 	decimal_bound_parameter(mpf_class *paramsArg);
 
 	//! Destructor
-	~decimal_bound_parameter() noexcept
+	~decimal_bound_parameter()
 	{
 	}
 };

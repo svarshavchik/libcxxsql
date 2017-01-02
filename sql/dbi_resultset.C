@@ -26,7 +26,7 @@ bindrowimplObj::bindrowimplObj()
 {
 }
 
-bindrowimplObj::~bindrowimplObj() noexcept
+bindrowimplObj::~bindrowimplObj()
 {
 }
 
@@ -39,7 +39,7 @@ resultsetObj::bindrow_all::bindrow_all()
 {
 }
 
-resultsetObj::bindrow_all::~bindrow_all() noexcept
+resultsetObj::bindrow_all::~bindrow_all()
 {
 }
 
@@ -61,7 +61,7 @@ resultsetObj::resultsetObj(const connection &connArg,
 {
 }
 
-resultsetObj::~resultsetObj() noexcept
+resultsetObj::~resultsetObj()
 {
 }
 
@@ -69,7 +69,7 @@ resultsetObj::aliasesObj::aliasesObj()
 {
 }
 
-resultsetObj::aliasesObj::~aliasesObj() noexcept
+resultsetObj::aliasesObj::~aliasesObj()
 {
 }
 
@@ -200,7 +200,7 @@ resultsetObj::rowObj::rowObj(const connection &connArg) : conn(connArg)
 {
 }
 
-resultsetObj::rowObj::~rowObj() noexcept
+resultsetObj::rowObj::~rowObj()
 {
 }
 
@@ -210,7 +210,7 @@ joinBaseObj::joinBaseObj()
 {
 }
 
-joinBaseObj::~joinBaseObj() noexcept
+joinBaseObj::~joinBaseObj()
 {
 }
 

@@ -23,7 +23,7 @@ flavorObj::flavorObj()
 {
 }
 
-flavorObj::~flavorObj() noexcept
+flavorObj::~flavorObj()
 {
 }
 
@@ -36,7 +36,7 @@ class LIBCXX_HIDDEN mysqlFlavorObj : public flavorObj {
 	mysqlFlavorObj();
 
 	//! Destructor
-	~mysqlFlavorObj() noexcept;
+	~mysqlFlavorObj();
 
 	void update_with_joins(std::ostream &o,
 			       const resultsetObj &rs,
@@ -55,7 +55,7 @@ mysqlFlavorObj::mysqlFlavorObj()
 {
 }
 
-mysqlFlavorObj::~mysqlFlavorObj() noexcept
+mysqlFlavorObj::~mysqlFlavorObj()
 {
 }
 
@@ -100,7 +100,7 @@ class LIBCXX_HIDDEN postgresFlavorObj : public flavorObj {
 	postgresFlavorObj();
 
 	//! Destructor
-	~postgresFlavorObj() noexcept;
+	~postgresFlavorObj();
 
 	void update_with_joins(std::ostream &o,
 			       const resultsetObj &rs,
@@ -119,7 +119,7 @@ postgresFlavorObj::postgresFlavorObj()
 {
 }
 
-postgresFlavorObj::~postgresFlavorObj() noexcept
+postgresFlavorObj::~postgresFlavorObj()
 {
 }
 

@@ -19,7 +19,7 @@ insertblobObj::insertblobObj()
 {
 }
 
-insertblobObj::~insertblobObj() noexcept
+insertblobObj::~insertblobObj()
 {
 }
 
@@ -29,7 +29,7 @@ insertblobdatatypeObj<char_type>::insertblobdatatypeObj()
 }
 
 template<typename char_type>
-insertblobdatatypeObj<char_type>::~insertblobdatatypeObj() noexcept
+insertblobdatatypeObj<char_type>::~insertblobdatatypeObj()
 {
 }
 

@@ -20,7 +20,7 @@ constraintObj::constraintObj()
 {
 }
 
-constraintObj::~constraintObj() noexcept
+constraintObj::~constraintObj()
 {
 }
 
@@ -88,7 +88,7 @@ void constraintObj::cmpObj<std::nullptr_t>
 		     const_constraint(this), name, "=", "NULL");
 }
 
-constraintObj::cmpObj<std::nullptr_t>::~cmpObj() noexcept
+constraintObj::cmpObj<std::nullptr_t>::~cmpObj()
 {
 }
 
@@ -148,7 +148,7 @@ constraintObj::rawcmpObj::rawcmpObj(const std::string &nameArg,
 	}
 }
 
-constraintObj::rawcmpObj::~rawcmpObj() noexcept
+constraintObj::rawcmpObj::~rawcmpObj()
 {
 }
 
@@ -207,11 +207,11 @@ void constraintObj::get_vec_sql_impl(std::ostream &o,
 	o << ")";
 }
 
-constraintObj::containerObj::~containerObj() noexcept
+constraintObj::containerObj::~containerObj()
 {
 }
 
-constraintObj::andObj::~andObj() noexcept
+constraintObj::andObj::~andObj()
 {
 }
 
@@ -242,7 +242,7 @@ void constraintObj::andObj::get_sql(std::vector<std::string> &fields,
 		v->get_sql(fields, placeholders, constraints);
 }
 
-constraintObj::orObj::~orObj() noexcept
+constraintObj::orObj::~orObj()
 {
 }
 
@@ -264,7 +264,7 @@ void constraintObj::orObj::get_sql(std::ostream &o) const
 	o << ")";
 }
 
-constraintObj::notObj::~notObj() noexcept
+constraintObj::notObj::~notObj()
 {
 }
 

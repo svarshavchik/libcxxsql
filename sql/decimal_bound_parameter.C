@@ -39,7 +39,7 @@ class LIBCXX_HIDDEN boundDecimalObj
 		buffer_lengthRet=string_size;
 	}
 
-	~boundDecimalObj() noexcept
+	~boundDecimalObj()
 	{
 	}
 

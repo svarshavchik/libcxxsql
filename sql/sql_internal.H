@@ -61,7 +61,7 @@ class LIBCXX_HIDDEN diagnostics {
 	diagnostics(const char *function, SQLHANDLE handle, SQLSMALLINT type);
 	diagnostics();
 
-	~diagnostics() noexcept;
+	~diagnostics();
 };
 
 void sql_error(const char *function,
@@ -74,7 +74,7 @@ class LIBCXX_HIDDEN envimplObj : public envObj {
 	SQLHENV h;
 
 	envimplObj();
-	~envimplObj() noexcept;
+	~envimplObj();
 
 	void get_data_sources(std::map<std::string,
 			      std::string> &sources) const override;
@@ -114,7 +114,7 @@ class LIBCXX_HIDDEN connectionimplObj : public connectionObj {
 	friend class newstatementimplObj;
 
 	connectionimplObj(ref<envimplObj> &&envArg);
-	~connectionimplObj() noexcept;
+	~connectionimplObj();
 
 	connection clone() const override;
 	void ret(SQLRETURN ret, const char *func);
@@ -245,7 +245,7 @@ class LIBCXX_HIDDEN newstatementimplObj : public newstatementObj {
 	void set_attribute_ulen(SQLINTEGER, const char *, SQLULEN);
 
 	newstatementimplObj(ref<connectionimplObj> &&connArg);
-	~newstatementimplObj() noexcept;
+	~newstatementimplObj();
 
 	statement prepare(const std::string &sql) override;
 	statement prepare(const ref<statementimplObj> &s,
@@ -266,7 +266,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 	ref<connectionimplObj> conn;
 
 	statementimplObj(const ref<connectionimplObj> &connArg);
-	~statementimplObj() noexcept;
+	~statementimplObj();
 
 	void ret(SQLRETURN ret, const char *func);
 
@@ -368,7 +368,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 
 		public:
 			baseObj();
-			~baseObj() noexcept;
+			~baseObj();
 
 			virtual void bind(const bound_indicator &indicators,
 					  statementimplObj &statement);
@@ -394,7 +394,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 				sqlbuf.resize(row_array_size);
 			}
 
-			~bindTransformObj() noexcept
+			~bindTransformObj()
 			{
 			}
 
@@ -427,7 +427,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 			size_t string_size;
 
 			stringsbaseObj(size_t recsize, size_t row_array_size);
-			~stringsbaseObj() noexcept;
+			~stringsbaseObj();
 		};
 
 		class stringsObj : public stringsbaseObj {
@@ -437,7 +437,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 
 			stringsObj(std::string *stringsArg,
 				   size_t recsize, size_t row_array_size);
-			~stringsObj() noexcept;
+			~stringsObj();
 			void bind(const bound_indicator &indicators,
 				  statementimplObj &statement) override;
 		};
@@ -449,7 +449,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 
 			bookmarksObj(bookmark *bookmarksArg,
 				     size_t recsize, size_t row_array_size);
-			~bookmarksObj() noexcept;
+			~bookmarksObj();
 			void bind(const bound_indicator &indicators,
 				  statementimplObj &statement) override;
 		};
@@ -471,7 +471,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 				    size_t column_numberArg);
 
 			// Destructor
-			~blobBaseObj() noexcept;
+			~blobBaseObj();
 
 			// Process bind results.
 			void bind(const bound_indicator &indicators,
@@ -521,7 +521,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 			{
 			}
 
-			~blobObj() noexcept
+			~blobObj()
 			{
 			}
 
@@ -571,7 +571,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 				size_t row_array_size,
 				ref<baseObj> &&dataArg=ref<baseObj>::create());
 
-		~bound_indicator() noexcept;
+		~bound_indicator();
 
 		void resize(size_t recsize, size_t nrecords);
 	};
@@ -617,7 +617,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 		{
 		}
 
-		~indicator() noexcept;
+		~indicator();
 
 		void installed() { installedflag=true; }
 
@@ -638,7 +638,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 		buffer_t buffer;
 
 		bindBufferObj() {}
-		~bindBufferObj() noexcept {}
+		~bindBufferObj() {}
 	};
 
 	// Buffers for strlen_or-ind parameters to SQLBindParameter()
@@ -653,7 +653,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 		size_t blobindex;
 
 		strlen_or_ind_buffer_t();
-		~strlen_or_ind_buffer_t() noexcept;
+		~strlen_or_ind_buffer_t();
 	};
 
 	// We reserve() this ahead, so it won't get reallocated

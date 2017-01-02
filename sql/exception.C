@@ -92,7 +92,7 @@ exceptionObj::exceptionObj() : function(nullptr)
 {
 }
 
-exceptionObj::~exceptionObj() noexcept
+exceptionObj::~exceptionObj()
 {
 }
 
@@ -106,7 +106,7 @@ exceptionObj::diagnostic::diagnostic(const char *errcodeArg,
 	strncat(errcode, errcodeArg, sizeof(errcode)-1);
 }
 
-exceptionObj::diagnostic::~diagnostic() noexcept
+exceptionObj::diagnostic::~diagnostic()
 {
 }
 

@@ -63,7 +63,7 @@ public:
 		aliasesObj();
 
 		//! Destructor
-		~aliasesObj() noexcept;
+		~aliasesObj();
 
 		//! Get the alias for a new table in a join.
 
@@ -110,7 +110,7 @@ protected:
 		bindrow_all();
 
 		//! Destructor
-		~bindrow_all() noexcept;
+		~bindrow_all();
 	};
 
 public:
@@ -124,7 +124,7 @@ public:
 		     const ref<aliasesObj> &aliasesArg=ref<aliasesObj>::create());
 
 	//! Destructor
-	~resultsetObj() noexcept;
+	~resultsetObj();
 
 	//! Return the name of the underlying table
 	virtual const char *get_table_name() const=0;
@@ -296,7 +296,7 @@ public:
 	rowObj(const connection &connArg);
 
 	//! Destructor
-	~rowObj() noexcept;
+	~rowObj();
 
 	//! Template class used by a subclass to declare a field
 
@@ -403,7 +403,7 @@ public:
 	joinBaseObj();
 
 	//! Destructor
-	~joinBaseObj() noexcept;
+	~joinBaseObj();
 
         //! Return the real table's name
 	virtual const char *get_table_name() const=0;

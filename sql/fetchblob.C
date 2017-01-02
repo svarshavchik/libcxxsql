@@ -19,7 +19,7 @@ fetchcloseObj::fetchcloseObj()
 {
 }
 
-fetchcloseObj::~fetchcloseObj() noexcept
+fetchcloseObj::~fetchcloseObj()
 {
 }
 

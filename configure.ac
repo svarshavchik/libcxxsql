@@ -13,7 +13,7 @@ AM_INIT_AUTOMAKE([dist-bzip2 foreign -Wno-portability])
 AC_PROG_CXX
 AC_PROG_LIBTOOL
 AM_GNU_GETTEXT([external])
-AM_GNU_GETTEXT_VERSION([0.19.4])
+AM_GNU_GETTEXT_VERSION([0.19.6])
 AC_LANG(C++)
 
 XGETTEXT_EXTRA_OPTIONS="--keyword=_txt --keyword=_txtw --keyword=_txtn:1,2 --keyword=_txtnw:1,2 \`cd \$(top_srcdir); echo sql/*.C\`"

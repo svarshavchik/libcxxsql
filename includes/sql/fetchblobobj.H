@@ -31,7 +31,7 @@ public:
 	fetchcloseObj();
 
 	//! Destructor
-	~fetchcloseObj() noexcept;
+	~fetchcloseObj();
 
 	virtual void close(); //!< Default no-op implementation.
 };
@@ -64,7 +64,7 @@ public:
 	}
 
 	//! Destructor
-	~fetchcloseimplObj() noexcept
+	~fetchcloseimplObj()
 	{
 	}
 
@@ -131,7 +131,7 @@ public:
 	fetchblobObj() {}
 
 	//! Destructor
-	~fetchblobObj() noexcept {}
+	~fetchblobObj() {}
 
 	//! Create an output iterator for a given row, and the close function.
 
@@ -168,7 +168,7 @@ public:
 	}
 
 	//! Destructor
-	~fetchblobimplObj() noexcept
+	~fetchblobimplObj()
 	{
 	}
 

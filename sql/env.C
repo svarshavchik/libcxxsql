@@ -41,7 +41,7 @@ diagnostics::diagnostics(const char *function,
 {
 }
 
-diagnostics::~diagnostics() noexcept
+diagnostics::~diagnostics()
 {
 }
 
@@ -58,7 +58,7 @@ envObj::envObj()
 {
 }
 
-envObj::~envObj() noexcept
+envObj::~envObj()
 {
 }
 
@@ -79,7 +79,7 @@ envimplObj::envimplObj() : login_timeout_set(false)
 
 }
 
-envimplObj::~envimplObj() noexcept
+envimplObj::~envimplObj()
 {
 	if (h)
 		SQLFreeHandle(SQL_HANDLE_ENV, h);

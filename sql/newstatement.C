@@ -22,7 +22,7 @@ newstatementObj::newstatementObj()
 {
 }
 
-newstatementObj::~newstatementObj() noexcept
+newstatementObj::~newstatementObj()
 {
 }
 
@@ -31,7 +31,7 @@ newstatementimplObj::newstatementimplObj(ref<connectionimplObj> &&connArg)
 {
 }
 
-newstatementimplObj::~newstatementimplObj() noexcept
+newstatementimplObj::~newstatementimplObj()
 {
 }
 

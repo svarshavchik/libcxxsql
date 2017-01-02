@@ -14,7 +14,7 @@ Source0: %{name}-%{version}.tar.bz2
 %define _hardened_build 1
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-BuildRequires: libcxx-devel >= 0.5
+BuildRequires: libcxxbase-devel >= 0.5
 BuildRequires: gmp-devel >= 5.1
 BuildRequires: unixODBC-devel
 
@@ -42,7 +42,7 @@ Requires: %{name} = 0:%{version}-%{release}
 Requires: %{name}-gmp = 0:%{version}-%{release}
 
 %description devel
-This package installs files needed to develop applications that use 
+This package installs files needed to develop applications that use
 LibCXX SQL development libraries.
 
 %prep
@@ -88,4 +88,3 @@ rm -rf $RPM_BUILD_ROOT
 
 * Sat Jun  1 2013 Sam Varshavchik <mrsam@octopus.email-scan.com>
 - Initial version
-

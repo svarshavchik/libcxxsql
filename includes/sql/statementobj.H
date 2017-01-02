@@ -72,7 +72,7 @@ public:
 	statementObj();
 
 	//! Destructor
-	~statementObj() noexcept;
+	~statementObj();
 
 	//! Limit the number of rows to be returned
 	virtual void limit(size_t maxrows)=0;
@@ -108,7 +108,7 @@ public:
 			  bool nullable);
 
 		//! Destructor
-		~parameter() noexcept;
+		~parameter();
 	};
 
 	//! Return parameters in the SQL statement.
@@ -389,7 +389,7 @@ public:
 		friend class statementObj::process_execute_non_null_param<dbi::constraint>;
 
 		//! Destructor
-		~execute_factory() noexcept {}
+		~execute_factory() {}
 
 		//! NULL value parameter.
 		void parameter(std::nullptr_t null_param);

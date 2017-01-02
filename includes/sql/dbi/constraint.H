@@ -270,7 +270,7 @@ void constraintObj::containerObj::add(const std::vector<const_constraint> &const
 }
 
 template<typename T>
-constraintObj::cmpvecObj<T>::~cmpvecObj() noexcept
+constraintObj::cmpvecObj<T>::~cmpvecObj()
 {
 }
 
@@ -322,7 +322,7 @@ template<typename valueType, typename allocatorType>
 class init_vectorObj<std::vector<valueType, allocatorType>> {
 public:
 
-	//! Call \ref vector "INSERT_LIBX_NAMESPACE::vector<>::create" to convert the \c std::list to a vector.
+	//! Call \link vector INSERT_LIBX_NAMESPACE::vector<>::create \endlink to convert the \c std::list to a vector.
 
 	//! The wrapper that calls this always passes a single parameter,
 	//! but we'll use variadic parameters in order to allow future

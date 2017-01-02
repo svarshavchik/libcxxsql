@@ -35,7 +35,7 @@ public:
 	constraintObj();
 
 	//! Destructor
-	~constraintObj() noexcept;
+	~constraintObj();
 
 	//! Retrieve SQL for the constraint
 	virtual void get_sql(std::ostream &) const=0;
@@ -150,7 +150,7 @@ public:
 	}
 
 	//! Destructor
-	~cmpObj() noexcept
+	~cmpObj()
 	{
 	}
 
@@ -211,7 +211,7 @@ public:
 		  vecType && valueArg);
 
 	//! Destructor
-	~cmpvecObj() noexcept;
+	~cmpvecObj();
 
 	//! Retrieve SQL for the constraint
 
@@ -259,7 +259,7 @@ public:
 	       std::nullptr_t valueArg);
 
 	//! Destructor
-	~cmpObj() noexcept;
+	~cmpObj();
 
 	//! Construct SQL for this constraint.
 
@@ -320,7 +320,7 @@ public:
 		  std::list<std::string> &&rawsqlArg);
 
 	//! Destructor
-	~rawcmpObj() noexcept;
+	~rawcmpObj();
 
 	//! Retrieve SQL for the constraint
 	void get_sql(std::ostream &o) const override;
@@ -351,7 +351,7 @@ public:
 		     Args && ...args);
 
 	//! Destructor
-	~containerObj() noexcept;
+	~containerObj();
 
 	//! No more parameter values to add().
 	void add()
@@ -437,7 +437,7 @@ public:
 	}
 
 	//! Destructor
-	~andObj() noexcept;
+	~andObj();
 
 	//! Create "AND" SQL constraint.
 
@@ -475,7 +475,7 @@ public:
 	}
 
 	//! Destructor
-	~orObj() noexcept;
+	~orObj();
 
 	//! Create "OR" SQL constraint.
 
@@ -507,7 +507,7 @@ public:
 	}
 
 	//! Destructor
-	~notObj() noexcept;
+	~notObj();
 
 	//! Create a "NOT" SQL constraint.
 

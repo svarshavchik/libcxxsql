@@ -31,7 +31,7 @@ bookmark::bookmark()
 {
 }
 
-bookmark::~bookmark() noexcept
+bookmark::~bookmark()
 {
 }
 
@@ -94,7 +94,7 @@ statementObj::statementObj()
 {
 }
 
-statementObj::~statementObj() noexcept
+statementObj::~statementObj()
 {
 }
 
@@ -115,7 +115,7 @@ statementimplObj::statementimplObj(const ref<connectionimplObj> &connArg)
 	}
 }
 
-statementimplObj::~statementimplObj() noexcept
+statementimplObj::~statementimplObj()
 {
 	if (h)
 		SQLFreeHandle(SQL_HANDLE_STMT, h);
@@ -199,7 +199,7 @@ statementimplObj::parameter::parameter(const char *data_typeArg,
 {
 }
 
-statementimplObj::parameter::~parameter() noexcept
+statementimplObj::parameter::~parameter()
 {
 }
 
@@ -396,7 +396,7 @@ statementimplObj::strlen_or_ind_buffer_t::strlen_or_ind_buffer_t()
 {
 }
 
-statementimplObj::strlen_or_ind_buffer_t::~strlen_or_ind_buffer_t() noexcept
+statementimplObj::strlen_or_ind_buffer_t::~strlen_or_ind_buffer_t()
 {
 }
 
@@ -1253,7 +1253,7 @@ statementimplObj::bound_indicator::baseObj::baseObj()
 {
 }
 
-statementimplObj::bound_indicator::baseObj::~baseObj() noexcept
+statementimplObj::bound_indicator::baseObj::~baseObj()
 {
 }
 
@@ -1270,7 +1270,7 @@ statementimplObj::bound_indicator::bound_indicator(bitflag *nullflag,
 	indicators.resize(row_array_size);
 }
 
-statementimplObj::bound_indicator::~bound_indicator() noexcept
+statementimplObj::bound_indicator::~bound_indicator()
 {
 }
 
@@ -1294,7 +1294,7 @@ statementimplObj::bound_indicator::stringsbaseObj
 	string_buffer.resize(total_size);
 }
 
-statementimplObj::bound_indicator::stringsbaseObj::~stringsbaseObj() noexcept
+statementimplObj::bound_indicator::stringsbaseObj::~stringsbaseObj()
 {
 }
 
@@ -1308,7 +1308,7 @@ statementimplObj::bound_indicator::stringsObj
 {
 }
 
-statementimplObj::bound_indicator::stringsObj::~stringsObj() noexcept
+statementimplObj::bound_indicator::stringsObj::~stringsObj()
 {
 }
 
@@ -1341,7 +1341,7 @@ statementimplObj::bound_indicator::bookmarksObj
 }
 
 statementimplObj::bound_indicator::bookmarksObj
-::~bookmarksObj() noexcept
+::~bookmarksObj()
 {
 }
 
@@ -1353,7 +1353,7 @@ statementimplObj::bound_indicator::blobBaseObj
 {
 }
 
-statementimplObj::bound_indicator::blobBaseObj::~blobBaseObj() noexcept
+statementimplObj::bound_indicator::blobBaseObj::~blobBaseObj()
 {
 }
 
@@ -1452,7 +1452,7 @@ void statementimplObj::bound_indicator::bookmarksObj::bind(const
 	}
 }
 
-statementimplObj::indicator::~indicator() noexcept
+statementimplObj::indicator::~indicator()
 {
 	if (!installedflag)
 		stmt->bound_indicator_list.erase(installed_iter);
