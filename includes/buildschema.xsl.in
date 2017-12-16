@@ -7,7 +7,7 @@ See COPYING for distribution information.
 
 -->
 
-<xsl:stylesheet  
+<xsl:stylesheet
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 
   <xsl:output method="text" />
@@ -92,7 +92,7 @@ See COPYING for distribution information.
 	    <xsl:with-param name="namespace" select="substring-after($namespace, '::')" />
 	    <xsl:with-param name="context" select="$context" />
 	  </xsl:call-template>
-	  
+
 	</xsl:when>
 	<xsl:otherwise>
 	  <xsl:call-template name="namespacedeclemit">
@@ -236,7 +236,7 @@ typedef @LIBCXX_NAMESPACE@::const_ptr&lt;</xsl:text>
 
 class </xsl:text>
     <xsl:call-template name="class" />
-    <xsl:text>Base : public @LIBCXX_NAMESPACE@::ptrrefBase {
+    <xsl:text>Base : public @LIBCXX_NAMESPACE@::ptrref_base {
 
 public:
 
@@ -1330,7 +1330,7 @@ void </xsl:text>
 	</xsl:for-each>
     <xsl:text>
     });
-	    
+
     return newjoin;
 }
 </xsl:text>

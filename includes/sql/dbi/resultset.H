@@ -22,7 +22,7 @@ namespace LIBCXX_NAMESPACE {
 
 //! Base class for \ref resultset "SQL resultsets".
 
-class resultsetBase : public ptrrefBase {
+class resultsetBase : public ptrref_base {
 };
 
 template<typename ...Args>

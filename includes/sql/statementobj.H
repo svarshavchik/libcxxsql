@@ -19,6 +19,7 @@
 #include <x/sql/dbi/constraintfwd.H>
 #include <x/sql/dbi/resultsetfwd.H>
 #include <vector>
+#include <functional>
 #include <map>
 #include <unistd.h>
 
@@ -353,7 +354,7 @@ public:
 
 	//! Refer to this class as \c INSERT_LIBX_NAMESPACE::sql::statement::base::columnmap_t;
 
-	typedef std::multimap<std::string, column &,
+	typedef std::multimap<std::string, std::reference_wrapper<column>,
 			      chrcasecmp::str_less> columnmap_t;
 
 	//! Return current resultset map

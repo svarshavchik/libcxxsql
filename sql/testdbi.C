@@ -240,7 +240,7 @@ void testdbi(const std::string &connection,
 	}
 
 	{
-		auto keys=LIBCXX_NAMESPACE::const_vector<int>::create();
+		auto keys=LIBCXX_NAMESPACE::vector<int>::create();
 		auto constraint=LIBCXX_NAMESPACE::sql::dbi::AND("b", "!=", keys);
 
 		LIBCXX_NAMESPACE::vector<int> cpy=keys;

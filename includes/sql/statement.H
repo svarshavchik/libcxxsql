@@ -24,7 +24,7 @@ namespace LIBCXX_NAMESPACE {
 
 //! Refer to this class as \c INSERT_LIBX_NAMESPACE::sql::env::base.
 
-class statementBase : public ptrrefBase {
+class statementBase : public ptrref_base {
 
 public:
 

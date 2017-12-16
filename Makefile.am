@@ -51,11 +51,15 @@ html/index.html: html/ref/index.html $(wildcard docbook/*.xml) docbook/xmllinks.
 		--stringparam generate.id.attributes 1 \
 		--param local.l10n.xml 'document("'`pwd`/docbook/l10.xml'")' \
 		$(srcdir)/docbook/docbook.xsl $(srcdir)/docbook/book.xml
-	-rm -f html/* 2>/dev/null >/dev/null || :
-	mv html.tmp/* html
-	rm -rf html.tmp
-	links -dump -no-numbering -no-references html/INSTALL.html >INSTALL.tmp
+	links -dump -no-numbering -no-references html.tmp/INSTALL.html >INSTALL.tmp
 	mv -f INSTALL.tmp INSTALL
+	mkdir html.tmp/ref
+	ln html/ref/* html.tmp/ref
+	chcon -R -t httpd_sys_content_t html.tmp/. 2>/dev/null || true
+	rm -rf ~/www/www.courier-mta.org/libcxx/sql
+	rsync -a -X html.tmp/. ~/www/www.courier-mta.org/libcxx/sql
+	rm -rf html
+	mv html.tmp html
 
 html/ref/index.html: $(DOCS_SRC) Doxyfile header.html
 	rm -rf html/ref

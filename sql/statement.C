@@ -1183,9 +1183,9 @@ const std::vector<statementimplObj::column> &statementimplObj::get_columns()
 						    S(SQL_DESC_TABLE_NAME)));
 			auto &last=columns.back();
 
-			columnmap.insert(std::pair<std::string,
-					 decltype(last) &>
-					 (last.name, last));
+			columnmap.insert({last.name,
+						std::reference_wrapper
+						<column>(last)});
 		}
 		have_columns=true;
 	}
@@ -1237,7 +1237,7 @@ statementimplObj::column::operator std::string() const
 			   ? "searchable":"searchable (LIKE)"
 			   : searchable_except_like
 			   ? "searchable (EXCEPT LIKE)":"not searchable");
-	
+
 	props.emplace_back("prefix: " + literal_prefix);
 	props.emplace_back("suffix: " + literal_suffix);
 
@@ -1426,7 +1426,7 @@ void statementimplObj::bound_indicator::blobBaseObj
 			if (done)
 				finish();
 		} while (!done);
-	}				    
+	}
 }
 
 void statementimplObj::bound_indicator::bookmarksObj::bind(const
@@ -1521,7 +1521,7 @@ size_t statementimplObj::bind_column_name(const std::string &name)
 		throw EXCEPTION(gettextmsg(_TXT(_txt("Column %1% occurs more than once in the resultset")),
 					   name));
 
-	return range.first->second.column_number;
+	return range.first->second.get().column_number;
 }
 
 void statementimplObj::bind_bookmarks(bookmark *bookmarks)
@@ -1816,7 +1816,7 @@ statement statementimplObj::prepare_modify_fetched_row(size_t rownum,
 	{
 		if (num_rows_fetched == 0)
 			throw EXCEPTION(_TXT(_txt("update_fetched_row called after no rows were fetched")));
-		
+
 		throw EXCEPTION((std::string)
 				gettextmsg(_TXT(_txt("update_fetched_row called for row #%1% when the last fetched row is row #%2%")),
 					   rownum,
