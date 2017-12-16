@@ -165,7 +165,7 @@ envimplObj::connect(const std::string &connection_parameters,
 	ODBCINSTWND wnd;
 
 	{
-		auto str=ui_property.getValue();
+		auto str=ui_property.get();
 
 		wnd.szUI[0]=0;
 		strncat(wnd.szUI, str.c_str(), sizeof(wnd.szUI)-1);
