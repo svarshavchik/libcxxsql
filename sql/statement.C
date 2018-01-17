@@ -705,10 +705,10 @@ void statementimplObj::process_input_parameter(size_t param_number,
 		       []
 		       (const ymd &d)
 		       {
-			       auto y=d.getYear();
+			       auto y=d.get_year();
 			       DATE_STRUCT ds={(SQLSMALLINT)y,
-					       d.getMonth(),
-					       d.getDay()};
+					       d.get_month(),
+					       d.get_day()};
 
 			       if (ds.year <= 0 || ds.year != y)
 				       throw EXCEPTION(_TXT(_txt("Year overflow")));

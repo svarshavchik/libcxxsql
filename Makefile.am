@@ -26,6 +26,9 @@ EXTRA_DIST=config.rpath m4/ChangeLog config.rpath DoxygenLayout.xml \
 DOCS_SRC = $(shell find includes -name '*.H' -print)
 
 docs: html/index.html html/book.css html/logo.png html/frame.js html/icon.gif $(patsubst %,html/%,$(notdir $(wildcard $(srcdir)/docbook/*.png)))
+	chcon -R -t httpd_sys_content_t html 2>/dev/null || true
+	rm -rf ~/www/www.courier-mta.org/libcxx/sql
+	rsync -a -X html/. ~/www/www.courier-mta.org/libcxx/sql
 
 html/%.png: html/index.html docbook/%.png
 	$(INSTALL) -m 0644 $(srcdir)/docbook/$(notdir $@) html
@@ -55,9 +58,6 @@ html/index.html: html/ref/index.html $(wildcard docbook/*.xml) docbook/xmllinks.
 	mv -f INSTALL.tmp INSTALL
 	mkdir html.tmp/ref
 	ln html/ref/* html.tmp/ref
-	chcon -R -t httpd_sys_content_t html.tmp/. 2>/dev/null || true
-	rm -rf ~/www/www.courier-mta.org/libcxx/sql
-	rsync -a -X html.tmp/. ~/www/www.courier-mta.org/libcxx/sql
 	rm -rf html
 	mv html.tmp html
 
@@ -120,9 +120,8 @@ ACLOCAL_AMFLAGS = -I m4
 www: html
 	rsync -a --delete-after html/. ~/www/www.courier-mta.org/libcxx/sql/.
 
-tag:
+upload:
 	git tag -s -a @PACKAGE@/@VERSION@/`date +%Y%m%d%H%M%S` -m 'Tag version @VERSION@'
-
-scp:
 	rm -f @PACKAGE@-@VERSION@.tar.bz2.sig; gpg --detach-sign --default-key mrsam@courier-mta.com @PACKAGE@-@VERSION@.tar.bz2; test -f @PACKAGE@-@VERSION@.tar.bz2.sig || exit 1
-	scp @PACKAGE@-@VERSION@.tar.bz2 @PACKAGE@-@VERSION@.tar.bz2.sig fedorahosted.org:libcxx
+	pag upload @PACKAGE@-@VERSION@.tar.bz2
+	pag upload @PACKAGE@-@VERSION@.tar.bz2.sig
