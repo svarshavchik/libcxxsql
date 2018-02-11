@@ -1,9 +1,9 @@
 #
-# Copyright 2012-2013 Double Precision, Inc.
+# Copyright 2012-2018 Double Precision, Inc.
 # See COPYING for distribution information.
 
 AC_PREREQ(2.61)
-AC_INIT(libcxxsql, 0.4, [mrsam@courier-mta.com])
+AC_INIT(libcxxsql, 0.4.1, [mrsam@courier-mta.com])
 
 AC_CONFIG_SRCDIR([includes/sql/env.H])
 AC_CONFIG_HEADER([libcxx_config.h])

@@ -17,6 +17,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: libcxxbase-devel >= 0.5
 BuildRequires: gmp-devel >= 5.1
 BuildRequires: unixODBC-devel
+BuildRequires: libidn-devel
 
 %description
 This package installs the LibCXX SQL library. This package must be installed
