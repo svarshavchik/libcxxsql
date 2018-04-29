@@ -12,6 +12,7 @@
 #include <sqlext.h>
 #include <list>
 #include <string>
+#include <string_view>
 
 namespace LIBCXX_NAMESPACE {
 	namespace sql {
@@ -25,6 +26,13 @@ inline SQLCHAR *to_sqlcharptr(const std::string &s) LIBCXX_HIDDEN;
 inline SQLCHAR *to_sqlcharptr(const std::string &s)
 {
 	return reinterpret_cast<SQLCHAR *>(const_cast<char *>(s.c_str()));
+}
+
+inline SQLCHAR *to_sqlcharptr(const std::string_view &s) LIBCXX_HIDDEN;
+
+inline SQLCHAR *to_sqlcharptr(const std::string_view &s)
+{
+	return reinterpret_cast<SQLCHAR *>(const_cast<char *>(&*s.begin()));
 }
 
 inline SQLCHAR *to_sqlcharptr_null(const std::string &s) LIBCXX_HIDDEN;
@@ -90,7 +98,7 @@ class LIBCXX_HIDDEN envimplObj : public envObj {
 
 	std::pair<connection, std::string>
 		connect(const std::string &connection_parameters,
-			connect_flags flags);
+			connect_flags flags) override;
 };
 
 class LIBCXX_HIDDEN statementimplObj;
@@ -121,7 +129,7 @@ class LIBCXX_HIDDEN connectionimplObj : public connectionObj {
 
 	diagnostics diags;
 
-	void disconnect();
+	void disconnect() override;
 	void do_disconnect();
 
 	statement tables_catalog(bool literal_ids,
@@ -199,6 +207,7 @@ class LIBCXX_HIDDEN connectionimplObj : public connectionObj {
 
 	newstatement create_newstatement() override;
 	ref<newstatementimplObj> do_create_newstatement();
+	statement execute_directly(const std::string_view &sql) override;
 
 	template<typename ret_type>
 		void getinfo(SQLUSMALLINT what, const char *what_str,
@@ -220,9 +229,7 @@ class LIBCXX_HIDDEN connectionimplObj : public connectionObj {
 	void rollback(bool turn_on_autocommit) override;
 	void check_not_transaction_scope_level(const char *funcname);
 	std::string savepoint_name();
-	void commit_rollback_work(const ref<newstatementimplObj> &,
-				  const ref<statementimplObj> &,
-				  const std::string &);
+	void commit_rollback_work(const std::string &);
 	void begin_work(const std::string &options) override;
 	void commit_work() override;
 	void rollback_work() override;
@@ -527,7 +534,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 
 			void chunk(size_t row_number,
 				   const char *ptr,
-				   size_t cnt)
+				   size_t cnt) override
 			{
 				if (!current_iterator)
 				{
@@ -549,7 +556,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 				}
 			}
 
-			void finish()
+			void finish() override
 			{
 				if (current_iterator)
 				{
@@ -677,7 +684,7 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 	void limit(size_t maxrowsArg) override;
 	bitflag execute() override;
 	void begin_execute_params(bitflag *, size_t) override;
-	void process_execute_params(size_t param_number);
+	void process_execute_params(size_t param_number) override;
 
 	strlen_or_ind_buffer_t &add_lengths(size_t nvalues, size_t nnullvalues);
 	strlen_or_ind_buffer_t &create_lengths_buffer(const bitflag *nullflags, size_t nvalues, size_t nnullvalues);

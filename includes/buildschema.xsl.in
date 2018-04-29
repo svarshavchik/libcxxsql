@@ -846,7 +846,7 @@ public:
     //! Returns true if the row was updated, false if the row was unchanged.
     //! An exception gets thrown if the schema's primary keys are wrong.
 
-    bool update();
+    bool update() override;
 
     friend class </xsl:text>
     <xsl:call-template name="class" />
@@ -911,7 +911,7 @@ private:
     void bind(@LIBCXX_NAMESPACE@::sql::bindrow::consecutive &amp;factory) override;
 
     //! The row was fetched
-    void fetched();
+    void fetched() override;
 };
 
 

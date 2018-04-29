@@ -69,7 +69,7 @@ public:
 	}
 
 	//! Invoke callback
-	void close()
+	void close() override
 	{
 		callback(std::get<0>(iter.get()->iters));
 	}

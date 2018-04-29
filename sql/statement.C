@@ -1773,12 +1773,12 @@ size_t statementimplObj::fetch_into()
 
 	for (const auto &b:bound_indicator_list)
 	{
-		if (b.indicator_bools)
+		if (b.indicator_bools && num_rows_fetched)
 		{
 			// This bound column wanted a NULL indicator
 
 			std::transform(&b.indicators[0],
-				       &b.indicators[num_rows_fetched],
+				       &b.indicators[0]+num_rows_fetched,
 				       b.indicator_bools,
 				       []
 				       (SQLLEN v)

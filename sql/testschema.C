@@ -287,7 +287,8 @@ void testschema(const std::string &connection,
 
 			for (const example2::ledger_entries::base::row &row: *ledger_entries)
 			{
-				row;
+				if (sizeof(row) > 0)
+					; // Quell compiler warning
 			}
 		}
 	}

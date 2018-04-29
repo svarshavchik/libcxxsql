@@ -464,6 +464,9 @@ public:
 		return execute(&a[0]);
 	}
 
+	//! Execute SQL statement directly
+	virtual statement execute_directly(const std::string_view &sql)=0;
+
 #include <x/sql/getinfo.H>
 
 	//! Prepare a new statement, with custom options.

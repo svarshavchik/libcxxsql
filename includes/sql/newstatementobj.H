@@ -51,7 +51,7 @@ public:
 	template<typename ...Args>
 	statement execute(//! Return value of statement->execute()
 			  bitflag &status,
-			  
+
 			  //! SQL statement to execute
 			  const std::string &statement,
 

@@ -95,13 +95,16 @@ else
     </blockquote>
 
     <para>
-      <link linkend="sqltranautocommit"><methodname>autocommit</methodname>(),
-      <methodname>commit</methodname>(), and
-      <methodname>rollback</methodname>()</link> should be used only when the
-      underlying database driver does not implement modern
-      <literal>START TRANSACTION</literal> and
+      <methodname>begin_work</methodname>(),
+      <methodname>commit_work</methodname>() and
+      <methodname>rollback_work</methodname>()
+      requires a modern database driver that implements modern
       <literal>SAVEPOINT SQL</literal> that allows for nested logical
       transactions.
+      Without save point support the only options are
+      <link linkend="sqltranautocommit"><methodname>autocommit</methodname>(),
+      <methodname>commit</methodname>(), and
+      <methodname>rollback</methodname>()</link>.
     </para>
 
     <para>
@@ -128,9 +131,15 @@ else
     </para>
 
     <para>
+      The first <methodname>commit_work</methodname>() is equivalent to
+      <literal>autocommit(false);</literal>, and the final
+      <methodname>commit_work</methodname>() is equivalent to
+      <methodname>commit</methodname>() followed by
+      <literal>autocommit(true)</literal>.
       Nested transactions get implemented using &SQL; savepoints. The limit on
       the maximum number of nested transactions depends on the database
-      driver-specific on the maximum number of savepoints within a transaction.
+      driver-specific limit on the maximum number of savepoints within a
+      transaction.
     </para>
   </section>
 
@@ -200,7 +209,7 @@ void move_money(const &ns;::sql::connection &amp;conn,
     </para>
 
     <para>
-      However, throwing an explicit exception from 
+      However, throwing an explicit exception from
       <methodname>rollback_work</methodname>() is just a small consolation.
       Since the database connection's state is no longer deterministic, any
       database error occuring in

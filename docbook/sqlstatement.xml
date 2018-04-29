@@ -208,6 +208,36 @@ for (const auto &amp;param:params)
     closed.
   </para>
 
+  <blockquote>
+    <informalexample>
+      <programlisting>
+#include &lt;&ns;/sql/connection.H&gt;
+#include &lt;&ns;/sql/statement.H&gt;
+
+&ns;::sql::connection conn=henv->connect("DSN=dev").first;
+
+&ns;::sql::statement stmt=conn->execute_directly("INSERT INTO books(name, price) VALUES('Around the world in 80 days', 9.99)");</programlisting>
+    </informalexample>
+  </blockquote>
+
+  <para>
+    <methodname>execute_directly</methodname>() executes a literal SQL
+    statement without any parameters, returning a
+    <ulink url="&link-typedef-x--sql-statement;"><classname>&ns;::sql::statement</classname></ulink>
+    only for the purpose of invoking <methodname>row_count</methodname>()
+    and <methodname>more</methodname>(). Although it's possible to
+    <methodname>prepare</methodname>() and <methodname>execute</methodname>()
+    skipping all parameter-related setup, some database drivers may be
+    problematic with this approach.
+    At press time, for example, the Postgres ODBC connector encounters an
+    internal error if
+    a <literal>SAVEPOINT</literal> command gets
+    <methodname>execute</methodname>().
+    It is necessary to
+    <methodname>execute_directly</methodname>()
+    all <literal>SAVEPOINT</literal> commands.
+  </para>
+
   <section id="sqlconndebug">
     <title>Logging executed &SQL;</title>
 
@@ -626,7 +656,7 @@ while (tables->fetch(table))
       (a reference to one, actually). This is convenient for accessing
       column metadata by name.
     </para>
-      
+
     <para>
       Passing a <classname>std::map</classname> parameter to
       <methodname>fetch</methodname>() results in
@@ -1162,7 +1192,7 @@ size_t cnt=stmt->fetch_vectors(1000, "prices", prices, &ns;::sql::fetch::next);<
 
     <para>
       This is the default action, if omitted, that fetches the next row or
-      vector of rows from the cursor. 
+      vector of rows from the cursor.
       <link linkend="cursorcapabilities">Depending on the cursor type, and
       the database drivers</link>, other possible values are:
     </para>

@@ -283,7 +283,7 @@ See COPYING for distribution information.
 	<link linkend="sqlstatementvectorparams">execute_vector</link>() and
 	    <link linkend="sqlstatementfetchbulk">fetch_vector</link>().
       </para>
-	
+
       <note>
 	<para>
 	  A non-default connection parameter is

@@ -481,6 +481,16 @@ ref<newstatementimplObj> connectionimplObj::do_create_newstatement()
 	return ref<newstatementimplObj>::create(ref<connectionimplObj>(this));
 }
 
+statement connectionimplObj::execute_directly(const std::string_view &sql)
+{
+	auto s=ref<statementimplObj>::create(ref(this));
+
+	ret(SQLExecDirect(s->h, to_sqlcharptr(sql), sql.size()),
+	    "SQLExecDirect");
+
+	return s;
+}
+
 void connectionimplObj::set_attribute_uint(SQLINTEGER attribute,
 					   const char *attribute_str,
 					   SQLUINTEGER v)
@@ -540,25 +550,13 @@ std::string connectionimplObj::savepoint_name()
 
 void connectionimplObj::begin_work(const std::string &options)
 {
-	// Need to create these before taking the lock
-
-	auto newstmt=do_create_newstatement();
-	auto stmt=newstmt->newstmt();
-
 	std::lock_guard<std::mutex> lock(objmutex);
 
 	if (transaction_scope_level == 0)
 	{
 		// Initial transaction
 
-		CONN_ATTR(SQL_ATTR_AUTOCOMMIT, uint, SQL_AUTOCOMMIT_ON);
-
-		std::string sql="START TRANSACTION";
-
-		if (!options.empty())
-			sql += " ";
-
-		newstmt->prepare(stmt, sql + options)->execute();
+		CONN_ATTR(SQL_ATTR_AUTOCOMMIT, uint, SQL_AUTOCOMMIT_OFF);
 	}
 	else
 	{
@@ -566,50 +564,48 @@ void connectionimplObj::begin_work(const std::string &options)
 
 		if (!(transaction_scope_level+1))
 			throw EXCEPTION(_TXT(_txt("Transaction scope level exceeds maximum")));
-		newstmt->prepare(stmt, "SAVEPOINT " + savepoint_name())
-			->execute();
+		execute_directly("SAVEPOINT " + savepoint_name());
 	}
 	++transaction_scope_level;
 }
 
 void connectionimplObj::commit_work()
 {
-	// Need to create these before taking the lock
-
-	auto newstmt=do_create_newstatement();
-	auto stmt=newstmt->newstmt();
-
 	std::lock_guard<std::mutex> lock(objmutex);
 
-	commit_rollback_work(newstmt, stmt,
-			     --transaction_scope_level
-			     ? "RELEASE SAVEPOINT "+savepoint_name()
-			     : "COMMIT WORK");
+	if (transaction_scope_level == 0)
+		throw EXCEPTION(_TXT(_txt("commit_work() called without begin_work")));
+
+	if (--transaction_scope_level == 0)
+	{
+		ret(SQLEndTran(SQL_HANDLE_DBC, h, SQL_COMMIT), "SQLEndTran");
+		CONN_ATTR(SQL_ATTR_AUTOCOMMIT, uint, SQL_AUTOCOMMIT_ON);
+	}
+	else
+		commit_rollback_work("RELEASE SAVEPOINT "+savepoint_name());
 }
 
 void connectionimplObj::rollback_work()
 {
-	auto newstmt=do_create_newstatement();
-	auto stmt=newstmt->newstmt();
-
 	std::lock_guard<std::mutex> lock(objmutex);
 
-	commit_rollback_work(newstmt, stmt,
-			     --transaction_scope_level
-			     ? "ROLLBACK TO SAVEPOINT "+savepoint_name()
-			     : "ROLLBACK WORK");
+	if (transaction_scope_level == 0)
+		throw EXCEPTION(_TXT(_txt("commit_work() called without begin_work")));
+	if (--transaction_scope_level == 0)
+	{
+		ret(SQLEndTran(SQL_HANDLE_DBC, h, SQL_ROLLBACK), "SQLEndTran");
+		CONN_ATTR(SQL_ATTR_AUTOCOMMIT, uint, SQL_AUTOCOMMIT_ON);
+	}
+	else
+	{
+		commit_rollback_work("ROLLBACK TO SAVEPOINT "+savepoint_name());
+	}
 }
 
-void connectionimplObj::commit_rollback_work(const ref<newstatementimplObj>
-					     &stmt,
-					     const ref<statementimplObj>
-					     &newstmt,
-					     const std::string &cmd)
+void connectionimplObj::commit_rollback_work(const std::string &cmd)
 {
-	LOG_FUNC_SCOPE(execute::logger);
-
 	try {
-		stmt->prepare(newstmt, cmd)->execute();
+		execute_directly(cmd);
 	} catch (...) {
 
 		// If we fail here, the connection is in an unknown state.
@@ -618,8 +614,7 @@ void connectionimplObj::commit_rollback_work(const ref<newstatementimplObj>
 		try {
 			do_disconnect();
 		} catch (const LIBCXX_NAMESPACE::exception &e) {
-			LOG_ERROR(e);
-			LOG_TRACE(e->backtrace);
+			e->caught();
 		}
 
 		throw;
@@ -647,16 +642,13 @@ void transaction::rollback_work()
 
 transaction::~transaction()
 {
-	LOG_FUNC_SCOPE(execute::logger);
-
 	if (!committed)
 	{
 		try {
 			rollback_work();
 		} catch (const LIBCXX_NAMESPACE::exception &e)
 		{
-			LOG_ERROR(e);
-			LOG_TRACE(e->backtrace);
+			e->caught();
 		}
 	}
 };
