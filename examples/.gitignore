@@ -1,0 +1,5 @@
+COPYING
+config.h
+config.h.in
+helloworld
+*.inc.[CH]

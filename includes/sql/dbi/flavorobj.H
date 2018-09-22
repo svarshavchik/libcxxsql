@@ -27,14 +27,14 @@ namespace LIBCXX_NAMESPACE {
 
 //! Select DBI SQL flavor
 
-class LIBCXX_HIDDEN flavorObj : virtual public obj {
+class flavorObj : virtual public obj {
 
 public:
 	//! Constructor
-	flavorObj();
+	flavorObj() LIBCXX_HIDDEN ;
 
 	//! Destructor
-	~flavorObj();
+	~flavorObj() LIBCXX_HIDDEN ;
 
 	//! Build an UPDATE with joins
 
@@ -49,14 +49,14 @@ public:
 
 				       //! Placeholder for values
 				       std::vector<std::string> &placeholders)
-		const=0;
+		const LIBCXX_HIDDEN =0;
 
 	//! The datatype for auto_increment/serial field
-	virtual const char *datatype_serial()=0;
+	virtual const char *datatype_serial() LIBCXX_HIDDEN=0;
 
 	//! The default value for auto_increment/serial field
 
-	virtual const char *default_value_serial()=0;
+	virtual const char *default_value_serial() LIBCXX_HIDDEN=0;
 
 	//! Create constraint to return the value of just-inserted serial value(s)
 
@@ -64,7 +64,8 @@ public:
 					       const char *table_name,
 
 					       //! Serial key column(s)
-					       const std::set<std::string> &columns)=0;
+					       const std::set<std::string> &columns)
+		LIBCXX_HIDDEN=0;
 };
 
 #if 0

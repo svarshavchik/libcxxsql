@@ -3,7 +3,7 @@
 # See COPYING for distribution information.
 
 AC_PREREQ(2.61)
-AC_INIT(libcxxsql, 0.4.1, [mrsam@courier-mta.com])
+AC_INIT(libcxxsql, 0.4.2, [mrsam@courier-mta.com])
 
 AC_CONFIG_SRCDIR([includes/sql/env.H])
 AC_CONFIG_HEADER([libcxx_config.h])
@@ -15,6 +15,28 @@ AC_PROG_LIBTOOL
 AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION([0.19.6])
 AC_LANG(C++)
+
+# VERSION_INFO is:
+#
+#   libtool's -version-info
+#
+# ABIVER is, basically, the major version, the ABI version.
+#
+#   $libdir/libcxxsql-$ABIVER-$LIBCXX_VERSION
+#
+#   $includedir/libcxxsql-$ABIVER-$LIBCXX_VERSION
+#
+#   $datadir/libcxxsql-$ABIVER-$LIBCXX_VERSION
+#
+# Our package $VERSION is:
+#
+#   $libdir/pkgconfig/libcxxsql-$VERSION.$LIBCXX_VERSION.pc
+#   $datadir/aclocal/libcxxsql-$VERSION-$LIBCXX_VERSION.m4
+#
+ABIVER=0.04
+AC_SUBST(ABIVER)
+VERSION_INFO=4:0:0
+AC_SUBST(VERSION_INFO)
 
 XGETTEXT_EXTRA_OPTIONS="--keyword=_txt --keyword=_txtw --keyword=_txtn:1,2 --keyword=_txtnw:1,2 \`cd \$(top_srcdir); echo sql/*.C\`"
 
@@ -42,7 +64,7 @@ AC_SUBST(PKGCONFIGDIR)
 LIBCXX_INIT
 CXXFLAGS="$CXXFLAGS -fvisibility-inlines-hidden"
 export CXXFLAGS
-LDFLAGS="$LDFLAGS -z relro"
+LDFLAGS="$LDFLAGS -z relro -z now"
 export LDFLAGS
 
 AC_PATH_PROG(ODBC_CONFIG,odbc_config,none)
@@ -80,9 +102,6 @@ AC_SUBST(ODBC_CFLAGS)
 LIBS="$save_LIBS"
 CPPFLAGS="$save_CPPFLAGS"
 
-VERSION_INFO=2:0:0
-AC_SUBST(VERSION_INFO)
-
 test "x$prefix" = xNONE && prefix=$ac_default_prefix
 test "x$exec_prefix" = xNONE && exec_prefix='${prefix}'
 eval "prefix=\"$prefix\""
@@ -94,6 +113,7 @@ AC_SUBST(httportmapd)
 AC_SUBST(LIBCXX_NAMESPACE,x)
 AC_CONFIG_FILES([Makefile
 		 Doxyfile
+		 libcxxsql.m4
                  po/Makefile.in
 		 includes/Makefile
 		 includes/sql/Makefile

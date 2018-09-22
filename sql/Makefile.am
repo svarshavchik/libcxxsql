@@ -17,7 +17,8 @@ LINKTYPE=
 x:
 	ln -s $(srcdir)/../includes x
 
-lib_LTLIBRARIES=libcxxsql.la libcxxsqldecimal.la
+abilibdir=$(libdir)/libcxxsql-@ABIVER@-@LIBCXX_VERSION@
+abilib_LTLIBRARIES=libcxxsql.la libcxxsqldecimal.la
 libcxxsql_la_SOURCES=\
 	connection.C \
 	dbi_constraint.C \

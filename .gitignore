@@ -8,6 +8,7 @@ INSTALL
 Makefile
 Makefile.in
 aclocal.m4
+libcxxsql*.m4
 autom4te.cache
 config.guess
 config.log
@@ -23,7 +24,7 @@ depcomp
 install-sh
 libcxx_config.h
 libcxx_config.h.in
-libcxxsql.pc
+libcxxsql*.pc
 libtool
 ltmain.sh
 /m4

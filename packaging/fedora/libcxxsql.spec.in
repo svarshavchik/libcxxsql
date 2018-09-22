@@ -1,20 +1,29 @@
 #
-# Copyright 2013 Double Precision, Inc.
+# Copyright 2013-2018 Double Precision, Inc.
 # See COPYING for distribution information.
 #
 
-Summary: LibCXX SQL Library
+%define libcxx_version %{expand:%(v="$LIBCXX_VERSION"; test "$v" = "" && v=@LIBCXX_VERSION@; echo $v)}
+
+%{?compat: %define do_compat 1}
+%{!?compat: %define do_compat 0}
+
+%if %do_compat
+Name: libcxxsql%{expand:%(echo @ABIVER@cxx%{libcxx_version} | tr -d '.')}
+%else
 Name: libcxxsql
-Version: @VERSION@
+%endif
+
+Summary: LibCXX SQL Library
+Version: @VERSION@.%{libcxx_version}
 Release: 1%{?extrarelease}
 License: GPL
 Group: Development/Libraries
-Source0: %{name}-%{version}.tar.bz2
+Source0: libcxxsql-@VERSION@.tar.bz2
 
 %define _hardened_build 1
 
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-BuildRequires: libcxxbase-devel >= 0.5
+BuildRequires: libcxxbase-abi = %{libcxx_version}
 BuildRequires: gmp-devel >= 5.1
 BuildRequires: unixODBC-devel
 BuildRequires: libidn-devel
@@ -41,14 +50,15 @@ Group: Development/Libraries
 Summary: LibCXX SQL development libraries
 Requires: %{name} = 0:%{version}-%{release}
 Requires: %{name}-gmp = 0:%{version}-%{release}
+Provides: %{name}-abi = @ABIVER@
 
 %description devel
 This package installs files needed to develop applications that use
 LibCXX SQL development libraries.
 
 %prep
-%setup -q
-%configure
+%setup -q -n libcxxsql-@VERSION@
+LIBCXX_VERSION=%libcxx_version %configure
 
 %build
 %{__make} %{_smp_mflags}
@@ -56,34 +66,33 @@ LibCXX SQL development libraries.
 %install
 rm -rf $RPM_BUILD_ROOT
 %{__make} install DESTDIR=$RPM_BUILD_ROOT
-rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
+rm -f $RPM_BUILD_ROOT%{_libdir}/libcxxsql*/*.la
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post -p /sbin/ldconfig
-%postun -p /sbin/ldconfig
-
-%post gmp -p /sbin/ldconfig
-%postun gmp -p /sbin/ldconfig
-
 %files
 %defattr(-,root,root,-)
-%{_libdir}/libcxxsql.so.*
+%dir %{_libdir}/libcxxsql*
+%{_libdir}/libcxxsql*/libcxxsql.so.*
 
 %files gmp
 %defattr(-,root,root,-)
-%{_libdir}/libcxxsqldecimal.so.*
+%{_libdir}/libcxxsql*/libcxxsqldecimal.so.*
 
 %files devel
 %defattr(-,root,root,-)
-%{_libdir}/*.so
-%{_libdir}/*.a
+%{_libdir}/libcxxsql*/*.so
+%{_libdir}/libcxxsql*/*.a
 %{_libdir}/pkgconfig/*
-%{_includedir}/x/sql
-%{_datadir}/*/*
+%{_includedir}/libcxxsql*
+%{_datadir}/aclocal/*
+%{_datadir}/libcxxsql*
 
 %changelog
+* Sat Sep 22 2018 Sam Varshavchik <mrsam@octopus.email-scan.com>
+- New installation layout
+
 * Mon Sep  2 2013 Sam Varshavchik <mrsam@octopus.email-scan.com>
 - Put libcxxsqldecimal into a separate subpackage
 

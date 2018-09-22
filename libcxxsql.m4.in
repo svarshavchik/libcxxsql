@@ -1,0 +1,26 @@
+# serial @VERSION@.@LIBCXX_VERSION@
+
+AC_DEFUN([LIBCXXSQL_INIT],[
+if test "$LIBCXX_VERSION" = ""
+then
+    # aclocal seems to go bonkers, recursing infinitely, if it sees my
+    # symbol literally.
+    init="_INIT"
+    AC_MSG_ERROR([Use LIBCXX${init} before LIBCXXSQL${init}])
+fi
+if test "$LIBCXXSQL_VERSION" = ""
+then
+	LIBCXXSQL_VERSION="@ABIVER@"
+fi
+
+PKG_CHECK_EXISTS([libcxxsql-$LIBCXXSQL_VERSION.$LIBCXX_VERSION],[:],[AC_MSG_ERROR([LibCXXSQL package $LIBCXXSQL_VERSION.$LIBCXX_VERSION not found])])
+
+libcxxsql_pkgdatadir="`$PKG_CONFIG --variable=pkgdatadir libcxxsql-$LIBCXXSQL_VERSION.$LIBCXX_VERSION`"
+
+CFLAGS="$CFLAGS `$PKG_CONFIG --cflags libcxxsql-$LIBCXXSQL_VERSION.$LIBCXX_VERSION`"
+CXXFLAGS="$CXXFLAGS `$PKG_CONFIG --cflags libcxxsql-$LIBCXXSQL_VERSION.$LIBCXX_VERSION`"
+LDFLAGS="$LDFLAGS `$PKG_CONFIG --libs libcxxsql-$LIBCXXSQL_VERSION.$LIBCXX_VERSION`"
+LIBCXXSQL_AM="include $libcxxsql_pkgdatadir/*.mk"
+AC_SUBST([LIBCXXSQL_AM])
+
+])

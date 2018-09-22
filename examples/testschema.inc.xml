@@ -1,0 +1,7 @@
+<schema name="temporary_tables">
+
+  <table name="temptbl_accounts" class="accounts">
+    <column name="account_id" datatype="int64_t" primarykey='1' />
+  </table>
+
+</schema>

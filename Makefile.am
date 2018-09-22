@@ -97,23 +97,31 @@ rpm:
 
 pkgconfdir=@PKGCONFIGDIR@
 
-pkgconf_DATA=libcxxsql.pc
+pkgconf_DATA=libcxxsql-@ABIVER@.@LIBCXX_VERSION@.pc
 
-libcxxsql.pc: Makefile
+libcxxsql-@ABIVER@.@LIBCXX_VERSION@.pc: Makefile
 	echo "prefix=${prefix}" >libcxxsql.pc.tmp
 	echo "exec_prefix=${exec_prefix}" >>libcxxsql.pc.tmp
 	echo "datadir=${datadir}" >>libcxxsql.pc.tmp
-	echo "pkgdatadir=${pkgdatadir}" >>libcxxsql.pc.tmp
-	echo "libdir=${libdir}" >>libcxxsql.pc.tmp
+	echo "pkgdatadir=${pkgdatadir}-@ABIVER@-@LIBCXX_VERSION@" >>libcxxsql.pc.tmp
+	echo "libdir=${libdir}/libcxxsql-@ABIVER@-@LIBCXX_VERSION@" >>libcxxsql.pc.tmp
 	echo "includedir=${includedir}" >>libcxxsql.pc.tmp
 	echo "" >>libcxxsql.pc.tmp
 	echo "Name: LibCXX SQL Library" >>libcxxsql.pc.tmp
 	echo "Description: LibCXX SQL Library" >>libcxxsql.pc.tmp
-	echo "Version: @VERSION@" >>libcxxsql.pc.tmp
-	echo "Requires: libcxx" >>libcxxsql.pc.tmp
-	mv -f libcxxsql.pc.tmp libcxxsql.pc
+	echo "Version: @VERSION@.@LIBCXX_VERSION@" >>libcxxsql.pc.tmp
+	echo "Cflags: -I$(includedir)/libcxxsql-@ABIVER@-@LIBCXX_VERSION@" >>libcxxsql.pc.tmp
+	echo 'Libs: -L${libdir}/libcxxsql-@ABIVER@-@LIBCXX_VERSION@ -Wl,-rpath -Wl,${libdir}/libcxxsql-@ABIVER@-@LIBCXX_VERSION@' >>libcxxsql.pc.tmp
+	mv -f libcxxsql.pc.tmp libcxxsql-@ABIVER@.@LIBCXX_VERSION@.pc
 
-CLEANFILES=libcxxsql.pc
+aclocaldir=@datadir@/aclocal
+aclocal_DATA=libcxxsql-@VERSION@-@LIBCXX_VERSION@.m4
+
+libcxxsql-@VERSION@-@LIBCXX_VERSION@.m4: libcxxsql.m4
+	rm -f libcxxsql-@VERSION@-@LIBCXX_VERSION@.m4
+	ln libcxxsql.m4 libcxxsql-@VERSION@-@LIBCXX_VERSION@.m4
+
+CLEANFILES=$(aclocal_DATA) $(pkgconf_DATA)
 
 ACLOCAL_AMFLAGS = -I m4
 

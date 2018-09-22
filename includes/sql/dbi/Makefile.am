@@ -3,7 +3,7 @@
 # See COPYING for distribution information.
 #
 
-headerdir=$(includedir)/x/sql/dbi
+headerdir=$(includedir)/libcxxsql-@ABIVER@-@LIBCXX_VERSION@/x/sql/dbi
 
 header_HEADERS=$(shell cd $(srcdir) && echo *.H)
 

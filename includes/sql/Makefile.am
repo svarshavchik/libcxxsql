@@ -5,7 +5,7 @@
 
 SUBDIRS = dbi
 
-headerdir=$(includedir)/x/sql
+headerdir=$(includedir)/libcxxsql-@ABIVER@-@LIBCXX_VERSION@/x/sql
 
 header_HEADERS=$(shell cd $(srcdir) && echo *.H)
 
