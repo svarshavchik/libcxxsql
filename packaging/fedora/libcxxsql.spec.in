@@ -50,7 +50,7 @@ Group: Development/Libraries
 Summary: LibCXX SQL development libraries
 Requires: %{name} = 0:%{version}-%{release}
 Requires: %{name}-gmp = 0:%{version}-%{release}
-Provides: %{name}-abi = @ABIVER@
+Provides: libcxxsql-abi = @ABIVER@
 
 %description devel
 This package installs files needed to develop applications that use
