@@ -204,7 +204,7 @@ void testschema(const std::string &connection,
 			auto amount=row->amount.value();
 
 			values.insert(amount);
-			std::cout << LIBCXX_NAMESPACE::tostring(row->ledger_date.value())
+			std::cout << LIBCXX_NAMESPACE::to_string(row->ledger_date.value())
 				  << ": "
 				  << amount
 				  << std::endl;

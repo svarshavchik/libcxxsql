@@ -14,7 +14,7 @@
 #include "x/exception.H"
 #include "x/ymd.H"
 #include "x/hms.H"
-#include "x/tostring.H"
+#include "x/to_string.H"
 #include "x/join.H"
 #include "x/messages.H"
 #include "x/sql/insertblob.H"
@@ -500,7 +500,7 @@ void statementimplObj::bind_input_parameter(size_t param_num,
 	if (n)								\
 		(o) << "NULL";						\
 	else								\
-		(o) << LIBCXX_NAMESPACE::tostring((v),(l));
+		(o) << LIBCXX_NAMESPACE::to_string((v),(l));
 
 // Log bound parameter values. We use LOG_DEBUG() to conditionally execute
 // this spaghetti only when needed. Each parameter gets collected into
@@ -1213,12 +1213,12 @@ statementimplObj::column::operator std::string() const
 	props.emplace_back("concise type: " + std::string(concise_type));
 	props.emplace_back("native type: " + native_type);
 	props.emplace_back("localized type: " + local_type_name);
-	props.emplace_back("width: " + tostring(width));
-	props.emplace_back("length: " + tostring(length));
-	props.emplace_back("octet length: " + tostring(octet_length));
-	props.emplace_back("precision: " + tostring(precision));
-	props.emplace_back("radix: " + tostring(radix));
-	props.emplace_back("scale: " + tostring(scale));
+	props.emplace_back("width: " + to_string(width));
+	props.emplace_back("length: " + to_string(length));
+	props.emplace_back("octet length: " + to_string(octet_length));
+	props.emplace_back("precision: " + to_string(precision));
+	props.emplace_back("radix: " + to_string(radix));
+	props.emplace_back("scale: " + to_string(scale));
 
 	if (autoincrement)
 		props.emplace_back("autoincrement");
