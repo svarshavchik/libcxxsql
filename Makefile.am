@@ -27,8 +27,8 @@ DOCS_SRC = $(shell find includes -name '*.H' -print)
 
 docs: html/index.html html/book.css html/logo.png html/frame.js html/icon.gif $(patsubst %,html/%,$(notdir $(wildcard $(srcdir)/docbook/*.png)))
 	chcon -R -t httpd_sys_content_t html 2>/dev/null || true
-	rm -rf ~/www/www.courier-mta.org/libcxx/sql
-	rsync -a -X html/. ~/www/www.courier-mta.org/libcxx/sql
+	rm -rf ~/www/hostrocket/libcxx.org/sql
+	rsync -a -X html/. ~/www/hostrocket/libcxx.org/sql
 
 html/%.png: html/index.html docbook/%.png
 	$(INSTALL) -m 0644 $(srcdir)/docbook/$(notdir $@) html
