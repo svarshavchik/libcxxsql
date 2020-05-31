@@ -1,0 +1,21 @@
+2020-05-30  Sam Varshavchik  <mrsam@courier-mta.com>
+
+	* Rebase to libcxx 0.22
+
+0.5.0
+
+2020-03-01  Sam Varshavchik  <mrsam@courier-mta.com>
+
+	* Rebase to libcxx 0.20
+
+0.4.2
+2018-04-29  Sam Varshavchik  <mrsam@courier-mta.com>
+
+	* Fixes for compilation with gcc 8 assertions enabled, and higher
+	warning levels.
+
+	* Added execute_directly().
+
+	* Reimplement transactions using autocommits only for the initial
+	level, and use execute_directly() for savepoints. Postgres's current
+	ODBC driver does not grok execute()ing SAVEPOINTs.

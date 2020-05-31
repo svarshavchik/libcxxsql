@@ -805,7 +805,7 @@ int main(int argc, char **argv)
 
 	auto seed=seed_value->value;
 	try {
-		if (connect_value->isSet())
+		if (connect_value->is_set())
 		{
 			std::cout << "Seed " << seed << std::endl;
 

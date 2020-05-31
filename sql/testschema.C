@@ -643,7 +643,7 @@ int main(int argc, char **argv)
 		exit(1);
 
 	try {
-		if (connect_value->isSet())
+		if (connect_value->is_set())
 		{
 			testschema(connect_value->value, flags_value->value);
 		}

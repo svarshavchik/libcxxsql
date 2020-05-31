@@ -2,7 +2,6 @@
 *.gz
 *.sig
 ABOUT-NLS
-ChangeLog
 Doxyfile
 INSTALL
 Makefile

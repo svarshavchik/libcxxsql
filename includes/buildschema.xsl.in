@@ -948,7 +948,22 @@ public:
 
     //! This is an input iterator
 
-    typedef std::input_iterator_tag iterator_traits;
+    typedef std::input_iterator_tag iterator_category;
+
+    //! What this is iterating over
+
+    typedef </xsl:text>
+    <xsl:call-template name="class" />
+    <xsl:text>::base::row value_type;
+
+    //! Iterator trait
+    typedef std::ptrdiff_t difference_type;
+
+    //! Iterator trait
+    typedef value_type *pointer;
+
+    //! Iterator trait
+    typedef value_type &amp;reference;
 
 public:
     //! Beginning iterator constructor
