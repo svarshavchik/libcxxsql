@@ -1,9 +1,9 @@
 #
-# Copyright 2012-2018 Double Precision, Inc.
+# Copyright 2012-2020 Double Precision, Inc.
 # See COPYING for distribution information.
 
 AC_PREREQ(2.61)
-AC_INIT(libcxxsql, 0.5.0, [mrsam@courier-mta.com])
+AC_INIT(libcxxsql, 0.6.0, [mrsam@courier-mta.com])
 
 AC_CONFIG_SRCDIR([includes/sql/env.H])
 AC_CONFIG_HEADER([libcxx_config.h])
@@ -33,9 +33,9 @@ AC_LANG(C++)
 #   $libdir/pkgconfig/libcxxsql-$VERSION.$LIBCXX_VERSION.pc
 #   $datadir/aclocal/libcxxsql-$VERSION-$LIBCXX_VERSION.m4
 #
-ABIVER=0.05
+ABIVER=0.06
 AC_SUBST(ABIVER)
-VERSION_INFO=5:0:0
+VERSION_INFO=6:0:0
 AC_SUBST(VERSION_INFO)
 
 XGETTEXT_EXTRA_OPTIONS="--keyword=_txt --keyword=_txtw --keyword=_txtn:1,2 --keyword=_txtnw:1,2 \`cd \$(top_srcdir); echo sql/*.C\`"
