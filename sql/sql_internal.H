@@ -656,8 +656,8 @@ class LIBCXX_HIDDEN statementimplObj : public statementObj {
 		std::vector<SQLLEN> strlen_or_ind;
 		ptr<obj> extrabuffer;
 
-		const insertblob *blobptr;
-		size_t blobindex;
+		const insertblob *blobptr=nullptr;
+		size_t blobindex=0;
 
 		strlen_or_ind_buffer_t();
 		~strlen_or_ind_buffer_t();

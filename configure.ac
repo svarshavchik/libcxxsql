@@ -2,16 +2,16 @@
 # Copyright 2012-2020 Double Precision, Inc.
 # See COPYING for distribution information.
 
-AC_PREREQ(2.61)
-AC_INIT(libcxxsql, 0.6.0, [mrsam@courier-mta.com])
+AC_PREREQ([2.71])
+AC_INIT([libcxxsql],[0.6.0],[mrsam@courier-mta.com])
 
 AC_CONFIG_SRCDIR([includes/sql/env.H])
-AC_CONFIG_HEADER([libcxx_config.h])
+AC_CONFIG_HEADERS([libcxx_config.h])
 AM_INIT_AUTOMAKE([dist-bzip2 foreign -Wno-portability])
 
 # Checks for programs.
 AC_PROG_CXX
-AC_PROG_LIBTOOL
+LT_INIT
 AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION([0.19.6])
 AC_LANG(C++)
@@ -84,17 +84,17 @@ save_CPPFLAGS="$CPPFLAGS"
 LIBS="$LIBX $ODBC_LIBS"
 CPPFLAGS="$CPPFLAGS $ODBC_CPPFLAGS"
 
-AC_TRY_LINK([
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #include <sql.h>
 #include <odbcinst.h>
 
-], [
+]], [[
    SQLHENV h;
 
    SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &h);
-], [
+]])],[
    :
-], [
+],[
    AC_MSG_ERROR([Cannot compile a test unixODBC program, make sure you have unixODBC development files installed. You can find exact compiler errors in config.log.])
 ])
 AC_SUBST(ODBC_CFLAGS)

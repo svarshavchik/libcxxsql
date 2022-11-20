@@ -93,7 +93,7 @@ rpm:
 		--define '_tmppath %{_var}/tmp' \
 		--define '__spec_prep_pre %{___build_pre}' \
 		--define "extrarelease .`date '+%Y%m%d%H%M%S'`" @PACKAGE@-@VERSION@.tar.bz2
-	sh $$HOME/repos.sh
+	sh $$HOME/bin/rpmrepos.sh
 
 pkgconfdir=@PKGCONFIGDIR@
 

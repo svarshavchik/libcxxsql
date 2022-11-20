@@ -58,9 +58,9 @@ LibCXX SQL development libraries.
 
 %prep
 %setup -q -n libcxxsql-@VERSION@
-LIBCXX_VERSION=%libcxx_version %configure
 
 %build
+LIBCXX_VERSION=%libcxx_version %configure
 %{__make} %{_smp_mflags}
 
 %install

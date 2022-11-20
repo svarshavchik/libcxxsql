@@ -166,7 +166,7 @@ void testconnect(const std::string &connection,
 	dump(conn->procedure_columns("", "", "temp%", "%"));
 
 	{
-		auto tables=conn->tables("", "", "tmptbl%");
+		auto tables=conn->tables(false, "", "", "tmptbl%");
 
 		const auto &columns=tables->get_columnmap();
 
@@ -215,7 +215,7 @@ void testconnect(const std::string &connection,
 	}
 
 	{
-		auto tables=conn->tables("", "", "tmptbl%");
+		auto tables=conn->tables(false, "", "", "tmptbl%");
 
 		std::map<std::string, std::pair<std::string,
 						LIBCXX_NAMESPACE::sql::bitflag
