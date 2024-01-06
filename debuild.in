@@ -1,0 +1,46 @@
+#! /bin/bash
+
+set -e
+shopt -s extglob
+
+LIBCXX_VERSION=${LIBCXX_VERSION-@LIBCXX_VERSION@}
+SOVERSION=@SOVERSION@
+ABIVER=@ABIVER@
+
+CC="`pkg-config --variable=CC libcxx-$LIBCXX_VERSION`"
+CXX="`pkg-config --variable=CXX libcxx-$LIBCXX_VERSION`"
+
+rm -rf deb
+mkdir deb
+cp ../libcxxsql-@VERSION@.tar.bz2 deb/libcxxsql_@VERSION@.orig.tar.bz2
+cd deb
+tar xf libcxxsql_@VERSION@.orig.tar.bz2
+cd libcxxsql-@VERSION@
+rm -rf debian
+cp -pr packaging/debian .
+
+. /etc/lsb-release
+
+RELEASE="${RELEASE-100}+`echo $DISTRIB_RELEASE | tr '.' '+'`"
+
+for f in debian/changelog debian/control debian/rules
+do
+	sed "
+s/@""VERSION""@/@VERSION@/g
+s/@""RELEASE""@/$RELEASE/g
+s/@""SOVERSION""@/@SOVERSION@/g
+s/@""ABIVER""@/${ABIVER}/g
+s/@""LIBCXX_VERSION""@/${LIBCXX_VERSION}/g
+s/@""CC""@/${CC}/g
+s/@""CXX""@/${CXX}/g
+s/@DATE@/`date -R`/g
+" <packaging/$f >$f
+done
+
+ln -s libcxxsql.soname.lintian-overrides \
+   debian/libcxxsql${SOVERSION}.lintian-overrides
+ln -s libcxxsql-gmp.soname.lintian-overrides \
+   debian/libcxxsql${SOVERSION}-gmp.lintian-overrides
+chmod +x debian/rules
+
+debuild "$@"

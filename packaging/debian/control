@@ -1,0 +1,43 @@
+Source: libcxxsql
+Priority: optional
+Maintainer: Sam Varshavchik <mrsam@courier-mta.com>
+Build-Depends: debhelper-compat (= 13),
+	       perl:any,
+	       libcxxbase-abi (= @LIBCXX_VERSION@),
+	       pkg-config,
+	       libcxxbase-dev,
+	       libgmp-dev,
+	       libidn2-dev,
+	       unixodbc,
+	       unixodbc-dev
+Standards-Version: 4.6.0
+Section: contrib/libs
+Homepage: https://www.libcxx.org/
+Rules-Requires-Root: no
+
+Package: libcxxsql@SOVERSION@
+Section: contrib/libdevel
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: libcxxsql@SOVERSION@-gmp (= ${binary:Version})
+Description: LibCXX SQL Library
+ This package installs the LibCXX SQL library. This package must be installed
+ to run software that's linked against libcxxsql.
+
+Package: libcxxsql@SOVERSION@-gmp
+Section: contrib/libdevel
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: LibCXX SQL support for the GNU MP library
+ This package installs an additional library that's needed to support
+ inserting and selecting libgmp's mpf_class values from an SQL database.
+
+Package: libcxxsql-dev
+Section: contrib/libdevel
+Architecture: any
+Depends: ${misc:Depends}, libcxxbase-abi (= @LIBCXX_VERSION@),
+ libcxxsql@SOVERSION@-gmp (= ${binary:Version}),
+ libcxxsql@SOVERSION@ (= ${binary:Version})
+Description: LibCXX SQL development libraries
+ This package installs files needed to develop applications that use
+ LibCXX SQL development libraries.

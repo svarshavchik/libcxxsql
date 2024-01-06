@@ -1,0 +1,4 @@
+#
+# DOCUMENT ME
+#
+custom-library-search-path RUNPATH /usr/lib/x86_64-linux-gnu/libcxx*

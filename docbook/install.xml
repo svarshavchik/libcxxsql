@@ -49,13 +49,19 @@ See COPYING for distribution information.
     installing the &app;.
   </para>
 
+  <para>
+    &app; should be converted into an installable package instead of building
+    and installing &app; directly. The source tarball
+    contains build scripts for Fedora and Ubuntu (most likely works on Debian
+    too, but untested.
+  </para>
 
   <para>
-    The &app; should be converted into an installable package, instead of
-    building
-    and installing the &app; directly. The source tarball
-    includes a canned build script for Fedora. Running
+    The installable packages get created the same way &libcxx;'s packages
+    get created.
+    Running
     <quote><command>rpmbuild -ta libcxxsql-<replaceable>version</replaceable>.tar.bz2</command></quote>
+    on Fedora
     creates the following packages:
   </para>
 
@@ -65,12 +71,84 @@ See COPYING for distribution information.
     </listitem>
     <listitem>
       <para>
+	The <quote>gmp</quote> subpackage, containing the additional
+	library <link linkend="gmp">for interacing with the gmp
+	  library</link>.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
 	The <quote>devel</quote> subpackage, containing header files and
 	other supporting files used for developing applications that use the
 	&app;.
       </para>
     </listitem>
   </itemizedlist>
+
+  <para>
+    To build a DEB package:
+  </para>
+
+  <itemizedlist>
+    <listitem>
+      <para>
+	Create an empty directory and copy/move the tarball into it:
+      </para>
+      <blockquote>
+	<informalexample>
+	  <programlisting>
+$ mkdir tmp
+$ mv libcxxsql-VERSION.tar.bz2 tmp
+$ cd tmp</programlisting>
+	</informalexample>
+      </blockquote>
+      <para>Unpack the tarball and cd into the unpacked subdirectory:</para>
+      <blockquote>
+	<informalexample>
+	  <programlisting>
+$ tar xvf libcxxsql-VERSION.tar.bz2
+$ cd libcxxsql-VERSION</programlisting>
+	</informalexample>
+      </blockquote>
+    </listitem>
+    <listitem>
+      <para>
+	Run the <command>debuild</command> script in the current directory,
+	which is a wrapper for the system
+	<command>debuild</command> script,
+	and forwards its parameters to it:
+      </para>
+      <blockquote>
+	<informalexample>
+	  <programlisting>$ ./debuild -us -uc</programlisting>
+	</informalexample>
+      </blockquote>
+    </listitem>
+  </itemizedlist>
+
+  <note>
+    <para>
+      The above steps must be followed strictly. The
+      <command>debuild</command> script expects the
+      distributed tarball in its parent
+      directory.
+    </para>
+  </note>
+
+  <para>
+    This eventually produces a <filename>deb</filename> subdirectory with
+    .deb packages that can be
+    installed with "dpkg -i".
+  </para>
+
+  <note>
+    <para>
+      The above steps must be followed strictly. The
+      <command>debuild</command> script expects the
+      distributed tarball in its parent
+      directory.
+    </para>
+  </note>
 
   <note>
     <para>
@@ -101,6 +179,12 @@ See COPYING for distribution information.
       <listitem>
 	<para>
 	  <application>unixODBC</application>.
+	</para>
+      </listitem>
+
+      <listitem>
+	<para>
+	  <application>libgmp</application>.
 	</para>
       </listitem>
 

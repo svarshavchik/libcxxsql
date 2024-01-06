@@ -13,22 +13,25 @@ endef
 $(shell :)DIST_SUBDIRS=$(call reverse,$(SUBDIRS))
 
 DISTCHECK_CONFIGURE_FLAGS=--with-pkgconfigdir='$$(prefix)/local/pkgconf'
-EXTRA_DIST=config.rpath m4/ChangeLog config.rpath DoxygenLayout.xml \
+EXTRA_DIST=config.rpath DoxygenLayout.xml \
 	COPYING \
+	debuild \
 	packaging/fedora/libcxxsql.spec \
-	packaging/freebsd10/devel/libcxxsql/Makefile.in \
-	packaging/freebsd10/devel/libcxxsql/pkg-descr \
-	packaging/freebsd10/devel/libcxxsql/pkg-plist
-
-
-
+	packaging/debian/changelog \
+	packaging/debian/control \
+	packaging/debian/copyright \
+	packaging/debian/lintian-overrides.allow-errors \
+	packaging/debian/*.lintian-overrides \
+	packaging/debian/rules \
+	packaging/debian/source/format
 
 DOCS_SRC = $(shell find includes -name '*.H' -print)
 
 docs: html/index.html html/book.css html/logo.png html/frame.js html/icon.gif $(patsubst %,html/%,$(notdir $(wildcard $(srcdir)/docbook/*.png)))
 	chcon -R -t httpd_sys_content_t html 2>/dev/null || true
-	rm -rf ~/www/hostrocket/libcxx.org/sql
-	rsync -a -X html/. ~/www/hostrocket/libcxx.org/sql
+	test -d ~/www/hostrocket || exit 0; set -e; \
+		rm -rf ~/www/hostrocket/libcxx.org/sql; \
+		rsync -a -X html/. ~/www/hostrocket/libcxx.org/sql
 
 html/%.png: html/index.html docbook/%.png
 	$(INSTALL) -m 0644 $(srcdir)/docbook/$(notdir $@) html
@@ -54,7 +57,7 @@ html/index.html: html/ref/index.html $(wildcard docbook/*.xml) docbook/xmllinks.
 		--stringparam generate.id.attributes 1 \
 		--param local.l10n.xml 'document("'`pwd`/docbook/l10.xml'")' \
 		$(srcdir)/docbook/docbook.xsl $(srcdir)/docbook/book.xml
-	links -dump -no-numbering -no-references html.tmp/INSTALL.html >INSTALL.tmp
+	elinks -dump -no-numbering -no-references html.tmp/INSTALL.html >INSTALL.tmp
 	mv -f INSTALL.tmp INSTALL
 	mkdir html.tmp/ref
 	ln html/ref/* html.tmp/ref
@@ -76,6 +79,9 @@ header.html: Doxyfile
 
 .PHONY: rpm
 
+dist-hook:
+	chmod +x $(distdir)/debuild
+
 rpm:
 	make dist
 	rm -rf rpm/SRPMS/*
@@ -94,6 +100,20 @@ rpm:
 		--define '__spec_prep_pre %{___build_pre}' \
 		--define "extrarelease .`date '+%Y%m%d%H%M%S'`" @PACKAGE@-@VERSION@.tar.bz2
 	sh $$HOME/bin/rpmrepos.sh
+
+.PHONY: deb
+
+deb: dist
+	rm -rf deb
+	mkdir deb
+	cp libcxxsql-@VERSION@.tar.bz2 deb
+	cd deb; set -e; tar xf libcxxsql-@VERSION@.tar.bz2; \
+	    cd libcxxsql-@VERSION@; \
+                RELEASE=`date '+%Y%m%d%H%M%S'` \
+		./debuild -us -uc
+	rm -rf deb.new; mv deb/*/deb deb.new
+	rm -rf deb; mv deb.new deb
+	$$HOME/bin/debrepos.sh
 
 pkgconfdir=@PKGCONFIGDIR@
 
@@ -124,9 +144,6 @@ libcxxsql-@VERSION@-@LIBCXX_VERSION@.m4: libcxxsql.m4
 CLEANFILES=$(aclocal_DATA) $(pkgconf_DATA)
 
 ACLOCAL_AMFLAGS = -I m4
-
-www: html
-	rsync -a --delete-after html/. ~/www/www.courier-mta.org/libcxx/sql/.
 
 upload:
 	git tag -s -a @PACKAGE@/@VERSION@/`date +%Y%m%d%H%M%S` -m 'Tag version @VERSION@'

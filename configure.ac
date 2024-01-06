@@ -4,6 +4,7 @@
 
 AC_PREREQ([2.71])
 AC_INIT([libcxxsql],[0.6.0],[mrsam@courier-mta.com])
+AC_CANONICAL_TARGET
 
 AC_CONFIG_SRCDIR([includes/sql/env.H])
 AC_CONFIG_HEADERS([libcxx_config.h])
@@ -13,7 +14,7 @@ AM_INIT_AUTOMAKE([dist-bzip2 foreign -Wno-portability])
 AC_PROG_CXX
 LT_INIT
 AM_GNU_GETTEXT([external])
-AM_GNU_GETTEXT_VERSION([0.19.6])
+AM_GNU_GETTEXT_VERSION([0.21])
 AC_LANG(C++)
 
 # VERSION_INFO is:
@@ -35,7 +36,9 @@ AC_LANG(C++)
 #
 ABIVER=0.06
 AC_SUBST(ABIVER)
-VERSION_INFO=6:0:0
+SOVERSION=6
+AC_SUBST(SOVERSION)
+VERSION_INFO=${SOVERSION}:0:0
 AC_SUBST(VERSION_INFO)
 
 XGETTEXT_EXTRA_OPTIONS="--keyword=_txt --keyword=_txtw --keyword=_txtn:1,2 --keyword=_txtnw:1,2 \`cd \$(top_srcdir); echo sql/*.C\`"
@@ -45,7 +48,8 @@ XGETTEXT_EXTRA_OPTIONS="--keyword=_txt --keyword=_txtw --keyword=_txtn:1,2 --key
 AC_ARG_WITH(pkgconfigdir,[AS_HELP_STRING([--with-pkgconfigdir=dir],[Specify where pkgconfig configuration file gets installed])],
 	[PKGCONFIGDIR="$withval"],
 	[
-for d in /usr/lib64/pkgconfig /usr/lib/pkgconfig /usr/local/libdata/pkgconfig
+for d in /usr/lib64/pkgconfig /usr/lib/$host_cpu-$host_os/pkgconfig \
+    /usr/lib/pkgconfig /usr/local/libdata/pkgconfig
 do
 	if test -d "$d"
 	then
@@ -67,16 +71,16 @@ export CXXFLAGS
 LDFLAGS="$LDFLAGS -z relro -z now"
 export LDFLAGS
 
-AC_PATH_PROG(ODBC_CONFIG,odbc_config,none)
-if test "$ODBC_CONFIG" = "none"
+if pkg-config --exists odbc
 then
-	AC_MSG_ERROR([odbc_config not found, install unixODBC])
+	:
+else
+	AC_MSG_ERROR([unixODBC package not found])
 fi
 
-ODBC_LIBS="`$ODBC_CONFIG --libs`"
+ODBC_CFLAGS="`pkg-config --variable=build_cflags odbc`"
+ODBC_LIBS="`pkg-config --libs odbc`"
 AC_SUBST(ODBC_LIBS)
-
-ODBC_CFLAGS="`$ODBC_CONFIG --cflags`"
 
 save_LIBS="$LIBS"
 save_CPPFLAGS="$CPPFLAGS"
@@ -121,7 +125,7 @@ AC_CONFIG_FILES([Makefile
 		 includes/buildschema.xsl
 		 includes/libcxxsql.mk
 		 packaging/fedora/libcxxsql.spec
-		 packaging/freebsd10/devel/libcxxsql/Makefile
 		 sql/Makefile
+		 debuild
 		 ])
 AC_OUTPUT

@@ -1,0 +1,31 @@
+#!/usr/bin/make -f
+
+ABIVER=@ABIVER@
+LIBCXX_VERSION=@LIBCXX_VERSION@
+SOVERSION=@SOVERSION@
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	dh_auto_configure -- CC=@CC@ CXX=@CXX@
+
+override_dh_auto_test:
+	:
+override_dh_makeshlibs:
+	dh_makeshlibs -n
+
+override_dh_builddeb:
+	dh_builddeb -- $(DEB_BUILDDEB_OPTIONS)
+
+override_dh_auto_install:
+	dh_auto_install
+	perl -p -i -e "s/dependency_libs=.*/dependency_libs=''/" debian/tmp/usr/lib/*/libcxxsql*/*.la
+	dh_install --package libcxxsql$(SOVERSION) debian/tmp/usr/lib/*/libcxxsql*/libcxxsql.so.*  `cd debian/tmp; ls -d usr/lib/*/libcxxsql-$(ABIVER)-$(LIBCXX_VERSION)`
+	dh_install --package libcxxsql$(SOVERSION)-gmp debian/tmp/usr/lib/*/libcxxsql*/libcxxsqldecimal.so.*  `cd debian/tmp; ls -d usr/lib/*/libcxxsql-$(ABIVER)-$(LIBCXX_VERSION)`
+	dh_install --package libcxxsql-dev debian/tmp/usr/include/* usr/include
+	dh_install --package libcxxsql-dev debian/tmp/usr/share/* usr/include
+	dh_install --package libcxxsql-dev debian/tmp/usr/lib/*/pkgconfig/libcxxsql*pc
+	dh_install --package libcxxsql-dev `cd debian/tmp; ls -d usr/lib/*/libcxx*/*.so; echo usr/lib/*/libcxxsql-$(ABIVER)-$(LIBCXX_VERSION)`
+	dh_install --package libcxxsql-dev `cd debian/tmp; ls -d usr/lib/*/libcxx*/*.la; echo usr/lib/*/libcxxsql-$(ABIVER)-$(LIBCXX_VERSION)`
+	dh_install --package libcxxsql-dev `cd debian/tmp; ls -d usr/lib/*/libcxx*/*.a; echo usr/lib/*/libcxxsql-$(ABIVER)-$(LIBCXX_VERSION)`

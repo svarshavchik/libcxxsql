@@ -15,8 +15,10 @@ config.rpath
 config.status
 config.sub
 configure
+debuild
 depcomp
 /compile
+/deb
 /doctags
 /header.html
 /html

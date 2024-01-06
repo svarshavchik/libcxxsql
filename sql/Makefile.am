@@ -49,15 +49,15 @@ libcxxsqldecimal_la_LDFLAGS=-version-info @VERSION_INFO@ $(LINKTYPE)
 noinst_PROGRAMS=testenv testcursor testdbi testschema testdecimal
 
 testcursor_SOURCES=testcursor.C
-testcursor_LDADD=libcxxsql.la
+testcursor_LDADD=libcxxsql.la -lcxx
 testcursor_LDFLAGS=$(LINKTYPE)
 
 testenv_SOURCES=testenv.C
-testenv_LDADD=libcxxsql.la
+testenv_LDADD=libcxxsql.la -lcxx
 testenv_LDFLAGS=$(LINKTYPE)
 
 testdbi_SOURCES=testdbi.C
-testdbi_LDADD=libcxxsql.la
+testdbi_LDADD=libcxxsql.la -lcxx
 testdbi_LDFLAGS=$(LINKTYPE)
 
 $(call SCHEMA_GEN,testschematbl)
@@ -69,11 +69,11 @@ $(call SCHEMA_GEN,exampleschema2)
 $(call SCHEMA_GEN,exampleschema3)
 
 testschema_SOURCES=testschema.C
-testschema_LDADD=libcxxsql.la
+testschema_LDADD=libcxxsql.la -lcxx
 testschema_LDFLAGS=$(LINKTYPE)
 
 testdecimal_SOURCES=testdecimal.C
-testdecimal_LDADD=libcxxsqldecimal.la
+testdecimal_LDADD=libcxxsqldecimal.la libcxxsql.la -lcxx -lgmp
 testdecimal_LDFLAGS=$(LINKTYPE)
 
 check-am: $(noinst_PROGRAMS)
