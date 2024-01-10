@@ -21,7 +21,7 @@ EXTRA_DIST=config.rpath DoxygenLayout.xml \
 	packaging/debian/control \
 	packaging/debian/copyright \
 	packaging/debian/lintian-overrides.allow-errors \
-	packaging/debian/*.lintian-overrides \
+	$(patsubst $(srcdir)/%,%,$(wildcard $(srcdir)/packaging/debian/*.lintian-overrides)) \
 	packaging/debian/rules \
 	packaging/debian/source/format
 

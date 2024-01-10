@@ -3,7 +3,7 @@
 # See COPYING for distribution information.
 
 AC_PREREQ([2.71])
-AC_INIT([libcxxsql],[0.6.0],[mrsam@courier-mta.com])
+AC_INIT([libcxxsql],[0.6.1],[mrsam@courier-mta.com])
 AC_CANONICAL_TARGET
 
 AC_CONFIG_SRCDIR([includes/sql/env.H])
