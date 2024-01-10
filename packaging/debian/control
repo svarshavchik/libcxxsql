@@ -4,7 +4,6 @@ Maintainer: Sam Varshavchik <mrsam@courier-mta.com>
 Build-Depends: debhelper-compat (= 13),
 	       perl:any,
 	       libcxxbase-abi (= @LIBCXX_VERSION@),
-	       pkg-config,
 	       libcxxbase-dev,
 	       libgmp-dev,
 	       libidn2-dev,
