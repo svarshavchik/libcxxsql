@@ -14,7 +14,6 @@ AM_INIT_AUTOMAKE([dist-bzip2 foreign -Wno-portability])
 AC_PROG_CXX
 LT_INIT
 AM_GNU_GETTEXT([external])
-AM_GNU_GETTEXT_VERSION([0.21])
 AC_LANG(C++)
 
 # VERSION_INFO is:
@@ -115,10 +114,9 @@ eval "httportmapd=\"$sbindir/httportmapd\""
 
 AC_SUBST(httportmapd)
 AC_SUBST(LIBCXX_NAMESPACE,x)
-AC_CONFIG_FILES([Makefile
+AC_CONFIG_FILES([Makefile po/Makefile.in
 		 Doxyfile
 		 libcxxsql.m4
-                 po/Makefile.in
 		 includes/Makefile
 		 includes/sql/Makefile
 		 includes/sql/dbi/Makefile

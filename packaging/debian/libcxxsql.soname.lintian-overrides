@@ -1,4 +1,4 @@
 #
-# DOCUMENT ME
+# libcxx library packaging
 #
-custom-library-search-path RUNPATH /usr/lib/x86_64-linux-gnu/libcxx*
+custom-library-search-path RUNPATH /usr/lib/*/libcxx*
