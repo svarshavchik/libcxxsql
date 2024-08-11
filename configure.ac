@@ -11,6 +11,7 @@ AC_CONFIG_HEADERS([libcxx_config.h])
 AM_INIT_AUTOMAKE([dist-bzip2 foreign -Wno-portability])
 
 # Checks for programs.
+LIBCXX_INIT
 AC_PROG_CXX
 LT_INIT
 AM_GNU_GETTEXT([external])
@@ -64,7 +65,6 @@ then
 fi
 AC_SUBST(PKGCONFIGDIR)
 
-LIBCXX_INIT
 CXXFLAGS="$CXXFLAGS -fvisibility-inlines-hidden"
 export CXXFLAGS
 LDFLAGS="$LDFLAGS -z relro -z now"
