@@ -67,6 +67,7 @@ LIBCXX_VERSION=%libcxx_version %configure
 rm -rf $RPM_BUILD_ROOT
 %{__make} install DESTDIR=$RPM_BUILD_ROOT
 rm -f $RPM_BUILD_ROOT%{_libdir}/libcxxsql*/*.la
+rm -f $RPM_BUILD_ROOT%{_libdir}/libcxxsql*/*.a
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -83,7 +84,6 @@ rm -rf $RPM_BUILD_ROOT
 %files devel
 %defattr(-,root,root,-)
 %{_libdir}/libcxxsql*/*.so
-%{_libdir}/libcxxsql*/*.a
 %{_libdir}/pkgconfig/*
 %{_includedir}/libcxxsql*
 %{_datadir}/aclocal/*
