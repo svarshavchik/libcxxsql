@@ -53,7 +53,7 @@ See COPYING for distribution information.
     &app; should be converted into an installable package instead of building
     and installing &app; directly. The source tarball
     contains build scripts for Fedora and Ubuntu (most likely works on Debian
-    too, but untested.
+    too, but untested).
   </para>
 
   <para>
